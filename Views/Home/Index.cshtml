@@ -1,0 +1,58 @@
+@{
+    ViewData["Title"] = "Home";
+}
+
+
+<link rel="stylesheet" href="/css/index_page.css" />
+<link rel="stylesheet" href="/css/login.css" />
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@900&display=swap" rel="stylesheet">
+
+
+<div class="home-container" style="position: relative; z-index: 0;">
+    <div class="home-background">
+        <span class="text1">Buble</span>
+        <span class="text2">Tea</span>
+    </div>
+
+    <section class="about" id="about">
+        <div class="about-inner">
+            <div class="about-text">
+                <h2>About Us</h2>
+                <p>
+                    We craft delicious milk tea with premium tea leaves, fresh milk, and house-made toppings.
+                    Our mission is to bring a cozy experience and bold flavors to every cup.
+                </p>
+                <ul class="about-highlights">
+                    <li>Signature boba cooked fresh throughout the day</li>
+                    <li>Carefully sourced tea blends</li>
+                    <li>Seasonal, limited-time flavors</li>
+                </ul>
+                <a href="#menu" class="about-cta">Explore Menu</a>
+            </div>
+
+            @{
+                var traSuaList = (ViewBag.TraSuaList as List<string>)?.Take(8).ToList();
+            }
+            <div class="about-media">
+                @if (traSuaList != null && traSuaList.Any())
+                {
+                    foreach (var item in traSuaList)
+                    {
+                        <div class="product-item">
+                            <img src="@item" alt="Milk Tea" />
+                        </div>
+                    }
+                }
+                else
+                {
+                    <p>No milk tea images available.</p>
+                }
+            </div>
+
+
+        </div>
+    </section>
+
+
+
+</div>

@@ -1,0 +1,88 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/start.styles.css" asp-append-version="true" />
+    <link rel="shorcut icon" type="image/x-icon" href="/img/logo1.png" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
+    <!-- Font Muli -->
+    <link href="https://fonts.googleapis.com/css2?family=Muli:wght@400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@900&display=swap" rel="stylesheet">
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+
+<body style="display:flex; flex-direction:column; min-height:100vh; margin:0; font-family:'Muli', sans-serif; position: relative;">
+
+    <!-- Taskbar / Header -->
+    <header style="position: relative; z-index: 10;">
+        <div class="taskbar">
+            <!-- Logo -->
+            <div class="logo-title">
+                <a asp-controller="Home" asp-action="Index" class="logo-link">
+                    <img src="/img/logo1.png" alt="Logo" />
+                     <span class="brand-title">
+                     Buble <span class="brand-hub">Tea</span>
+                     </span>
+                  </a>           
+            </div>
+
+            <!-- Menu -->
+            <nav class="function">
+                <ul>
+                    <li><a asp-controller="Home" asp-action="Index">GIỚI THIỆU</a></li>
+                    <li><a href="#">THỰC ĐƠN</a></li>
+                    <li><a href="#">TIN TỨC</a></li>
+                    <li><a asp-controller="Home" asp-action="Privacy">LIÊN HỆ</a></li>
+                    <li><a href="#">CỬA HÀNG</a></li>
+                    <li><a href="#">THÀNH VIÊN</a></li>
+                </ul>
+            </nav>
+
+            @{
+                var currentController = ViewContext.RouteData.Values["Controller"]?.ToString()?.ToLowerInvariant();
+                var currentAction = ViewContext.RouteData.Values["Action"]?.ToString()?.ToLowerInvariant();
+                var hideAuth = currentController == "home" && (currentAction == "login" || currentAction == "register");
+            }
+            @if (!hideAuth)
+            {
+                <div class="auth">
+                    <a asp-controller="Home" asp-action="Login" class="btn-auth login">Đăng Nhập</a>
+                    <a asp-controller="Home" asp-action="Register" class="btn-auth register">Đăng Ký</a>
+                </div>
+            }
+
+        </div>
+    </header>
+
+   
+        <main>
+            @RenderBody()
+        </main>
+    </div>
+
+    <!-- Footer FnB -->
+    <footer class="fnb-footer" style="position: relative; z-index: 10;">
+        <div class="footer-container">
+            <div class="footer-left">
+                <p class="footer-text">&copy; 2025 - Milk & Tea Shop | <a href="#">Privacy</a></p>
+            </div>
+            <div class="footer-right">
+                <a href="#" class="social-icon"><i class="fab fa-facebook-f"></i></a>
+                <a href="#" class="social-icon"><i class="fab fa-instagram"></i></a>
+                <a href="#" class="social-icon"><i class="fa-solid fa-comment-dots"></i></a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+
+</html>

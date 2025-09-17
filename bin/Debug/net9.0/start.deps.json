@@ -1,0 +1,41 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v9.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v9.0": {
+      "start/1.0.0": {
+        "dependencies": {
+          "Microsoft.AspNetCore.Authentication.Google": "9.0.9"
+        },
+        "runtime": {
+          "start.dll": {}
+        }
+      },
+      "Microsoft.AspNetCore.Authentication.Google/9.0.9": {
+        "runtime": {
+          "lib/net9.0/Microsoft.AspNetCore.Authentication.Google.dll": {
+            "assemblyVersion": "9.0.9.0",
+            "fileVersion": "9.0.925.42003"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "start/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Microsoft.AspNetCore.Authentication.Google/9.0.9": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-cVElw5JwIib+frt6G/Zp4cSEFl1eE4gGIm0ICmkDJM16uePQDuWrFho5SoHHybnASspMyuI8y0S/miysHL1nmA==",
+      "path": "microsoft.aspnetcore.authentication.google/9.0.9",
+      "hashPath": "microsoft.aspnetcore.authentication.google.9.0.9.nupkg.sha512"
+    }
+  }
+}

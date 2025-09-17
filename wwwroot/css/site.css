@@ -1,0 +1,299 @@
+/* ===== Milk Tea Theme ===== */
+:root {
+    --mt-bg: #fffaf2;           /* creamy background */
+    --mt-surface: #ffffff;      /* cards, header */
+    --mt-text: #2d261f;         /* dark cocoa */
+    --mt-muted: #6b5b4d;        /* muted text */
+    --mt-brand: #ffb74d;        /* caramel orange */
+    --mt-brand-dark: #d98c2b;   /* darker caramel */
+    --mt-accent: #6f4e37;       /* coffee brown */
+    --mt-shadow: 0 6px 20px rgba(0,0,0,0.08);
+}
+
+body {
+    background: var(--mt-bg);
+    color: var(--mt-text);
+}
+
+html {
+  font-size: 14px;
+}
+
+@media (min-width: 768px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
+  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+}
+
+html {
+  position: relative;
+  min-height: 100%;
+}
+
+body {
+    font-family: 'Montserrat', Arial Black, Arial, sans-serif;
+    font-weight: 900;
+    margin: 0;
+}
+
+
+
+
+.form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
+  color: var(--bs-secondary-color);
+  text-align: end;
+}
+
+.form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
+  text-align: start;
+}
+
+
+.taskbar {
+    display: flex;
+    font-family: 'Montserrat', Arial Black, Arial, sans-serif;
+    font-weight: 900;
+    align-items: center;
+    justify-content: space-between;
+    height: 70px;
+    padding: 0 40px;
+    background: var(--mt-surface);
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+    box-shadow: var(--mt-shadow);
+}
+
+.taskbar .logo-title {
+    display: flex;
+    align-items: center;
+
+}
+
+.taskbar .logo-link {
+    display: flex;             
+    align-items: center;
+    gap: 10px;               
+    text-decoration: none !important; 
+}
+
+.taskbar .logo-link img {
+    max-height: 80px;
+    width: auto;
+    display: block;
+}
+
+.brand-title {
+    font-family: 'Montserrat', Arial Black, Arial, sans-serif;
+    font-size: 2rem;
+    font-weight: 900;
+    color: var(--mt-text);
+    letter-spacing: 1px;
+    text-shadow: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.brand-hub {
+    background: var(--mt-brand);
+    color: #111;
+    border-radius: 8px;
+    padding: 2px 14px 2px 12px;
+    margin-left: 4px;
+    font-family: 'Montserrat', Arial Black, Arial, sans-serif;
+    font-weight: 900;
+    font-size: 1.85rem;
+    letter-spacing: 0.5px;
+    box-shadow: var(--mt-shadow);
+    display: inline-block;
+    border: 1px solid var(--mt-brand);
+    transition: transform 0.18s ease, background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.brand-hub:hover {
+    background: var(--mt-brand-dark);
+    border-color: var(--mt-brand-dark);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+}
+
+/* Reusable brand badge */
+.brand-badge {
+    background: var(--mt-brand);
+    color: #111;
+    border: 1px solid var(--mt-brand);
+    border-radius: 10px;
+    padding: 6px 18px;
+    font-weight: 900;
+    display: inline-block;
+    line-height: 1;
+}
+
+.brand-badge--invert:hover {
+    background: #111;
+    color: var(--mt-brand);
+    border-color: #111;
+}
+
+.brand-hub:hover {
+    background: #111;
+    color: #ff9800;
+    box-shadow: 0 8px 22px rgba(0,0,0,0.35);
+    transform: translateY(-2px);
+    border-color: #111;
+}
+
+.taskbar .function ul {
+    list-style: none;
+    display: flex;
+    gap: 30px;
+    margin: 0;
+    padding: 0;
+}
+
+.taskbar .function a {
+    text-decoration: none;
+    color: var(--mt-text);
+    font-weight: 600;
+    font-size: 16px;
+    transition: color 0.3s;
+}
+
+.taskbar .function a:hover {
+    color: var(--mt-brand-dark);
+}
+
+.auth {
+    display: flex;
+    gap: 15px;
+}
+
+.btn-auth {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: 0.3s;
+    font-size: 14px;
+}
+
+.btn-auth.login {
+    background: transparent;
+    border: 1px solid var(--mt-brand-dark);
+    color: var(--mt-brand-dark);
+}
+
+.btn-auth.login:hover {
+    background: var(--mt-brand);
+    color: #111;
+}
+
+.btn-auth.register {
+    background: var(--mt-brand);
+    border: 1px solid var(--mt-brand);
+    color: #111;
+}
+
+.btn-auth.register:hover {
+    background: transparent;
+    color: var(--mt-brand-dark);
+}
+
+
+
+
+/* FOOTER - Light milk tea */
+.fnb-footer {
+    background: var(--mt-surface);
+    color: var(--mt-text);
+    padding: 20px 50px;
+    font-family: 'Muli', sans-serif;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.06);
+    margin-top: auto;
+    height: 110px;
+
+    display: flex;
+    align-items: center;
+}
+
+/* Container */
+.footer-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between; 
+    width: 100%;  
+    max-width: 1200px; 
+    margin: 0 auto;  
+}
+
+/* LEFT */
+.footer-left {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.footer-text {
+    font-size: 15px;
+    font-weight: 400;
+    margin: 0;
+    color: var(--mt-muted);
+}
+
+.fnb-footer .footer-text a {
+    color: var(--mt-brand-dark);
+    text-decoration: none;
+    margin-left: 5px;
+    transition: color 0.3s ease;
+}
+
+.fnb-footer .footer-text a:hover {
+    color: var(--mt-accent);
+}
+
+/* RIGHT - ICONS */
+.footer-right {
+    display: flex;
+    gap: 18px;
+}
+
+.fnb-footer .social-icon {
+    display: flex;               
+    align-items: center;
+    justify-content: center;
+    width: 42px;                 
+    height: 42px;
+    border: 2px solid var(--mt-text);      
+    border-radius: 50%;          
+    font-size: 18px;              
+    color: var(--mt-text);
+    transition: all 0.3s ease;
+    text-decoration: none;
+}
+
+.fnb-footer .social-icon:hover {
+    background: var(--mt-text);
+    color: #fff;
+    transform: scale(1.15);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .footer-container {
+        flex-direction: column;
+        text-align: center;
+        gap: 20px;
+    }
+
+    .footer-left {
+        flex-direction: column;
+    }
+}
+
+
+
+
+
