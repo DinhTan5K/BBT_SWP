@@ -97,6 +97,7 @@ D:\.net\start\obj\Debug\net9.0\compressed\l8eh461b7r-2fx6slejqm.gz
 D:\.net\start\bin\Debug\net9.0\Microsoft.AspNetCore.Authentication.Google.dll
 D:\.net\start\obj\Debug\net9.0\start.csproj.AssemblyReference.cache
 D:\.net\start\obj\Debug\net9.0\start.csproj.Up2Date
-D:\.net\start\obj\Debug\net9.0\compressed\4rgtoyatij-djcciss6vb.gz
 D:\.net\start\obj\Debug\net9.0\compressed\c7snl5a104-1gmu4w4rav.gz
 D:\.net\start\obj\Debug\net9.0\compressed\9y0zwausf1-hlwjoey3v9.gz
+D:\.net\start\obj\Debug\net9.0\start.sourcelink.json
+D:\.net\start\obj\Debug\net9.0\compressed\4rgtoyatij-rw6gfushfs.gz

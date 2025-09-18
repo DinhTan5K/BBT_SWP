@@ -33,7 +33,21 @@ public class HomeController : Controller
         return View("Login");
     }
 
-   public IActionResult Index()
+    public IActionResult Index()
+    {
+        string folderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "img", "milktea");
+
+        var files = Directory.GetFiles(folderPath);
+
+        var list = files.Select(file =>
+            "/img/milktea/" + Path.GetFileName(file)
+        ).ToList();
+
+        ViewBag.TraSuaList = list;
+
+        return View();
+    }
+    public IActionResult Product()
 {
     string folderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "img", "milktea");
 
