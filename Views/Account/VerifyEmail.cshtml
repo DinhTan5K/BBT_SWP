@@ -1,0 +1,13 @@
+@model start.Models.VerifyEmailViewModel
+
+<h2>Xác thực email</h2>
+
+<form asp-action="VerifyEmail" method="post">
+    <input type="hidden" asp-for="Email" />
+
+    <label>Mã OTP:</label>
+    <input asp-for="OtpCode" />
+    <span asp-validation-for="OtpCode"></span>
+
+    <button type="submit">Xác nhận</button>
+</form>

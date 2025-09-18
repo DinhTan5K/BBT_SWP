@@ -2,7 +2,6 @@ using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using start.Models;
 
-namespace start.Controllers;
 
 public class HomeController : Controller
 {
@@ -62,7 +61,12 @@ public class HomeController : Controller
     return View();
 }
 
+    public IActionResult Register()
+    {
+        return View();
+    }
 
+    
 
     public IActionResult Privacy()
     {
