@@ -1,6 +1,9 @@
-﻿<!DOCTYPE html>
-<html lang="en">
+﻿@using Microsoft.AspNetCore.Http
+@inject IHttpContextAccessor HttpContextAccessor
+@using System.Security.Claims
 
+<!DOCTYPE html>
+<html lang="en">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -10,25 +13,24 @@
     <link rel="stylesheet" href="~/start.styles.css" asp-append-version="true" />
     <link rel="shorcut icon" type="image/x-icon" href="/img/logo1.png" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
-    <!-- Font Muli -->
+    <!-- Font -->
     <link href="https://fonts.googleapis.com/css2?family=Muli:wght@400;600&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@900&display=swap" rel="stylesheet">
     @await RenderSectionAsync("Styles", required: false)
 </head>
-
 <body style="display:flex; flex-direction:column; min-height:100vh; margin:0; font-family:'Muli', sans-serif; position: relative;">
 
-    <!-- Taskbar / Header -->
+    <!-- Header -->
     <header style="position: relative; z-index: 10;">
         <div class="taskbar">
             <!-- Logo -->
             <div class="logo-title">
                 <a asp-controller="Home" asp-action="Index" class="logo-link">
                     <img src="/img/logo1.png" alt="Logo" />
-                     <span class="brand-title">
-                     Buble <span class="brand-hub">Tea</span>
-                     </span>
-                  </a>           
+                    <span class="brand-title">
+                        Buble <span class="brand-hub">Tea</span>
+                    </span>
+                </a>
             </div>
 
             <!-- Menu -->
@@ -43,29 +45,66 @@
                 </ul>
             </nav>
 
-            @{
-                var currentController = ViewContext.RouteData.Values["Controller"]?.ToString()?.ToLowerInvariant();
-                var currentAction = ViewContext.RouteData.Values["Action"]?.ToString()?.ToLowerInvariant();
-                var hideAuth = currentController == "home" && (currentAction == "login" || currentAction == "register");
-            }
+           @{
+    var currentController = ViewContext.RouteData.Values["Controller"]?.ToString()?.ToLowerInvariant();
+    var currentAction = ViewContext.RouteData.Values["Action"]?.ToString()?.ToLowerInvariant();
+    var hideAuth = currentController == "home" && (currentAction == "login" || currentAction == "register");
+
+    var customerId = HttpContextAccessor.HttpContext?.Session.GetInt32("CustomerID");
+    var customerName = HttpContextAccessor.HttpContext?.Session.GetString("CustomerName");
+
+  
+    if (string.IsNullOrEmpty(customerName) && User?.Identity?.IsAuthenticated == true)
+    {
+        customerName = User.FindFirst(ClaimTypes.Name)?.Value ?? User.Identity.Name;
+    }
+}
+
+
+            <!-- Auth buttons / User info -->
             @if (!hideAuth)
-            {
-                <div class="auth">
-                    <a asp-controller="Home" asp-action="Login" class="btn-auth login">Đăng Nhập</a>
-                    <a asp-controller="Account" asp-action="Register" class="btn-auth register">Đăng Ký</a>
-                </div>
-            }
-
-        </div>
-    </header>
-
-   
-        <main>
-            @RenderBody()
-        </main>
+{
+    <div class="auth">
+        @if (customerId != null || (User?.Identity?.IsAuthenticated ?? false))
+        {
+            
+            <div class="dropdown">
+                <a class="btn btn-light rounded-circle dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="fa-solid fa-user"></i>    
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                        <span class="dropdown-item-text">
+                              Xin chào, <b>@customerName</b>
+                        </span> 
+                    </li>
+                    <li>
+                        <a class="dropdown-item" asp-controller="Account" asp-action="Profile">Thông tin cá nhân</a>
+                    </li>
+                    <li>
+                        <a asp-controller="Account" asp-action="Logout" class="dropdown-item text-danger">Đăng Xuất</a>
+                    </li>
+                </ul>
+            </div>
+        }
+        else
+        {
+            <a asp-controller="Home" asp-action="Login" class="btn-auth login">Đăng Nhập</a>
+            <a asp-controller="Account" asp-action="Register" class="btn-auth register">Đăng Ký</a>
+        }
     </div>
 
-    <!-- Footer FnB -->
+
+}
+
+    </header>
+
+    <!-- Main content -->
+    <main>
+        @RenderBody()
+    </main>
+
+    <!-- Footer -->
     <footer class="fnb-footer" style="position: relative; z-index: 10;">
         <div class="footer-container">
             <div class="footer-left">
@@ -84,5 +123,4 @@
     <script src="~/js/site.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
-
 </html>

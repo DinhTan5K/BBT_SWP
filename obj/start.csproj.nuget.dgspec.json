@@ -1,23 +1,23 @@
 {
   "format": 1,
   "restore": {
-    "D:\\.net\\start\\start.csproj": {}
+    "C:\\FPT University\\Semester-5\\SWP391\\Project\\project\\BBT_SWP\\start.csproj": {}
   },
   "projects": {
-    "D:\\.net\\start\\start.csproj": {
+    "C:\\FPT University\\Semester-5\\SWP391\\Project\\project\\BBT_SWP\\start.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\.net\\start\\start.csproj",
+        "projectUniqueName": "C:\\FPT University\\Semester-5\\SWP391\\Project\\project\\BBT_SWP\\start.csproj",
         "projectName": "start",
-        "projectPath": "D:\\.net\\start\\start.csproj",
-        "packagesPath": "C:\\Users\\LENOVO\\.nuget\\packages\\",
-        "outputPath": "D:\\.net\\start\\obj\\",
+        "projectPath": "C:\\FPT University\\Semester-5\\SWP391\\Project\\project\\BBT_SWP\\start.csproj",
+        "packagesPath": "C:\\Users\\Admin\\.nuget\\packages\\",
+        "outputPath": "C:\\FPT University\\Semester-5\\SWP391\\Project\\project\\BBT_SWP\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\LENOVO\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\Admin\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -88,7 +88,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.302/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.304/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

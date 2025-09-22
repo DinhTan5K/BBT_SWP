@@ -6,7 +6,8 @@ using start.Data;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
 using System.Text;
-using start.Services;
+using start.Services;   
+using System.Security.Claims;
 public class AccountController : Controller
 {
     [HttpGet("login-google")]
@@ -16,15 +17,18 @@ public class AccountController : Controller
         return Challenge(props, "Google");
     }
 
-    [HttpGet("logout")]
-    public IActionResult Logout()
+    [HttpGet]
+    public async Task<IActionResult> Logout()
     {
-        return SignOut(new AuthenticationProperties { RedirectUri = "/" },
-            CookieAuthenticationDefaults.AuthenticationScheme);
+        // Xóa session (nếu dùng session login)
+        HttpContext.Session.Clear();
+
+        // SignOut khỏi Cookie (bao gồm cả Google login đã được wrap vào cookie)
+        await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+
+        // Redirect về trang chủ
+        return RedirectToAction("Index", "Home");
     }
-
-
-
 
     private readonly ApplicationDbContext _context;
     private readonly EmailService _emailService;
@@ -215,11 +219,11 @@ public class AccountController : Controller
     }
 
 
-[HttpGet]
-public IActionResult ForgotPassword()
-{
-    return View();
-}
+    [HttpGet]
+    public IActionResult ForgotPassword()
+    {
+        return View();
+    }
 
     [HttpPost]
     public IActionResult SendOtpForReset(string email)
@@ -234,41 +238,106 @@ public IActionResult ForgotPassword()
 
         _emailService.SendOtp(email, otp);
 
-        return RedirectToAction("ResetPassword","Account");
+        return RedirectToAction("ResetPassword", "Account");
 
     }
 
-[HttpGet]
+    [HttpGet]
     public IActionResult ResetPassword()
     {
         return View(new ResetPasswordViewModel());
     }
 
 
-[HttpPost]
-public IActionResult ResetPassword(ResetPasswordViewModel model)
+    [HttpPost]
+    public IActionResult ResetPassword(ResetPasswordViewModel model)
+    {
+        var sessionOtp = HttpContext.Session.GetString("ResetOtp");
+        var sessionEmail = HttpContext.Session.GetString("ResetEmail");
+
+        if (model.OtpCode != sessionOtp)
+        {
+            ModelState.AddModelError("", "OTP không đúng");
+            return View(model);
+        }
+
+        var user = _context.Customers.FirstOrDefault(c => c.Email == sessionEmail);
+        if (user != null)
+        {
+            user.Password = HashPassword(model.NewPassword);
+            _context.SaveChanges();
+        }
+
+        HttpContext.Session.Remove("ResetOtp");
+        HttpContext.Session.Remove("ResetEmail");
+
+        ViewBag.Message = "✅ Đổi mật khẩu thành công!";
+        return View();
+    }
+
+
+    [HttpGet]
+public IActionResult Profile()
 {
-    var sessionOtp = HttpContext.Session.GetString("ResetOtp");
-    var sessionEmail = HttpContext.Session.GetString("ResetEmail");
+    var vm = new UserProfileViewModel();
 
-    if(model.OtpCode != sessionOtp)
+   
+    int? userId = HttpContext.Session.GetInt32("CustomerID");
+    if (userId != null)
     {
-        ModelState.AddModelError("", "OTP không đúng");
-        return View(model);
-    }
+        var user = _context.Customers
+            .AsNoTracking()
+            .FirstOrDefault(c => c.CustomerID == userId.Value);
 
-    var user = _context.Customers.FirstOrDefault(c => c.Email == sessionEmail);
-    if (user != null)
-    {
-        user.Password = HashPassword(model.NewPassword);
-        _context.SaveChanges();
-    }
+        if (user != null)
+        {
+            vm.CustomerID = user.CustomerID;
+            vm.Name = user.Name;
+            vm.Email = user.Email;
+            vm.Phone = user.Phone;
+            vm.BirthDate = user.BirthDate;
+            vm.Address = user.Address;
+            return View(vm);
+        }
+   
+    } 
+    
+    if (User.Identity != null && User.Identity.IsAuthenticated)
+        {
+            var email = User.FindFirst(ClaimTypes.Email)?.Value
+                        ?? User.FindFirst("email")?.Value;
+                        
+            var user = _context.Customers
+                .AsNoTracking()
+                .FirstOrDefault(c => c.Email == email);
 
-    HttpContext.Session.Remove("ResetOtp");
-    HttpContext.Session.Remove("ResetEmail");
+            if (user != null)
+            {
 
-    ViewBag.Message = "✅ Đổi mật khẩu thành công!";
-    return View();
+                vm.CustomerID = user.CustomerID;
+                vm.Name = user.Name;
+                vm.Email = user.Email;
+                vm.Phone = user.Phone;
+                vm.BirthDate = user.BirthDate;
+                vm.Address = user.Address;
+                return View(vm);
+
+            }
+            else
+            {
+                vm.Name = User.FindFirst(ClaimTypes.Name)?.Value
+                          ?? User.FindFirst("name")?.Value;
+                vm.Email = email;
+                vm.AvatarUrl = User.FindFirst("picture")?.Value
+                               ?? User.FindFirst("urn:google:picture")?.Value;
+
+                vm.Phone = User.FindFirst("phone_number")?.Value;
+                return View(vm);
+            }
+        }
+
+    // Nếu không có → về login
+    return RedirectToAction("Login", "Account");
 }
 
 }
