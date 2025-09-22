@@ -7,7 +7,7 @@ html, body {
 
 .home-container {
     width: 100vw;
-    margin-left: calc(50% - 50vw); /* make full-bleed edge-to-edge on Index only */
+    margin-left: calc(50% - 50vw);
     padding: 0;        
     box-sizing: border-box; 
 }
@@ -61,7 +61,6 @@ html, body {
     border-color: #111;
 }
 
-/* ---------------- ABOUT ---------------- */
 .about {
     position: relative;
     z-index: 5;
@@ -75,19 +74,19 @@ html, body {
     margin: 0 auto;
     display: grid;
     grid-template-columns: 1.2fr 1fr;
-    gap: 20px; /* bớt khoảng cách */
+    gap: 20px;
     align-items: center;
 }
 
 .about-text h2 {
     font-family: 'Montserrat', Arial Black, Arial, sans-serif;
-    font-size: 2rem; /* nhỏ hơn 2.4rem */
+    font-size: 2rem;
     margin-bottom: 12px;
     color: var(--mt-accent);
 }
 
 .about-text p {
-    line-height: 1.5; /* bớt cao dòng */
+    line-height: 1.5;
     color: var(--mt-muted);
     margin-bottom: 12px;
 }
@@ -122,7 +121,6 @@ html, body {
     box-shadow: 0 8px 24px rgba(0,0,0,0.45);
 }
 
-/* ---------------- RESPONSIVE ---------------- */
 @media (max-width: 900px) {
     .about-inner { grid-template-columns: 1fr; }
 }
@@ -143,9 +141,9 @@ html, body {
 }
 
 .about-media .product-item img {
-    width: 100%;            
-    max-width: 180px;        
-    aspect-ratio: 3 / 4;    
+    width: 100%;
+    max-width: 180px;
+    aspect-ratio: 3 / 4;
     object-fit: cover;
     border-radius: 12px;
     box-shadow: 0 6px 16px rgba(0,0,0,0.25);

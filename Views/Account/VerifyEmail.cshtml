@@ -4,7 +4,6 @@
 
 <form asp-action="VerifyEmail" method="post">
     <input type="hidden" asp-for="Email" />
-
     <label>Mã OTP:</label>
     <input asp-for="OtpCode" />
     <span asp-validation-for="OtpCode"></span>

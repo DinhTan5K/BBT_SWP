@@ -37,7 +37,7 @@
                     <li><a asp-controller="Home" asp-action="Index">GIỚI THIỆU</a></li>
                     <li><a asp-controller="Home" asp-action="Product">THỰC ĐƠN</a></li>
                     <li><a href="#">TIN TỨC</a></li>
-                    <li><a asp-controller="Home" asp-action="Privacy">LIÊN HỆ</a></li>
+                    <li><a asp-controller="Home" asp-action="Privacy">Privacy</a></li>
                     <li><a href="#">CỬA HÀNG</a></li>
                     <li><a href="#">THÀNH VIÊN</a></li>
                 </ul>
@@ -51,7 +51,7 @@
             @if (!hideAuth)
             {
                 <div class="auth">
-                    <a asp-controller="Home" asp-action="Login" class="btn-auth login">Đăng Nhập</a>
+                    <a asp-controller="Account" asp-action="Login" class="btn-auth login">Đăng Nhập</a>
                     <a asp-controller="Account" asp-action="Register" class="btn-auth register">Đăng Ký</a>
                 </div>
             }

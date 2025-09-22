@@ -14,23 +14,17 @@ public class HomeController : Controller
         _env = env;
     }
 
-    [HttpGet]
+   
     public IActionResult Login()
     {
         return View();
     }
 
-    [HttpPost]
-    public IActionResult Login(string username, string password)
+    public IActionResult Register()
     {
-        if (username == "ad" && password == "1")
-        {
-            return RedirectToAction("Privacy", "Home");
-        }
-
-        ViewBag.Error = "Sai tài khoản hoặc mật khẩu!";
-        return View("Login");
+        return View();
     }
+
 
     public IActionResult Index()
     {
@@ -60,18 +54,13 @@ public class HomeController : Controller
 
     return View();
 }
-
-    public IActionResult Register()
-    {
-        return View();
-    }
-
     
 
     public IActionResult Privacy()
     {
         return View();
     }
+
 
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public IActionResult Error()

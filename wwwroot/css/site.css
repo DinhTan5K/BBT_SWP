@@ -1,12 +1,11 @@
-/* ===== Milk Tea Theme ===== */
 :root {
-    --mt-bg: #fffaf2;           /* creamy background */
-    --mt-surface: #ffffff;      /* cards, header */
-    --mt-text: #2d261f;         /* dark cocoa */
-    --mt-muted: #6b5b4d;        /* muted text */
-    --mt-brand: #ffb74d;        /* caramel orange */
-    --mt-brand-dark: #d98c2b;   /* darker caramel */
-    --mt-accent: #6f4e37;       /* coffee brown */
+    --mt-bg: #fffaf2;
+    --mt-surface: #ffffff;
+    --mt-text: #2d261f;
+    --mt-muted: #6b5b4d;
+    --mt-brand: #ffb74d;
+    --mt-brand-dark: #d98c2b;
+    --mt-accent: #6f4e37;
     --mt-shadow: 0 6px 20px rgba(0,0,0,0.08);
 }
 
@@ -120,7 +119,6 @@ body {
     box-shadow: 0 8px 20px rgba(0,0,0,0.15);
 }
 
-/* Reusable brand badge */
 .brand-badge {
     background: var(--mt-brand);
     color: #111;
@@ -205,7 +203,6 @@ body {
 
 
 
-/* FOOTER - Light milk tea */
 .fnb-footer {
     background: var(--mt-surface);
     color: var(--mt-text);
@@ -214,12 +211,10 @@ body {
     box-shadow: 0 -4px 20px rgba(0,0,0,0.06);
     margin-top: auto;
     height: 110px;
-
     display: flex;
     align-items: center;
 }
 
-/* Container */
 .footer-container {
     display: flex;
     align-items: center;
@@ -229,7 +224,6 @@ body {
     margin: 0 auto;  
 }
 
-/* LEFT */
 .footer-left {
     display: flex;
     align-items: center;
@@ -254,7 +248,6 @@ body {
     color: var(--mt-accent);
 }
 
-/* RIGHT - ICONS */
 .footer-right {
     display: flex;
     gap: 18px;
@@ -280,7 +273,6 @@ body {
     transform: scale(1.15);
 }
 
-/* Responsive */
 @media (max-width: 768px) {
     .footer-container {
         flex-direction: column;

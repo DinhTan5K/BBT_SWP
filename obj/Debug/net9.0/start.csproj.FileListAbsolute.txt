@@ -98,9 +98,7 @@ D:\.net\start\bin\Debug\net9.0\Microsoft.AspNetCore.Authentication.Google.dll
 D:\.net\start\obj\Debug\net9.0\start.csproj.AssemblyReference.cache
 D:\.net\start\obj\Debug\net9.0\start.csproj.Up2Date
 D:\.net\start\obj\Debug\net9.0\compressed\c7snl5a104-1gmu4w4rav.gz
-D:\.net\start\obj\Debug\net9.0\compressed\9y0zwausf1-hlwjoey3v9.gz
 D:\.net\start\obj\Debug\net9.0\start.sourcelink.json
-D:\.net\start\obj\Debug\net9.0\compressed\4rgtoyatij-rw6gfushfs.gz
 D:\.net\start\bin\Debug\net9.0\Azure.Core.dll
 D:\.net\start\bin\Debug\net9.0\Azure.Identity.dll
 D:\.net\start\bin\Debug\net9.0\Humanizer.dll
@@ -233,3 +231,5 @@ D:\.net\start\bin\Debug\net9.0\runtimes\win\lib\net6.0\System.Drawing.Common.dll
 D:\.net\start\bin\Debug\net9.0\runtimes\win\lib\net6.0\System.Runtime.Caching.dll
 D:\.net\start\bin\Debug\net9.0\runtimes\win\lib\net6.0\System.Security.Cryptography.ProtectedData.dll
 D:\.net\start\bin\Debug\net9.0\runtimes\win\lib\net6.0\System.Windows.Extensions.dll
+D:\.net\start\obj\Debug\net9.0\compressed\4rgtoyatij-614posrne2.gz
+D:\.net\start\obj\Debug\net9.0\compressed\9y0zwausf1-dv2bljpcyl.gz
