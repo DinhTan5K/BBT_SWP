@@ -7,52 +7,66 @@ using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
 using System.Text;
 using start.Services;
+using Microsoft.AspNetCore.Hosting;
+using System.IO;
+
 public class AccountController : Controller
 {
+    private readonly ApplicationDbContext _context;
+    private readonly EmailService _emailService;
+    private readonly IWebHostEnvironment _env;
+
+    public AccountController(ApplicationDbContext context, EmailService emailService, IWebHostEnvironment env)
+    {
+        _context = context;
+        _emailService = emailService;
+        _env = env;
+    }
+
     [HttpGet("login-google")]
-public IActionResult LoginGoogle()
-{
-    var props = new AuthenticationProperties
+    public IActionResult LoginGoogle()
     {
-        RedirectUri = Url.Action("LoginGoogleCallback", "Account")
-    };
-    return Challenge(props, "Google");
-}
-
-[HttpGet("login-google-callback")]
-public async Task<IActionResult> LoginGoogleCallback()
-{
-    var result = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-
-    if (!result.Succeeded)
-    {
-        return RedirectToAction("Login");
-    }
-
-    var claims = result.Principal.Identities.First().Claims;
-    var email = claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Email)?.Value;
-    var name = claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Name)?.Value;
-
-    var user = _context.Customers.FirstOrDefault(c => c.Email == email);
-    if (user == null)
-    {
-        user = new Customer
+        var props = new AuthenticationProperties
         {
-            Email = email,
-            Name = name,
-            IsEmailConfirmed = true
+            RedirectUri = Url.Action("LoginGoogleCallback", "Account")
         };
-        _context.Customers.Add(user);
-        _context.SaveChanges();
+        return Challenge(props, "Google");
     }
 
-    // ✅ Lưu Session sau khi login Google
-    HttpContext.Session.SetInt32("CustomerID", user.CustomerID);
-    HttpContext.Session.SetString("CustomerName", user.Name ?? "");
+    [HttpGet("login-google-callback")]
+    public async Task<IActionResult> LoginGoogleCallback()
+    {
+        var result = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
-    return RedirectToAction("Privacy", "Home");
-}
+        if (!result.Succeeded)
+        {
+            return RedirectToAction("Login");
+        }
 
+        var claims = result.Principal.Identities.First().Claims;
+        var email = claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Email)?.Value;
+        var name = claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Name)?.Value;
+
+        var user = _context.Customers.FirstOrDefault(c => c.Email == email);
+        if (user == null)
+        {
+            user = new Customer
+            {
+                Email = email,
+                Name = name,
+                IsEmailConfirmed = true
+            };
+            _context.Customers.Add(user);
+            _context.SaveChanges();
+        }
+
+        // ✅ Lưu Session sau khi login Google
+        HttpContext.Session.SetInt32("CustomerID", user.CustomerID);
+        HttpContext.Session.SetString("CustomerName", user.Name ?? "");
+        HttpContext.Session.SetString("ProfileImagePath", user.ProfileImagePath ?? "");
+
+        return RedirectToAction("Privacy", "Home");
+    }
 
     [HttpGet("logout")]
     public IActionResult Logout()
@@ -60,14 +74,6 @@ public async Task<IActionResult> LoginGoogleCallback()
         return SignOut(new AuthenticationProperties { RedirectUri = "/" },
             CookieAuthenticationDefaults.AuthenticationScheme);
     }
-
-
-
-
-    private readonly ApplicationDbContext _context;
-    private readonly EmailService _emailService;
-
-
 
     private string HashPassword(string password)
     {
@@ -77,12 +83,6 @@ public async Task<IActionResult> LoginGoogleCallback()
             var hash = sha256.ComputeHash(bytes);
             return Convert.ToBase64String(hash);
         }
-    }
-
-    public AccountController(ApplicationDbContext context, EmailService emailService)
-    {
-        _context = context;
-        _emailService = emailService;
     }
 
     [HttpGet]
@@ -116,8 +116,6 @@ public async Task<IActionResult> LoginGoogleCallback()
         return View(model);
     }
 
-
-
     [HttpPost]
     public IActionResult SendOtp(string email)
     {
@@ -126,9 +124,7 @@ public async Task<IActionResult> LoginGoogleCallback()
             return Json(new { success = false, message = "Email không được để trống" });
         }
 
-
         var otp = new Random().Next(100000, 999999).ToString();
-
 
         HttpContext.Session.SetString("OTP", otp);
         HttpContext.Session.SetString("EmailForOtp", email);
@@ -143,7 +139,6 @@ public async Task<IActionResult> LoginGoogleCallback()
             return Json(new { success = false, message = "Lỗi khi gửi email: " + ex.Message });
         }
     }
-
 
     [HttpGet]
     public IActionResult VerifyEmail(string email)
@@ -169,13 +164,11 @@ public async Task<IActionResult> LoginGoogleCallback()
         return View(model);
     }
 
-
     [HttpGet]
     public IActionResult Login()
     {
         return View();
     }
-
 
     [HttpPost]
     public IActionResult Login(string email, string password)
@@ -189,9 +182,7 @@ public async Task<IActionResult> LoginGoogleCallback()
             return View();
         }
 
-
         var hashedPassword = HashPassword(password);
-
 
         var user = _context.Customers
             .FirstOrDefault(c => c.Email == email && c.Password == hashedPassword);
@@ -208,11 +199,11 @@ public async Task<IActionResult> LoginGoogleCallback()
             return View();
         }
 
-
         HttpContext.Session.SetInt32("CustomerID", user.CustomerID);
         HttpContext.Session.SetString("CustomerName", user.Name ?? "");
+        HttpContext.Session.SetString("ProfileImagePath", user.ProfileImagePath ?? "");
 
-        return RedirectToAction("Index", "Home");
+        return RedirectToAction("Privacy", "Home");
     }
 
     [HttpGet]
@@ -252,12 +243,11 @@ public async Task<IActionResult> LoginGoogleCallback()
         return View();
     }
 
-
-[HttpGet]
-public IActionResult ForgotPassword()
-{
-    return View();
-}
+    [HttpGet]
+    public IActionResult ForgotPassword()
+    {
+        return View();
+    }
 
     [HttpPost]
     public IActionResult SendOtpForReset(string email)
@@ -273,15 +263,13 @@ public IActionResult ForgotPassword()
         _emailService.SendOtp(email, otp);
 
         return RedirectToAction("ResetPassword","Account");
-
     }
 
-[HttpGet]
+    [HttpGet]
     public IActionResult ResetPassword()
     {
         return View(new ResetPasswordViewModel());
     }
-
 
     [HttpPost]
     public IActionResult ResetPassword(ResetPasswordViewModel model)
@@ -308,25 +296,27 @@ public IActionResult ForgotPassword()
         ViewBag.Message = "✅ Đổi mật khẩu thành công!";
         return View();
     }
-[HttpGet]
-public IActionResult EditProfile()
-{
-    int? userId = HttpContext.Session.GetInt32("CustomerID");
-    if (userId == null) return RedirectToAction("Privacy", "Home");
 
-    var user = _context.Customers.FirstOrDefault(c => c.CustomerID == userId.Value);
-    if (user == null) return RedirectToAction("Privacy", "Home");
-
-    var vm = new EditProfile
+    [HttpGet]
+    public IActionResult EditProfile()
     {
-        Name = user.Name,
-        Phone = user.Phone,
-        Address = user.Address,
-        BirthDate = user.BirthDate
-    };
+        int? userId = HttpContext.Session.GetInt32("CustomerID");
+        if (userId == null) return RedirectToAction("Privacy", "Home");
 
-    return View(vm);
-}
+        var user = _context.Customers.FirstOrDefault(c => c.CustomerID == userId.Value);
+        if (user == null) return RedirectToAction("Privacy", "Home");
+
+        var vm = new EditProfile
+        {
+            Name = user.Name,
+            Phone = user.Phone,
+            Address = user.Address,
+            BirthDate = user.BirthDate,
+            CurrentProfileImagePath = user.ProfileImagePath
+        };
+
+        return View(vm);
+    }
 
     [HttpPost]
     public IActionResult EditProfile(EditProfile model)
@@ -351,16 +341,39 @@ public IActionResult EditProfile()
         customer.Address = model.Address;
         customer.BirthDate = model.BirthDate;
 
+        if (model.ProfileImage != null)
+        {
+            var uploadsFolder = Path.Combine(_env.WebRootPath, "images/profiles");
+            if (!Directory.Exists(uploadsFolder))
+            {
+                Directory.CreateDirectory(uploadsFolder);
+            }
+
+            var uniqueFileName = Guid.NewGuid().ToString() + Path.GetExtension(model.ProfileImage.FileName);
+            var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+            using (var fileStream = new FileStream(filePath, FileMode.Create))
+            {
+                model.ProfileImage.CopyTo(fileStream);
+            }
+
+            customer.ProfileImagePath = "/images/profiles/" + uniqueFileName;
+        }
+
         if (!string.IsNullOrEmpty(model.NewPassword))
         {
-            // ở đây bạn nên hash password thay vì lưu plain text
+            if (model.NewPassword != model.ConfirmPassword)
+            {
+                ModelState.AddModelError("", "Mật khẩu mới không khớp.");
+                return View(model);
+            }
             customer.Password = HashPassword(model.NewPassword);
         }
 
         _context.SaveChanges();
-         ViewBag.Message = "✅ Cập nhật thành công!";
-    return View(model);
-    
-}
 
+        HttpContext.Session.SetString("ProfileImagePath", customer.ProfileImagePath ?? "");
+
+        return RedirectToAction("Privacy", "Home");
+    }
 }

@@ -1,11 +1,18 @@
-﻿@using Microsoft.AspNetCore.Http
+﻿@using Microsoft.AspNetCore.Http 
 
 @{
     ViewData["Title"] = "Trang cá nhân";
     var customerId = Context.Session.GetInt32("CustomerID"); // Lấy CustomerID từ session
+    var profileImagePath = Context.Session.GetString("ProfileImagePath");
 }
 
 <h1>Hello bạn 👋</h1>
+
+@if (!string.IsNullOrEmpty(profileImagePath))
+{
+    <img src="@profileImagePath" alt="Profile Image" style="width: 100px; height: 100px; border-radius: 50%;" />
+}
+
 <p>Chào mừng bạn đã đăng nhập thành công.</p>
 
 @if (customerId != null)

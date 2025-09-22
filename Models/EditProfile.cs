@@ -1,6 +1,7 @@
-
 using System.ComponentModel.DataAnnotations;
 using System;
+using Microsoft.AspNetCore.Http;
+
 namespace start.Models
 {
     public class EditProfile
@@ -11,6 +12,11 @@ namespace start.Models
         public DateTime? BirthDate { get; set; }
 
         public int CustomerID { get; set; }
+
+        public string? CurrentProfileImagePath { get; set; }
+
+        public IFormFile? ProfileImage { get; set; }
+
         [DataType(DataType.Password)]
         public string? NewPassword { get; set; }
 

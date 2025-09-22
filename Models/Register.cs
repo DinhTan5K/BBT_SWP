@@ -32,6 +32,9 @@ public class Customer
 
     public DateTime CreatedAt { get; set; } = DateTime.Now;
 
-     public bool IsEmailConfirmed { get; set; } = false;
+    public bool IsEmailConfirmed { get; set; } = false;
     public string? OtpCode { get; set; }
+    
+    [StringLength(255)]
+        public string? ProfileImagePath { get; set; }
 }

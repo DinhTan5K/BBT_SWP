@@ -7,15 +7,14 @@
     <div class="card shadow-lg p-4" style="width: 500px; border-radius: 12px;">
         <h3 class="text-center mb-4">@ViewData["Title"]</h3>
 
-       @if (ViewBag.Message != null)
-{
-    <div class="alert alert-success text-center fw-bold">
-        @ViewBag.Message
-    </div>
-}
+        @if (ViewBag.Message != null)
+        {
+            <div class="alert alert-success text-center fw-bold">
+                @ViewBag.Message
+            </div>
+        }
 
-
-        <form asp-action="EditProfile" method="post">
+        <form asp-action="EditProfile" method="post" enctype="multipart/form-data">
             <div class="form-group mb-3">
                 <label asp-for="Name" class="form-label"></label>
                 <input asp-for="Name" class="form-control" placeholder="Nhập họ tên" />
@@ -38,6 +37,24 @@
                 <label asp-for="BirthDate" class="form-label"></label>
                 <input asp-for="BirthDate" type="date" class="form-control" />
                 <span asp-validation-for="BirthDate" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label>Ảnh hồ sơ hiện tại</label>
+                @if (!string.IsNullOrEmpty(Model.CurrentProfileImagePath))
+                {
+                    <img src="@Model.CurrentProfileImagePath" alt="Ảnh hồ sơ hiện tại" style="width: 100px; height: 100px; border-radius: 50%;" />
+                }
+                else
+                {
+                    <p>Chưa có ảnh hồ sơ</p>
+                }
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="ProfileImage" class="form-label">Chọn ảnh hồ sơ mới (tùy chọn)</label>
+                <input asp-for="ProfileImage" type="file" class="form-control" accept="image/*" />
+                <span asp-validation-for="ProfileImage" class="text-danger"></span>
             </div>
 
             <hr />
