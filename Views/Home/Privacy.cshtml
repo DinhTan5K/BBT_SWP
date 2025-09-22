@@ -1,6 +1,22 @@
-﻿@{
-    ViewData["Title"] = "Privacy";
-}
-<h1>@ViewData["Title"]</h1>
+﻿@using Microsoft.AspNetCore.Http
 
-<p>Use this page to detail your site's privacy policy.</p>
+@{
+    ViewData["Title"] = "Trang cá nhân";
+    var customerId = Context.Session.GetInt32("CustomerID"); // Lấy CustomerID từ session
+}
+
+<h1>Hello bạn 👋</h1>
+<p>Chào mừng bạn đã đăng nhập thành công.</p>
+
+@if (customerId != null)
+{
+    <p><strong>CustomerID:</strong> @customerId</p>
+}
+else
+{
+    <p style="color:red">⚠️ CustomerID chưa có trong session!</p>
+}
+
+<a asp-controller="Account" asp-action="EditProfile" class="btn btn-primary">
+    Chỉnh sửa hồ sơ
+</a>

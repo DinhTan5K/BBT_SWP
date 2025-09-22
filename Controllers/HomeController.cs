@@ -23,8 +23,10 @@ public class HomeController : Controller
     [HttpPost]
     public IActionResult Login(string username, string password)
     {
-        if (username == "ad" && password == "1")
+        if (username != null)
         {
+            // HttpContext.Session.SetInt32("CustomerID", 1); 
+            // HttpContext.Session.SetString("CustomerName", username);
             return RedirectToAction("Privacy", "Home");
         }
 
@@ -70,6 +72,7 @@ public class HomeController : Controller
 
     public IActionResult Privacy()
     {
+        
         return View();
     }
 
