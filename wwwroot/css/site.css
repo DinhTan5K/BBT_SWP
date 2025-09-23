@@ -277,7 +277,7 @@ body {
     font-size: 18px;
     color: var(--mt-text);
     transition: all 0.3s ease;
-   
+    text-decoration: none;
 }
 
 .fnb-footer .social-icon:hover {
