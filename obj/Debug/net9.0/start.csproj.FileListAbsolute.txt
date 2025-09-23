@@ -22,7 +22,6 @@ D:\.net\start\obj\Debug\net9.0\scopedcss\Views\Shared\_Layout.cshtml.rz.scp.css
 D:\.net\start\obj\Debug\net9.0\scopedcss\bundle\start.styles.css
 D:\.net\start\obj\Debug\net9.0\scopedcss\projectbundle\start.bundle.scp.css
 D:\.net\start\obj\Debug\net9.0\compressed\bvk49cdklj-61n19gt1b8.gz
-D:\.net\start\obj\Debug\net9.0\compressed\xz01rpisee-xtxxf3hu2r.gz
 D:\.net\start\obj\Debug\net9.0\compressed\t1qsgg7ggs-bqjiyaj88i.gz
 D:\.net\start\obj\Debug\net9.0\compressed\jw1b3yxct1-c2jlpeoesf.gz
 D:\.net\start\obj\Debug\net9.0\compressed\he0ft04oee-erw9l3u2r3.gz
@@ -231,5 +230,6 @@ D:\.net\start\bin\Debug\net9.0\runtimes\win\lib\net6.0\System.Drawing.Common.dll
 D:\.net\start\bin\Debug\net9.0\runtimes\win\lib\net6.0\System.Runtime.Caching.dll
 D:\.net\start\bin\Debug\net9.0\runtimes\win\lib\net6.0\System.Security.Cryptography.ProtectedData.dll
 D:\.net\start\bin\Debug\net9.0\runtimes\win\lib\net6.0\System.Windows.Extensions.dll
-D:\.net\start\obj\Debug\net9.0\compressed\4rgtoyatij-614posrne2.gz
-D:\.net\start\obj\Debug\net9.0\compressed\9y0zwausf1-dv2bljpcyl.gz
+D:\.net\start\obj\Debug\net9.0\compressed\4rgtoyatij-nkfzpxkiec.gz
+D:\.net\start\obj\Debug\net9.0\compressed\xz01rpisee-8ucretf95n.gz
+D:\.net\start\obj\Debug\net9.0\compressed\9y0zwausf1-204ydeipxk.gz

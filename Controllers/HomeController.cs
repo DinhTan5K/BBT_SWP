@@ -40,20 +40,21 @@ public class HomeController : Controller
 
         return View();
     }
+    
     public IActionResult Product()
-{
-    string folderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "img", "milktea");
+    {
+        string folderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "img", "milktea");
 
-    var files = Directory.GetFiles(folderPath);
+        var files = Directory.GetFiles(folderPath);
 
-    var list = files.Select(file =>
-        "/img/milktea/" + Path.GetFileName(file)
-    ).ToList();
+        var list = files.Select(file =>
+            "/img/milktea/" + Path.GetFileName(file)
+        ).ToList();
 
-    ViewBag.TraSuaList = list;
+        ViewBag.TraSuaList = list;
 
-    return View();
-}
+        return View();
+    }
     
 
     public IActionResult Privacy()

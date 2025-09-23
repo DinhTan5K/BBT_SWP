@@ -21,12 +21,17 @@
         <span asp-validation-for="Email"></span>
     </div>
 
+     <div>
+        <label for="Password">User Name</label>
+        <input asp-for="Username" />
+        <span asp-validation-for="Username"></span>
+    </div>
+
     <div>
         <label for="Password">Mật khẩu</label>
         <input asp-for="Password" type="password" />
         <span asp-validation-for="Password"></span>
     </div>
-
 
     <button type="submit">Đăng ký</button>
 </form>
