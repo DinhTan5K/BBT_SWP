@@ -6,22 +6,19 @@
 
 @{
     var customerId = HttpContextAccessor.HttpContext?.Session.GetInt32("CustomerID");
-    var customerName = HttpContextAccessor.HttpContext?.Session.GetString("CustomerName");
-    if (string.IsNullOrEmpty(customerName) && User?.Identity?.IsAuthenticated == true)
-    {
-        customerName = User.FindFirst(ClaimTypes.Name)?.Value ?? User.Identity.Name;
-    }
+    string? customerName = null;
 
-    string customerAvatar = null;
+    string? customerAvatar = null;
     if (customerId != null)
     {
         var ctm = _context.Customers.Find(customerId.Value);
+        customerName = ctm?.Name;
         customerAvatar = ctm?.ProfileImagePath;
     }
 
     var avatarUrl = string.IsNullOrEmpty(customerAvatar)
-        ? Url.Content("~/img/logo1.png")
-        : Url.Content(customerAvatar);
+    ? Url.Content("~/img/logo1.png")
+    : Url.Content(customerAvatar);
 
     var currentController = ViewContext.RouteData.Values["Controller"]?.ToString()?.ToLowerInvariant();
     var currentAction = ViewContext.RouteData.Values["Action"]?.ToString()?.ToLowerInvariant();
@@ -45,10 +42,9 @@
 <body
     style="display:flex; flex-direction:column; min-height:100vh; margin:0; font-family:'Muli', sans-serif; position: relative;">
 
-    <!-- Taskbar / Header -->
     <header style="position: relative; z-index: 10;">
         <div class="taskbar">
-            <!-- Logo -->
+
             <div class="logo-title">
                 <a asp-controller="Home" asp-action="Index" class="logo-link">
                     <img src="/img/logo1.png" alt="Logo" />
@@ -58,7 +54,7 @@
                 </a>
             </div>
 
-            <!-- Menu -->
+
             <nav class="function">
                 <ul>
                     <li><a asp-controller="Home" asp-action="Index">GIỚI THIỆU</a></li>
@@ -78,30 +74,28 @@
                         <div class="dropdown">
 
                             <div class="d-flex justify-content-center align-items-center" style="height:80px;">
-                                <a class="avatar-btn" href="#" role="button" data-bs-toggle="dropdown"
-                                    aria-expanded="false">
+                                <a class="avatar-btn" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                     <img src="@avatarUrl" alt="Avatar" />
                                 </a>
 
 
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                <li>
-                                    <span class="dropdown-item-text">
-                                        Xin chào, <b>@customerName</b>
-                                    </span>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item" asp-controller="Account" asp-action="Profile">Thông tin cá nhân</a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item" asp-controller="Account" asp-action="EditProfile">Chỉnh sửa hồ
-                                        sơ</a>
-                                </li>
-                                <li>
-                                    <a asp-controller="Account" asp-action="Logout" class="dropdown-item text-danger">Đăng
-                                        Xuất</a>
-                                </li>
-                            </ul>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li>
+                                        <span class="dropdown-item-text customer-name" title="@customerName">
+                                            Xin chào, <b>@customerName</b>
+                                        </span>
+
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" asp-controller="Account" asp-action="Profile">Thông tin cá
+                                            nhân</a>
+                                    </li>
+
+                                    <li>
+                                        <a asp-controller="Account" asp-action="Logout" class="dropdown-item text-danger">Đăng
+                                            Xuất</a>
+                                    </li>
+                                </ul>
                             </div>
                         </div>
                     }

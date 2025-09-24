@@ -1,41 +1,67 @@
 @model start.Models.Customer
+@{
+    ViewData["Title"] = "Register";
+}
 
-<h2>Đăng ký tài khoản</h2>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Muli:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="/css/login.css" />
+<link rel="stylesheet" href="/css/register.css" />
+<div class="login-form">
+    <div class="background"></div>
+    <div class="login-box">
+        <div class="top">
+            <img src="/img/logo1.png" alt="Logo">         
+                <div class="brand">
+                    <div class="title register-title">
+                        <span class="line1">ĐĂNG</span>
+                        <span class="line2">KÝ</span>
+                    </div>           
+            </div>
+        </div>
 
-<form asp-action="Register" asp-controller="Account" method="post">
-    <div>
-        <label for="Name">Tên khách hàng</label>
-        <input asp-for="Name" />
-        <span asp-validation-for="Name"></span>
+        <form asp-action="Register" asp-controller="Account" method="post">
+
+            <div class="mb-3 input-group">
+                <span class="input-group-text"><i class="fa-solid fa-user"></i></span>
+                <input asp-for="Name" class="form-control" placeholder="Tên khách hàng" />
+            </div>
+            <span class="text-danger small">@Html.ValidationMessageFor(m => m.Name)</span>
+
+            <div class="mb-3 input-group">
+                <span class="input-group-text"><i class="fa-solid fa-phone"></i></span>
+                <input asp-for="Phone" class="form-control" placeholder="Số điện thoại" />
+            </div>
+            <span class="text-danger small">@Html.ValidationMessageFor(m => m.Phone)</span>
+
+            <div class="mb-3 input-group">
+                <span class="input-group-text"><i class="fa-solid fa-envelope"></i></span>
+                <input asp-for="Email" class="form-control" placeholder="Email" />
+            </div>
+            <span class="text-danger small">@Html.ValidationMessageFor(m => m.Email)</span>
+
+            <div class="mb-3 input-group">
+                <span class="input-group-text"><i class="fa-solid fa-id-card"></i></span>
+                <input asp-for="Username" class="form-control" placeholder="Tên đăng nhập" />
+            </div>
+            <span class="text-danger small">@Html.ValidationMessageFor(m => m.Username)</span>
+
+            <div class="mb-3 input-group">
+                <span class="input-group-text"><i class="fa-solid fa-lock"></i></span>
+                <input asp-for="Password" type="password" class="form-control" placeholder="Mật khẩu" />
+            </div>
+            <span class="text-danger small">@Html.ValidationMessageFor(m => m.Password)</span>
+
+            <button type="submit" class="btn-login btn-main w-100">Đăng ký</button>
+        </form>
+
+        <div class="extra-links">
+            <p>Đã có tài khoản? <a asp-controller="Account" asp-action="Login" class="alt">Đăng nhập</a></p>
+        </div>
     </div>
-
-    <div>
-        <label for="Phone">Số điện thoại</label>
-        <input asp-for="Phone" />
-        <span asp-validation-for="Phone"></span>
-    </div>
-
-    <div>
-        <label for="Email">Email</label>
-        <input asp-for="Email" />
-        <span asp-validation-for="Email"></span>
-    </div>
-
-     <div>
-        <label for="Password">User Name</label>
-        <input asp-for="Username" />
-        <span asp-validation-for="Username"></span>
-    </div>
-
-    <div>
-        <label for="Password">Mật khẩu</label>
-        <input asp-for="Password" type="password" />
-        <span asp-validation-for="Password"></span>
-    </div>
-
-    <button type="submit">Đăng ký</button>
-</form>
+</div>
 
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
 }

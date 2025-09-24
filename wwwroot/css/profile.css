@@ -1,0 +1,143 @@
+.profile-container {
+    max-width: 900px;
+    margin: 50px auto;
+    padding: 30px;
+    background: var(--mt-bg);
+    color: var(--mt-text);
+    border-radius: 20px;
+    box-shadow: 0 8px 28px rgba(0,0,0,0.4);
+    font-family: 'Montserrat', sans-serif;
+}
+
+.profile-container h2 {
+    font-size: 1.8rem;
+    margin-bottom: 25px;
+    text-align: center;
+    color: var(--mt-accent);
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+.profile-card {
+    display: flex;
+    gap: 40px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.avatar-wrapper {
+    position: relative;
+    width: 160px;
+    height: 160px;
+    flex-shrink: 0;
+}
+
+.avatar-wrapper img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 4px solid var(--mt-brand);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.35);
+    transition: transform 0.3s;
+}
+
+.avatar-wrapper img:hover {
+    transform: scale(1.05);
+}
+
+.avatar-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    cursor: pointer;
+}
+
+.avatar-wrapper:hover .avatar-overlay {
+    opacity: 1;
+}
+
+
+.profile-info {
+    flex: 1;
+    min-width: 280px;
+}
+
+.profile-info h4 {
+    font-size: 1.6rem;
+    font-weight: 700;
+    margin-bottom: 20px;
+    margin-left: 20px;
+    color: var(--mt-text);
+}
+
+.info-item {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    padding: 14px 18px;
+    border-radius: 12px;
+    margin-bottom: 14px;
+    transition: transform 0.2s, box-shadow 0.25s;
+}
+
+.info-item i {
+    margin-right: 8px;
+    color: var(--mt-accent);
+}
+
+.info-item:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.25);
+}
+
+.info-item strong {
+    color: var(--mt-accent);
+    margin-right: 8px;
+}
+
+/* Actions */
+.profile-actions {
+    margin-top: 25px;
+}
+
+.profile-actions .btn {
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-weight: 600;
+    transition: all 0.25s ease;
+}
+
+.profile-actions .btn-danger {
+    background: var(--mt-brand);
+    border: none;
+    color: #111;
+}
+
+.profile-actions .btn-danger:hover {
+    background: #111;
+    color: var(--mt-brand);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.4);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .profile-card {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .avatar-wrapper {
+        margin-bottom: 20px;
+    }
+}

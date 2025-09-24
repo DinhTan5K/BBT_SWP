@@ -1,12 +1,38 @@
 @model start.Models.VerifyEmailViewModel
+<link rel="stylesheet" href="/css/login.css" />
+<div class="login-form">
+    <div class="background"></div>
+    <div class="login-box">
+        <div class="top">
+            <img src="/img/logo1.png" alt="Logo">
+            <div class="brand">
+                <div class="title title-stack">
+                    <span class="line1">XÁC THỰC</span>
+                    <span class="line2">EMAIL</span>
+                </div>
+            </div>
+        </div>
 
-<h2>Xác thực email</h2>
+        @if (ViewBag.ErrorMessage != null)
+        {
+            <div class="alert alert-danger">@ViewBag.ErrorMessage</div>
+        }
 
-<form asp-action="VerifyEmail" method="post">
-    <input type="hidden" asp-for="Email" />
-    <label>Mã OTP:</label>
-    <input asp-for="OtpCode" />
-    <span asp-validation-for="OtpCode"></span>
+        <form asp-action="VerifyEmail" method="post">
+            <input type="hidden" asp-for="Email" />
 
-    <button type="submit">Xác nhận</button>
-</form>
+            <div class="mb-3 input-group">
+                <span class="input-group-text"><i class="fa-solid fa-key"></i></span>
+                <input asp-for="OtpCode" class="form-control" placeholder="Nhập mã OTP" />
+            </div>
+            <span asp-validation-for="OtpCode" class="text-danger"></span>
+
+            <button type="submit" class="btn-login btn-main w-100">Xác nhận</button>
+        </form>
+
+        <div class="extra-links">
+            <p>Chưa nhận được OTP? <a asp-action="SendOtp" asp-controller="Account">Gửi lại</a></p>
+            <p>Chưa có tài khoản? <a asp-controller="Account" asp-action="Register" class="alt">Đăng ký</a></p>
+        </div>
+    </div>
+</div>

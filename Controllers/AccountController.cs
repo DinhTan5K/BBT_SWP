@@ -14,18 +14,15 @@ using System.Security.Claims;
 public class AccountController : Controller
 {
 
-    //ROOT
     private readonly ApplicationDbContext _context;
     private readonly EmailService _emailService;
-    private readonly IWebHostEnvironment _env;
+    
 
-    public AccountController(ApplicationDbContext context, EmailService emailService, IWebHostEnvironment env)
+    public AccountController(ApplicationDbContext context, EmailService emailService)
     {
         _context = context;
         _emailService = emailService;
-        _env = env;
     }
-    //FUNCTION
     private string HashPassword(string password)
     {
         using (var sha256 = SHA256.Create())
@@ -35,6 +32,13 @@ public class AccountController : Controller
             return Convert.ToBase64String(hash);
         }
     }
+
+    private bool VerifyPassword(string inputPassword, string hashedPassword)
+    {
+        var hashOfInput = HashPassword(inputPassword);
+        return hashOfInput == hashedPassword;
+    }
+
 
     [HttpGet]
     public IActionResult VerifyEmail(string email)
@@ -67,40 +71,45 @@ public class AccountController : Controller
     [HttpPost]
     public IActionResult SendOtp(string email, string purpose = "general")
     {
-
         if (string.IsNullOrEmpty(email))
-            return Json(new { success = false, message = "Email không được để trống" });
+        {
+            ViewBag.ErrorMessage = "Email không được để trống";
+            return View("ForgotPassword");
+        }
 
         if (purpose == "reset")
         {
             var user = _context.Customers.FirstOrDefault(c => c.Email == email);
             if (user == null)
+            {
                 ViewBag.ErrorMessage = "Email không tồn tại trong hệ thống";
-            return View("ForgotPassword");
-        }
+                return View("ForgotPassword");
+            }
 
-        string otp = new Random().Next(100000, 999999).ToString();
-
-
-        if (purpose == "reset")
-        {
+            string otp = new Random().Next(100000, 999999).ToString();
             HttpContext.Session.SetString("ResetOtp", otp);
             HttpContext.Session.SetString("ResetEmail", email);
+
+            try
+            {
+                _emailService.SendOtp(email, otp);
+                return RedirectToAction("ResetPassword", "Account");
+            }
+            catch (Exception ex)
+            {
+                ViewBag.ErrorMessage = "Lỗi khi gửi email: " + ex.Message;
+                return View("ForgotPassword");
+            }
         }
-        else
-        {
-            HttpContext.Session.SetString("OTP", otp);
-            HttpContext.Session.SetString("EmailForOtp", email);
-        }
+
+        string otpGeneral = new Random().Next(100000, 999999).ToString();
+        HttpContext.Session.SetString("OTP", otpGeneral);
+        HttpContext.Session.SetString("EmailForOtp", email);
 
         try
         {
-            _emailService.SendOtp(email, otp);
-
-            if (purpose == "reset")
-                return RedirectToAction("ResetPassword", "Account");
-            else
-                return Json(new { success = true, message = "OTP đã được gửi tới email" });
+            _emailService.SendOtp(email, otpGeneral);
+            return Json(new { success = true, message = "OTP đã được gửi tới email" });
         }
         catch (Exception ex)
         {
@@ -114,36 +123,36 @@ public class AccountController : Controller
         return View();
     }
 
-    [HttpPost]
-    public IActionResult ChangePassword(ChangePassword model)
-    {
-        int? userId = HttpContext.Session.GetInt32("CustomerID");
-        if (userId == null)
-            return RedirectToAction("Login");
+    // [HttpPost]
+    // public IActionResult ChangePassword(ChangePassword model)
+    // {
+    //     int? userId = HttpContext.Session.GetInt32("CustomerID");
+    //     if (userId == null)
+    //         return RedirectToAction("Login");
 
-        var user = _context.Customers.FirstOrDefault(c => c.CustomerID == userId.Value);
-        if (user == null)
-            return RedirectToAction("Login");
+    //     var user = _context.Customers.FirstOrDefault(c => c.CustomerID == userId.Value);
+    //     if (user == null)
+    //         return RedirectToAction("Login");
 
-        var hashedCurrent = HashPassword(model.CurrentPassword ?? "");
-        if (user.Password != hashedCurrent)
-        {
-            ModelState.AddModelError("", "Mật khẩu hiện tại không đúng.");
-            return View(model);
-        }
+    //     var hashedCurrent = HashPassword(model.CurrentPassword ?? "");
+    //     if (user.Password != hashedCurrent)
+    //     {
+    //         ModelState.AddModelError("", "Mật khẩu hiện tại không đúng.");
+    //         return View(model);
+    //     }
 
-        if (model.NewPassword != model.ConfirmNewPassword)
-        {
-            ModelState.AddModelError("", "Mật khẩu mới không trùng nhau.");
-            return View(model);
-        }
+    //     if (model.NewPassword != model.ConfirmNewPassword)
+    //     {
+    //         ModelState.AddModelError("", "Mật khẩu mới không trùng nhau.");
+    //         return View(model);
+    //     }
 
-        user.Password = HashPassword(model.NewPassword);
-        _context.SaveChanges();
+    //     user.Password = HashPassword(model.NewPassword);
+    //     _context.SaveChanges();
 
-        ViewBag.Message = "✅ Đổi mật khẩu thành công!";
-        return View();
-    }
+    //     ViewBag.Message = "✅ Đổi mật khẩu thành công!";
+    //     return View();
+    // }
 
 
     [HttpGet]
@@ -186,7 +195,6 @@ public class AccountController : Controller
     }
 
 
-    /// ////////////////
 
     [HttpGet("login-google")]
     public IActionResult LoginGoogle()
@@ -208,14 +216,12 @@ public class AccountController : Controller
         var name = claims.FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value;
         var picture = claims.FirstOrDefault(c => c.Type == "picture")?.Value;
 
-        // DEBUG: in ra tất cả claim
         Console.WriteLine("=== Google Claims ===");
         foreach (var c in claims)
         {
             Console.WriteLine($"Type: {c.Type}, Value: {c.Value}");
         }
 
-        // Tìm user trong DB
         var user = _context.Customers.FirstOrDefault(u => u.Email == email);
 
         if (user == null)
@@ -231,7 +237,6 @@ public class AccountController : Controller
                 IsEmailConfirmed = true
             };
 
-            // DEBUG: in thông tin trước khi save
             Console.WriteLine("=== New Customer ===");
             Console.WriteLine($"Name: {user.Name}");
             Console.WriteLine($"Email: {user.Email}");
@@ -249,7 +254,7 @@ public class AccountController : Controller
 
         HttpContext.Session.SetInt32("CustomerID", user.CustomerID);
 
-        return RedirectToAction("Profile", "Account");
+        return RedirectToAction("Index", "Home");
     }
 
 
@@ -300,6 +305,12 @@ public class AccountController : Controller
             ModelState.AddModelError("Phone", "Số điện thoại đã tồn tại.");
         }
 
+        if (string.IsNullOrWhiteSpace(model.Password) || model.Password.Length < 6)
+        {
+            ModelState.AddModelError("Password", "Mật khẩu phải có ít nhất 6 ký tự và không được để trống.");
+        }
+
+
         if (ModelState.IsValid)
         {
             model.Password = HashPassword(model.Password ?? "");
@@ -339,7 +350,7 @@ public class AccountController : Controller
 
         if (string.IsNullOrWhiteSpace(loginId) || string.IsNullOrWhiteSpace(password))
         {
-            ModelState.AddModelError("", "Vui lòng nhập Email/Username và mật khẩu");
+            ModelState.AddModelError("LoginError", "Vui lòng nhập Email/Username và mật khẩu");
             return View();
         }
 
@@ -412,21 +423,21 @@ public class AccountController : Controller
     [HttpGet]
     public IActionResult EditProfile()
     {
+         
         int? userId = HttpContext.Session.GetInt32("CustomerID");
         if (userId == null) return RedirectToAction("Privacy", "Home");
 
         var user = _context.Customers.FirstOrDefault(c => c.CustomerID == userId.Value);
         if (user == null) return RedirectToAction("Privacy", "Home");
-
+        bool isGoogleLogin = string.IsNullOrEmpty(user.Password); 
         var vm = new EditProfile
         {
             Name = user.Name,
             Phone = user.Phone,
             Address = user.Address,
             BirthDate = user.BirthDate,
-            CurrentProfileImagePath = user.ProfileImagePath
         };
-
+         ViewBag.IsGoogleLogin = isGoogleLogin;
         return View(vm);
     }
 
@@ -440,80 +451,97 @@ public class AccountController : Controller
             return RedirectToAction("Login", "Account");
         }
 
+
+        var customer = _context.Customers.FirstOrDefault(c => c.CustomerID == userId.Value);
+        if (customer == null) return NotFound();
+
+
+        if (_context.Customers.Any(c => c.Phone == model.Phone && c.CustomerID != userId.Value))
+        {
+            ModelState.AddModelError("Phone", "Số điện thoại đã tồn tại.");
+        }
+
+        if (!string.IsNullOrEmpty(customer.Password))
+        {
+
+            if (!string.IsNullOrEmpty(model.NewPassword))
+            {
+                if (string.IsNullOrEmpty(model.CurrentPassword))
+                {
+                    ModelState.AddModelError("CurrentPassword", "Vui lòng nhập mật khẩu hiện tại.");
+                }
+                else if (!VerifyPassword(model.CurrentPassword, customer.Password!))
+                {
+                    ModelState.AddModelError("CurrentPassword", "Mật khẩu hiện tại không đúng.");
+                }
+
+            }
+        }
+
         if (!ModelState.IsValid)
         {
             return View(model);
         }
-
-        var customer = _context.Customers.FirstOrDefault(c => c.CustomerID == userId.Value);
-        if (customer == null) return NotFound();
 
         customer.Name = model.Name;
         customer.Phone = model.Phone;
         customer.Address = model.Address;
         customer.BirthDate = model.BirthDate;
 
-
         if (!string.IsNullOrEmpty(model.NewPassword))
         {
-            if (model.NewPassword != model.ConfirmPassword)
-            {
-                ModelState.AddModelError("", "Mật khẩu mới không khớp.");
-                return View(model);
-            }
             customer.Password = HashPassword(model.NewPassword);
         }
 
         _context.SaveChanges();
-
+        TempData["SuccessMessage"] = "Cập nhật hồ sơ thành công!";
         return RedirectToAction("Profile", "Account");
     }
 
-[HttpPost]
-public async Task<IActionResult> UploadAvatar(IFormFile avatar)
-{
-    var customerId = HttpContext.Session.GetInt32("CustomerID");
-    if (customerId == null) return RedirectToAction("Login");
-
-    if (avatar != null && avatar.Length > 0)
+    [HttpPost]
+    public async Task<IActionResult> UploadAvatar(IFormFile avatar)
     {
-        var customer = _context.Customers.Find(customerId);
-        if (customer == null) return NotFound();
+        var customerId = HttpContext.Session.GetInt32("CustomerID");
+        if (customerId == null) return RedirectToAction("Login");
 
-        // Xóa file cũ (nếu có và không phải ảnh default)
-        if (!string.IsNullOrEmpty(customer.ProfileImagePath) 
-            && !customer.ProfileImagePath.Contains("/img/"))
+        if (avatar != null && avatar.Length > 0)
         {
-            var oldPath = Path.Combine(
-                Directory.GetCurrentDirectory(), 
-                "wwwroot", 
-                customer.ProfileImagePath.TrimStart('/')
-            );
-            if (System.IO.File.Exists(oldPath))
+            var customer = _context.Customers.Find(customerId);
+            if (customer == null) return NotFound();
+
+            if (!string.IsNullOrEmpty(customer.ProfileImagePath)
+                && !customer.ProfileImagePath.Contains("/img/"))
             {
-                System.IO.File.Delete(oldPath);
+                var oldPath = Path.Combine(
+                    Directory.GetCurrentDirectory(),
+                    "wwwroot",
+                    customer.ProfileImagePath.TrimStart('/')
+                );
+                if (System.IO.File.Exists(oldPath))
+                {
+                    System.IO.File.Delete(oldPath);
+                }
             }
+
+            var fileName = $"{Guid.NewGuid()}_{Path.GetFileName(avatar.FileName)}";
+            var path = Path.Combine(
+                Directory.GetCurrentDirectory(),
+                "wwwroot/uploads/avatars",
+                fileName
+            );
+
+            using (var stream = new FileStream(path, FileMode.Create))
+            {
+                await avatar.CopyToAsync(stream);
+            }
+
+            var dbPath = $"/uploads/avatars/{fileName}";
+            customer.ProfileImagePath = dbPath;
+            _context.SaveChanges();
         }
 
-        var fileName = $"{Guid.NewGuid()}_{Path.GetFileName(avatar.FileName)}";
-        var path = Path.Combine(
-            Directory.GetCurrentDirectory(), 
-            "wwwroot/uploads/avatars", 
-            fileName
-        );
-
-        using (var stream = new FileStream(path, FileMode.Create))
-        {
-            await avatar.CopyToAsync(stream);
-        }
-
-        var dbPath = $"/uploads/avatars/{fileName}";
-        customer.ProfileImagePath = dbPath;
-        _context.SaveChanges();
+        return RedirectToAction("Profile");
     }
-
-    return RedirectToAction("Profile");
-}
 
 
 }

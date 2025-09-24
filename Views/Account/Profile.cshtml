@@ -1,72 +1,124 @@
 @model Customer
 @{
-    ViewData["Title"] = "Thông tin cá nhân";
+    ViewData["Title"] = "Profile";
 
     var avatarUrl = string.IsNullOrEmpty(Model.ProfileImagePath)
-        ? Url.Content("~/img/logo.png")
-        : Url.Content(Model.ProfileImagePath);
+    ? Url.Content("~/img/logo1.png")
+    : Url.Content(Model.ProfileImagePath);
 }
 
-<div class="container py-4">
+
+<link rel="stylesheet" href="/css/profile.css" />
+
+
+<div class="profile-container">
     <h2>@ViewData["Title"]</h2>
+    @if (TempData["SuccessMessage"] != null)
+{
+    <div id="successToast" class="alert alert-success text-center" role="alert"
+         style="position: fixed; top: 70px; right: 10px; z-index: 1050; max-width: 400px;">
+        @TempData["SuccessMessage"]
+    </div>
 
-    <div class="card" style="max-width:800px;">
-        <div class="card-body d-flex gap-3">
-            
-            <div class="avatar-wrapper" style="position: relative; width:120px; height:120px;">
-                <img src="@avatarUrl" alt="Avatar"
-                     style="width:120px;height:120px;border-radius:50%;object-fit:cover;" />
+    <style>
+        #successToast {
+            animation: slideIn 0.5s ease-out;
+        }
 
-               
-                <div class="avatar-overlay"
-                     style="position:absolute;top:0;left:0;width:100%;height:100%;
-                            background:rgba(0,0,0,0.5);border-radius:50%;
-                            display:flex;flex-direction:column;align-items:center;justify-content:center;
-                            color:#fff;opacity:0;transition:opacity 0.3s;cursor:pointer;">
-                    <i class="fa fa-pen"></i>
-                    <span style="font-size:12px;">Edit</span>
-                </div>
+        #successToast.hide {
+            animation: fadeOut 0.5s ease forwards;
+        }
 
-                
-                <form asp-action="UploadAvatar" asp-controller="Account"
-                      method="post" enctype="multipart/form-data" id="avatarForm">
-                    <input type="file" name="avatar" id="avatarInput" accept="image/*" style="display:none;" />
-                </form>
+        @@keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @@keyframes fadeOut {
+            from {
+                opacity: 1;
+            }
+            to {
+                opacity: 0;
+                transform: translateX(100%);
+            }
+        }
+    </style>
+
+    <script>
+        setTimeout(function () {
+            var toast = document.getElementById('successToast');
+            if (toast) {
+                toast.classList.add('hide');
+                setTimeout(() => toast.remove(), 500);
+            }
+        }, 3000);
+    </script>
+}
+
+
+
+    <div class="profile-card">
+
+        <div class="avatar-wrapper">
+            <img src="@avatarUrl" alt="Avatar" />
+            <div class="avatar-overlay">
+                <i class="fa fa-pen"></i>
+                <span>Edit</span>
             </div>
+            <form asp-action="UploadAvatar" asp-controller="Account" method="post" enctype="multipart/form-data"
+                id="avatarForm">
+                <input type="file" name="avatar" id="avatarInput" accept="image/*" style="display:none;" />
+            </form>
+        </div>
 
-           
-            <div class="flex-fill">
-                <h4>@(Model.Name ?? "Người dùng")</h4>
-                <p class="mb-1"><strong>Email:</strong> @(Model.Email ?? "-")</p>
-                <p class="mb-1"><strong>Số điện thoại:</strong> @(Model.Phone ?? "-")</p>
-                <p class="mb-1"><strong>Ngày sinh:</strong> @(Model.BirthDate?.ToString("dd/MM/yyyy") ?? "-")</p>
-                <p class="mb-1"><strong>Địa chỉ:</strong> @(Model.Address ?? "-")</p>
 
-                <div class="mt-3">
-                    <a asp-controller="Account" asp-action="Logout" class="btn btn-danger">Đăng xuất</a>
-                </div>
+        <div class="profile-info">
+            <h4>@(Model.Name ?? "Người dùng")</h4>
+
+            <div class="info-item"><i class="fa fa-envelope"></i> <strong>Email:</strong> @(Model.Email ?? "-")</div>
+            <div class="info-item"><i class="fa fa-phone"></i> <strong>Số điện thoại:</strong> @(Model.Phone ?? "-")
+            </div>
+            <div class="info-item"><i class="fa fa-birthday-cake"></i> <strong>Ngày sinh:</strong>
+                @(Model.BirthDate?.ToString("dd/MM/yyyy") ?? "-")</div>
+            <div class="info-item"><i class="fa fa-home"></i> <strong>Địa chỉ:</strong> @(Model.Address ?? "-")</div>
+
+
+            <div class="profile-actions">
+                <a asp-controller="Account" asp-action="EditProfile" class="btn btn-danger">Chỉnh sửa</a>
             </div>
         </div>
     </div>
 </div>
 
+
+
 @section Scripts {
     <script>
-        
+
         document.querySelectorAll('.avatar-wrapper').forEach(wrapper => {
             const overlay = wrapper.querySelector('.avatar-overlay');
             wrapper.addEventListener('mouseenter', () => overlay.style.opacity = 1);
             wrapper.addEventListener('mouseleave', () => overlay.style.opacity = 0);
 
-            
+
             overlay.addEventListener('click', () => {
                 wrapper.querySelector('#avatarInput').click();
             });
 
-            
+
             wrapper.querySelector('#avatarInput').addEventListener('change', () => {
                 wrapper.querySelector('#avatarForm').submit();
             });
         });
+
     </script>
+
+
 }
