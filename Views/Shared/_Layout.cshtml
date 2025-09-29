@@ -55,16 +55,16 @@
             </div>
 
 
-            <nav class="function">
-                <ul>
-                    <li><a asp-controller="Home" asp-action="Index">GIỚI THIỆU</a></li>
-                    <li><a asp-controller="Home" asp-action="Product">THỰC ĐƠN</a></li>
-                    <li><a href="#">TIN TỨC</a></li>
-                    <li><a asp-controller="Home" asp-action="Privacy">LIÊN HỆ</a></li>
-                    <li><a href="#">CỬA HÀNG</a></li>
-                    <li><a href="#">PRIVACY</a></li>
-                </ul>
-            </nav>
+                <nav class="function">
+                    <ul>
+                        <li><a asp-controller="Home" asp-action="Index">GIỚI THIỆU</a></li>
+                        <li><a asp-controller="Product" asp-action="Product">THỰC ĐƠN</a></li>
+                        <li><a href="#">TIN TỨC</a></li>
+                        <li><a asp-controller="Home" asp-action="Privacy">LIÊN HỆ</a></li>
+                        <li><a href="#">CỬA HÀNG</a></li>
+                        <li><a href="#">PRIVACY</a></li>
+                    </ul>
+                </nav>
 
             @if (!hideAuth)
             {
@@ -113,7 +113,7 @@
         @RenderBody()
     </main>
 
-    <!-- Footer FnB -->
+    
     <footer class="fnb-footer" style="position: relative; z-index: 10;">
         <div class="footer-container">
             <div class="footer-left">

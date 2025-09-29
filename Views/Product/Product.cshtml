@@ -1,0 +1,190 @@
+@model IEnumerable<start.Models.Product>
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
+
+@{
+    var antiforgeryToken = Antiforgery.GetAndStoreTokens(Context).RequestToken;
+}
+
+<link rel="stylesheet" href="/css/product.css" />
+
+<div class="container">
+
+    <aside class="filter-sidebar">
+        <div class="search-bar">
+            <i class="fa fa-search"></i>
+            <input type="text" placeholder="Tìm trà sữa..." />
+        </div>
+        <button class="filter-btn active" data-category="all">Tất cả</button>
+        <button class="filter-btn" data-category="1">Truyền Thống</button>
+        <button class="filter-btn" data-category="2">Trái Cây</button>
+        <button class="filter-btn" data-category="3">Bộ Sưu Tập</button>
+        <button class="filter-btn" data-category="3">Con Ca</button>
+        <button class="filter-btn" data-category="3">Con Chim</button>
+    </aside>
+
+    <div class="products-grid">
+        @if (Model != null && Model.Any())
+        {
+            @foreach (var item in Model)
+            {
+                <div class="product-item" data-category="@item.CategoryID" data-product-id="@item.ProductID">
+                    <img src="@item.Image_Url" alt="@item.ProductName" />
+                    <h3>@item.ProductName</h3>
+
+                    <div class="size-options" data-product-id="@item.ProductID">
+                        @foreach (var size in item.ProductSizes)
+                        {
+                            <div class="size-option" data-size-id="@size.ProductSizeID" data-price="@size.Price">
+                                @size.Size
+                            </div>
+                        }
+                    </div>
+
+                    <p class="price">
+                        Giá: <span class="selected-price">
+                            @($"{item.ProductSizes.FirstOrDefault()?.Price:#,0} đ")
+                        </span>
+                    </p>
+
+                    <button class="btn-add">Add to Cart</button>
+                </div>
+            }
+        }
+        else
+        {
+            <p>Không có sản phẩm nào!</p>
+        }
+
+        <div class="no-result">
+            <i class="fa fa-search"></i>
+            <p>Không tìm thấy sản phẩm nào</p>
+        </div>
+    </div>
+
+    <div class="cart">
+        <h2>Giỏ hàng</h2>
+        <div class="cart-items" id="cart-items">
+            <p>Chưa có sản phẩm nào.</p>
+        </div>
+        <div class="cart-total">
+            Tổng : <span id="cart-total"> </span>
+        </div>
+        <a asp-action="Order" asp-controller="Order" class="btn-checkout">Thanh toán</a>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const csrfToken = '@antiforgeryToken';
+        let currentCartData = [];
+
+        document.querySelectorAll('.size-option').forEach(el => {
+            el.addEventListener('click', () => {
+                const parent = el.parentElement;
+                parent.querySelectorAll('.size-option').forEach(s => s.classList.remove('active'));
+                el.classList.add('active');
+            });
+        });
+
+        function addToCart(productId) {
+            const productEl = document.querySelector(`.product-item[data-product-id='${productId}']`);
+            if (!productEl) return;
+
+            const selectedSizeEl = productEl.querySelector('.size-option.active') || productEl.querySelector('.size-option');
+            const sizeId = parseInt(selectedSizeEl.dataset.sizeId);
+            const unitPrice = parseFloat(selectedSizeEl.dataset.price);
+
+            fetch('/Product/AddToCart', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': csrfToken
+                },
+                body: JSON.stringify({
+                    productId: productId,
+                    productSizeId: sizeId,
+                    quantity: 1,
+                    price: unitPrice
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) loadCart();
+                else alert('Lỗi: ' + data.message);
+            })
+            .catch(err => console.error(err));
+        }
+
+        function loadCart() {
+            fetch('/Product/CartItems')
+            .then(res => res.json())
+            .then(data => {
+                currentCartData = data;
+                const cartEl = document.getElementById('cart-items');
+                const cartTotalEl = document.getElementById('cart-total');
+
+                cartEl.innerHTML = "";
+                let total = 0;
+
+                if (data.length) {
+                    data.forEach((cd) => {
+                        const div = document.createElement('div');
+                        div.classList.add('cart-item');
+                        div.innerHTML = `
+                            <span class="cart-item-name">${cd.productName} - ${cd.size}</span>
+                            <div class="cart-actions">
+                                <button class="qty-btn" data-cart-detail-id="${cd.cartDetailID}" data-action="dec">-</button>
+                                <span class="qty">${cd.quantity}</span>
+                                <button class="qty-btn" data-cart-detail-id="${cd.cartDetailID}" data-action="inc">+</button>
+                            </div>
+                        `;
+                        cartEl.appendChild(div);
+                        total += cd.total;
+                    });
+                } else {
+                    cartEl.innerHTML = "<p>Chưa có sản phẩm nào.</p>";
+                }
+
+                cartTotalEl.textContent = total.toLocaleString() + " đ";
+            });
+        }
+
+        document.getElementById('cart-items').addEventListener('click', function (e) {
+            if (!e.target.classList.contains('qty-btn')) return;
+
+            const cartDetailId = e.target.dataset.cartDetailId;
+            const action = e.target.dataset.action;
+            const qtyEl = e.target.parentElement.querySelector('.qty');
+            let newQty = parseInt(qtyEl.textContent);
+
+            if (action === 'inc') newQty++;
+            else if (action === 'dec') newQty--;
+
+            if (newQty < 0) newQty = 0;
+
+            fetch('/Product/UpdateCart', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': csrfToken
+                },
+                body: JSON.stringify({ cartDetailId, quantity: newQty })
+            }).then(() => loadCart());
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.btn-add').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const productEl = btn.closest('.product-item');
+                    const productId = parseInt(productEl.dataset.productId);
+                    addToCart(productId);
+                });
+            });
+
+            loadCart();
+        });
+    </script>
+    <script src="/js/product.js"></script>
+}
+
+}

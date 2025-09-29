@@ -123,36 +123,36 @@ public class AccountController : Controller
         return View();
     }
 
-    // [HttpPost]
-    // public IActionResult ChangePassword(ChangePassword model)
-    // {
-    //     int? userId = HttpContext.Session.GetInt32("CustomerID");
-    //     if (userId == null)
-    //         return RedirectToAction("Login");
+    [HttpPost]
+    public IActionResult ChangePassword(ChangePassword model)
+    {
+        int? userId = HttpContext.Session.GetInt32("CustomerID");
+        if (userId == null)
+            return RedirectToAction("Login");
 
-    //     var user = _context.Customers.FirstOrDefault(c => c.CustomerID == userId.Value);
-    //     if (user == null)
-    //         return RedirectToAction("Login");
+        var user = _context.Customers.FirstOrDefault(c => c.CustomerID == userId.Value);
+        if (user == null)
+            return RedirectToAction("Login");
 
-    //     var hashedCurrent = HashPassword(model.CurrentPassword ?? "");
-    //     if (user.Password != hashedCurrent)
-    //     {
-    //         ModelState.AddModelError("", "Mật khẩu hiện tại không đúng.");
-    //         return View(model);
-    //     }
+        var hashedCurrent = HashPassword(model.CurrentPassword ?? "");
+        if (user.Password != hashedCurrent)
+        {
+            ModelState.AddModelError("", "Mật khẩu hiện tại không đúng.");
+            return View(model);
+        }
 
-    //     if (model.NewPassword != model.ConfirmNewPassword)
-    //     {
-    //         ModelState.AddModelError("", "Mật khẩu mới không trùng nhau.");
-    //         return View(model);
-    //     }
+        if (model.NewPassword != model.ConfirmNewPassword)
+        {
+            ModelState.AddModelError("", "Mật khẩu mới không trùng nhau.");
+            return View(model);
+        }
 
-    //     user.Password = HashPassword(model.NewPassword);
-    //     _context.SaveChanges();
+        user.Password = HashPassword(model.NewPassword);
+        _context.SaveChanges();
 
-    //     ViewBag.Message = "✅ Đổi mật khẩu thành công!";
-    //     return View();
-    // }
+        ViewBag.Message = "✅ Đổi mật khẩu thành công!";
+        return View();
+    }
 
 
     [HttpGet]
@@ -341,6 +341,7 @@ public class AccountController : Controller
         return View();
     }
 
+    //change passord
 
     [HttpPost]
     public IActionResult Login(string loginId, string password)
@@ -349,7 +350,7 @@ public class AccountController : Controller
         Console.WriteLine($"Password: {password}");
 
         if (string.IsNullOrWhiteSpace(loginId) || string.IsNullOrWhiteSpace(password))
-        {
+        {   
             ModelState.AddModelError("LoginError", "Vui lòng nhập Email/Username và mật khẩu");
             return View();
         }
@@ -364,7 +365,7 @@ public class AccountController : Controller
 
         if (user == null)
         {
-            ModelState.AddModelError("", "Sai Email/Username hoặc mật khẩu");
+            ModelState.AddModelError("ErrorAccount", "Sai Email/Username hoặc mật khẩu");
             return View();
         }
 
@@ -461,22 +462,23 @@ public class AccountController : Controller
             ModelState.AddModelError("Phone", "Số điện thoại đã tồn tại.");
         }
 
-        if (!string.IsNullOrEmpty(customer.Password))
+        if (model.CurrentPassword != null)
         {
-
-            if (!string.IsNullOrEmpty(model.NewPassword))
+            if (!VerifyPassword(model.CurrentPassword, customer.Password!))
             {
-                if (string.IsNullOrEmpty(model.CurrentPassword))
-                {
-                    ModelState.AddModelError("CurrentPassword", "Vui lòng nhập mật khẩu hiện tại.");
-                }
-                else if (!VerifyPassword(model.CurrentPassword, customer.Password!))
-                {
-                    ModelState.AddModelError("CurrentPassword", "Mật khẩu hiện tại không đúng.");
-                }
-
+                ModelState.AddModelError("CurrentPassword", "Mật khẩu hiện tại không đúng.");
             }
         }
+        if (!string.IsNullOrEmpty(customer.Password))
+            {
+                if (!string.IsNullOrEmpty(model.NewPassword))
+                {
+                    if (string.IsNullOrEmpty(model.CurrentPassword))
+                    {
+                        ModelState.AddModelError("CurrentPassword", "Vui lòng nhập mật khẩu hiện tại.");
+                    }
+                }
+            }
 
         if (!ModelState.IsValid)
         {
