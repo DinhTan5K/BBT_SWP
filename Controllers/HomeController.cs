@@ -28,7 +28,10 @@ public class HomeController : Controller
     {
         return View();
     }
-
+public IActionResult Introduce()
+{
+    return View();
+}
 
     public IActionResult Index()
     {

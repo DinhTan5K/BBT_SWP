@@ -1,2 +1,20 @@
+# Build results
 /bin/
 /obj/
+/out/
+/Debug/
+/Release/
+/node_modules/
+
+# User-specific files
+*.user
+*.rsuser
+*.suo
+*.userosscache
+*.sln.docstates
+
+# VS Code settings
+.vscode/
+
+# Logs
+*.log
