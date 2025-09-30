@@ -1,0 +1,153 @@
+
+
+/*---------- Background chỉ cho phần liên hệ ----------*/
+.page-background {
+    position: relative;
+    background-image: url('/img/ContactBackground.jpg'); /* thay bằng ảnh của bạn */
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    padding: 40px 0;
+}
+
+.page-background::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 0;
+}
+
+/* ---------- Banner ---------- */
+.contact-banner {
+    text-align: center;
+    color: #fff;
+    margin-bottom: 20px;
+    position: relative;
+    z-index: 1;
+}
+.contact-banner h1 {
+    font-size: 42px;
+    font-weight: 700;
+}
+.contact-banner .subtitle {
+    font-size: 20px;
+    font-weight: 500;
+    margin-top: 8px;
+}
+
+/* ---------- Form container ---------- */
+.contact-container {
+    position: relative;
+    z-index: 1;
+    max-width: 900px;
+    margin: auto;
+    padding: 40px;
+    background: rgba(255,255,255,0.9);
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+}
+
+/* Text */
+.intro-text {
+    font-size: 16px;
+    margin-bottom: 20px;
+}
+
+/* Row layout */
+.form-row {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+.col-left, .col-right {
+    flex: 1;
+}
+.form-group {
+    margin-bottom: 16px;
+}
+.form-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+/* Input */
+.form-control {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+/* ---------- Radio list styling (Chip/Tag style) ---------- */ .radio-list { display: flex; flex-wrap: wrap; gap: 10px 15px; padding: 8px 0; } /* BƯỚC QUAN TRỌNG: Ẩn radio button mặc định */ .radio-list input[type="radio"] { display: none !important; /* Buộc ẩn */ } /* Style cho label (Chip/Tag) */ .radio-list label { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; color: #555; font-weight: 400; padding: 8px 15px; border: 1px solid #ddd; border-radius: 20px; background: #fff; transition: all 0.2s ease; } /* KHI HOVER: Hiệu ứng khi di chuột qua */ .radio-list label:hover { border-color: #A70014; background: #f7f7f7; box-shadow: 0 1px 4px rgba(0,0,0,0.05); transform: translateY(-1px); } /* KHI CHỌN: Hiệu ứng bắt buộc với màu Đỏ rượu và chữ Be/Kem */ .radio-list input[type="radio"]:checked + label { background: #A70014 !important; /* ĐỎ RƯỢU */ border-color: #A70014 !important; color: #F5F5DC !important; /* MÀU BE/KEM */ font-weight: 500; box-shadow: 0 2px 6px rgba(167, 0, 20, 0.4); transform: none; }
+
+/* Agreement box */
+.agreement {
+    margin-top: 24px;
+    padding: 16px;
+    border-left: 4px solid #8b0000;
+    background: #fdfdfd;
+    border-radius: 6px;
+}
+.agreement strong {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 16px;
+    color: #8b0000;
+}
+.agreement li {
+    margin: 6px 0;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+/* Submit button */
+.form-submit {
+    text-align: right;
+    margin-top: 20px;
+}
+.btn-submit {
+    background: #8b0000;
+    color: #fff;
+    padding: 12px 26px;
+    border: none;
+    border-radius: 30px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.btn-submit:hover {
+    background: #a00000;
+}
+
+/* ---------- Footer ---------- */
+footer {
+    background: #f7f2eb;  /* màu be nhạt */
+    padding: 20px 0;
+    text-align: center;
+    font-size: 14px;
+    margin-top: 40px;
+}
+.footer-icons {
+    margin-top: 8px;
+}
+.footer-icons span {
+    margin: 0 10px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+/* Responsive */
+@media (max-width: 767px) {
+    .form-row {
+        flex-direction: column;
+    }
+    .contact-container {
+        padding: 20px;
+    }
+    .contact-banner h1 {
+        font-size: 28px;
+    }
+}
