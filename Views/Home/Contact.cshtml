@@ -73,32 +73,31 @@
             </div>
 
             <div class="form-group"> 
-    <label>Vấn đề phản hồi</label> 
-    <div class="radio-list"> 
+                <label>Vấn đề phản hồi</label> 
+                <div class="radio-list"> 
 
-        <input type="radio" id="issue-complaint" name="IssueType" value="Than phiền" 
-               @(Model.IssueType == "Than phiền" ? "checked" : "") /> 
-        <label for="issue-complaint">Than phiền</label> 
+                    <input type="radio" id="issue-complaint" name="IssueType" value="Than phiền" 
+                           @(Model.IssueType == "Than phiền" ? "checked" : "") /> 
+                    <label for="issue-complaint">Than phiền</label> 
 
-        <input type="radio" id="issue-praise" name="IssueType" value="Khen ngợi" 
-               @(Model.IssueType == "Khen ngợi" ? "checked" : "") /> 
-        <label for="issue-praise">Khen ngợi</label> 
+                    <input type="radio" id="issue-praise" name="IssueType" value="Khen ngợi" 
+                           @(Model.IssueType == "Khen ngợi" ? "checked" : "") /> 
+                    <label for="issue-praise">Khen ngợi</label> 
 
-        <input type="radio" id="issue-suggestion" name="IssueType" value="Đề xuất" 
-               @(Model.IssueType == "Đề xuất" ? "checked" : "") /> 
-        <label for="issue-suggestion">Đề xuất</label> 
+                    <input type="radio" id="issue-suggestion" name="IssueType" value="Đề xuất" 
+                           @(Model.IssueType == "Đề xuất" ? "checked" : "") /> 
+                    <label for="issue-suggestion">Đề xuất</label> 
 
-        <input type="radio" id="issue-membership" name="IssueType" value="Thẻ thành viên" 
-               @(Model.IssueType == "Thẻ thành viên" ? "checked" : "") /> 
-        <label for="issue-membership">Thẻ thành viên</label> 
+                    <input type="radio" id="issue-membership" name="IssueType" value="Thẻ thành viên" 
+                           @(Model.IssueType == "Thẻ thành viên" ? "checked" : "") /> 
+                    <label for="issue-membership">Thẻ thành viên</label> 
 
-        <input type="radio" id="issue-other" name="IssueType" value="Vấn đề khác" 
-               @(Model.IssueType == "Vấn đề khác" ? "checked" : "") /> 
-        <label for="issue-other">Vấn đề khác</label> 
+                    <input type="radio" id="issue-other" name="IssueType" value="Vấn đề khác" 
+                           @(Model.IssueType == "Vấn đề khác" ? "checked" : "") /> 
+                    <label for="issue-other">Vấn đề khác</label> 
 
-    </div> 
-</div>
-
+                </div> 
+            </div>
 
             <div class="form-group">
                 <label>Nội dung phản hồi</label>
@@ -123,9 +122,6 @@
     </div>
 </div>
 
-
-
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
 }
-
