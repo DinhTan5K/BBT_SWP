@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using start.Data;
+using start.Models;
 
 
 public class ProductController : Controller
@@ -23,41 +24,41 @@ public class ProductController : Controller
     }
 
 
-[HttpPost]
-public IActionResult UpdateCart([FromBody] UpdateCartRequest request)
-{
-    if (request == null || request.Quantity < 0)
-        return Json(new { success = false, message = "Dữ liệu không hợp lệ" });
-
-    int? customerId = HttpContext.Session.GetInt32("CustomerID");
-    if (customerId == null)
-        return Json(new { success = false, message = "Bạn chưa đăng nhập" });
-
-    var cart = _context.Carts
-        .Include(c => c.CartDetails)
-        .FirstOrDefault(c => c.CustomerID == customerId.Value);
-
-    if (cart == null)
-        return Json(new { success = false, message = "Cart không tồn tại" });
-
-    var cartDetail = cart.CartDetails.FirstOrDefault(cd => cd.CartDetailID == request.CartDetailId);
-    if (cartDetail == null)
-        return Json(new { success = false, message = "Cart item không tồn tại" });
-
-    if (request.Quantity == 0)
+    [HttpPost]
+    public IActionResult UpdateCart([FromBody] UpdateCartRequest request)
     {
-        _context.CartDetails.Remove(cartDetail);
-    }
-    else
-    {
-        cartDetail.Quantity = request.Quantity;
-        cartDetail.Total = cartDetail.UnitPrice * cartDetail.Quantity;
-    }
+        if (request == null || request.Quantity < 0)
+            return Json(new { success = false, message = "Dữ liệu không hợp lệ" });
 
-    _context.SaveChanges();
+        int? customerId = HttpContext.Session.GetInt32("CustomerID");
+        if (customerId == null)
+            return Json(new { success = false, message = "Bạn chưa đăng nhập" });
 
-    return Json(new { success = true });
-}
+        var cart = _context.Carts
+            .Include(c => c.CartDetails)
+            .FirstOrDefault(c => c.CustomerID == customerId.Value);
+
+        if (cart == null)
+            return Json(new { success = false, message = "Cart không tồn tại" });
+
+        var cartDetail = cart.CartDetails.FirstOrDefault(cd => cd.CartDetailID == request.CartDetailId);
+        if (cartDetail == null)
+            return Json(new { success = false, message = "Cart item không tồn tại" });
+
+        if (request.Quantity == 0)
+        {
+            _context.CartDetails.Remove(cartDetail);
+        }
+        else
+        {
+            cartDetail.Quantity = request.Quantity;
+            cartDetail.Total = cartDetail.UnitPrice * cartDetail.Quantity;
+        }
+
+        _context.SaveChanges();
+
+        return Json(new { success = true });
+    }
 
 
     [HttpGet]
@@ -81,9 +82,9 @@ public IActionResult UpdateCart([FromBody] UpdateCartRequest request)
         {
             cd.CartDetailID,
             cd.ProductID,
-           ProductName = cd.Product?.ProductName ?? "Unknown",
+            ProductName = cd.Product?.ProductName ?? "Unknown",
             cd.ProductSizeID,
-             Size = cd.ProductSize?.Size ?? "N/A",
+            Size = cd.ProductSize?.Size ?? "N/A",
             cd.Quantity,
             cd.UnitPrice,
             cd.Total
@@ -150,46 +151,8 @@ public IActionResult UpdateCart([FromBody] UpdateCartRequest request)
         return Json(new { success = true });
     }
 
-
-
-
-    // [HttpPost]
-    // public IActionResult Checkout(int customerId, int branchId)
-    // {
-    //     var cart = _context.Carts
-    //         .Include(c => c.CartDetails)
-    //         .ThenInclude(cd => cd.Product)
-    //         .Include(c => c.CartDetails)
-    //         .ThenInclude(cd => cd.ProductSize)
-    //         .FirstOrDefault(c => c.CustomerID == customerId);
-
-    //     if (cart == null || !cart.CartDetails.Any())
-    //         return BadRequest("Cart is empty");
-
-    //     var order = new Order
-    //     {
-    //         CustomerID = customerId,
-    //         BranchID = branchId,
-    //         CreatedAt = DateTime.Now,
-    //         OrderDetails = cart.CartDetails.Select(cd => new OrderDetail
-    //         {
-    //             ProductID = cd.ProductID,
-    //             ProductSizeID = cd.ProductSizeID,
-    //             Quantity = cd.Quantity,
-    //             Price = cd.Price
-    //         }).ToList()
-    //     };
-
-    //     _context.Orders.Add(order);
-
-
-    //     _context.CartDetails.RemoveRange(cart.CartDetails);
-    //     _context.Carts.Remove(cart);
-
-    //     _context.SaveChanges();
-
-    //     return Ok(new { OrderID = order.OrderID, Message = "Checkout success" });
-    // }
+    
+     
 }
 
 

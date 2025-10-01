@@ -12,5 +12,8 @@ public class OrderDetail
     public int ProductSizeID { get; set; }
     public ProductSize? ProductSize { get; set; }
     public int Quantity { get; set; }
-    public decimal Price { get; set; }
+    [Column(TypeName = "decimal(18,2)")]
+
+    public decimal Total { get; set; }
+    public decimal UnitPrice { get; set; }
 }

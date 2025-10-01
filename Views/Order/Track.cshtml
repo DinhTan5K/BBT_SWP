@@ -1,0 +1,49 @@
+@model start.Models.Order
+
+@{
+    ViewData["Title"] = "Tra cứu đơn hàng";
+}
+
+<h2>Tra cứu đơn hàng</h2>
+
+<div style="margin-top: 100px">
+    <label for="orderCode">Nhập Order Code:</label>
+    <input type="text" id="orderCode" placeholder="VD: S1I8S" />
+    <button id="btnTrack">Tra cứu</button>
+</div>
+
+<div id="result" style="margin-top:20px;"></div>
+
+@section Scripts {
+    <script>
+        document.getElementById("btnTrack").addEventListener("click", async () => {
+            const orderCode = document.getElementById("orderCode").value.trim();
+            if (!orderCode) {
+                alert("Vui lòng nhập Order Code");
+                return;
+            }
+
+            const response = await fetch(`/Order/TrackByCode/${orderCode}`);
+            const data = await response.json();
+            console.log(data);
+
+            const resultDiv = document.getElementById("result");
+            if (!data.success) {
+                resultDiv.innerHTML = `<span style="color:red;">${data.message}</span>`;
+            } else {
+                const order = data.order;
+
+                resultDiv.innerHTML = `
+        <p><strong>OrderID:</strong> ${order.orderID}</p>
+        <p><strong>CustomerID:</strong> ${order.customerID}</p>
+        <p><strong>BranchID:</strong> ${order.branchID}</p>
+        <p><strong>CreatedAt:</strong> ${new Date(order.createdAt).toLocaleString()}</p>
+        <p><strong>OrderCode:</strong> ${order.orderCode}</p>
+        <p><strong>Status:</strong> ${order.status}</p>
+        <p><strong>Total:</strong> ${order.total.toLocaleString("vi-VN")}</p>
+    `;
+
+            }
+        });
+    </script>
+}

@@ -83,8 +83,24 @@
                 const parent = el.parentElement;
                 parent.querySelectorAll('.size-option').forEach(s => s.classList.remove('active'));
                 el.classList.add('active');
+
+                // Update giá khi chọn size
+                const priceEl = parent.closest('.product-item').querySelector('.selected-price');
+                const price = parseFloat(el.dataset.price);
+                priceEl.textContent = price.toLocaleString('vi-VN') + ' đ';
             });
         });
+
+        document.querySelectorAll('.size-options').forEach(group => {
+            const options = group.querySelectorAll('.size-option');
+            if (options.length > 0) {
+                options[0].classList.add('active');
+                const priceEl = group.closest('.product-item').querySelector('.selected-price');
+                const defaultPrice = parseFloat(options[0].dataset.price);
+                priceEl.textContent = defaultPrice.toLocaleString('vi-VN') + ' đ';
+            }
+        });
+
 
         function addToCart(productId) {
             const productEl = document.querySelector(`.product-item[data-product-id='${productId}']`);
@@ -107,46 +123,46 @@
                     price: unitPrice
                 })
             })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) loadCart();
-                else alert('Lỗi: ' + data.message);
-            })
-            .catch(err => console.error(err));
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) loadCart();
+                    else alert('Lỗi: ' + data.message);
+                })
+                .catch(err => console.error(err));
         }
 
         function loadCart() {
             fetch('/Product/CartItems')
-            .then(res => res.json())
-            .then(data => {
-                currentCartData = data;
-                const cartEl = document.getElementById('cart-items');
-                const cartTotalEl = document.getElementById('cart-total');
+                .then(res => res.json())
+                .then(data => {
+                    currentCartData = data;
+                    const cartEl = document.getElementById('cart-items');
+                    const cartTotalEl = document.getElementById('cart-total');
 
-                cartEl.innerHTML = "";
-                let total = 0;
+                    cartEl.innerHTML = "";
+                    let total = 0;
 
-                if (data.length) {
-                    data.forEach((cd) => {
-                        const div = document.createElement('div');
-                        div.classList.add('cart-item');
-                        div.innerHTML = `
-                            <span class="cart-item-name">${cd.productName} - ${cd.size}</span>
-                            <div class="cart-actions">
-                                <button class="qty-btn" data-cart-detail-id="${cd.cartDetailID}" data-action="dec">-</button>
-                                <span class="qty">${cd.quantity}</span>
-                                <button class="qty-btn" data-cart-detail-id="${cd.cartDetailID}" data-action="inc">+</button>
-                            </div>
-                        `;
-                        cartEl.appendChild(div);
-                        total += cd.total;
-                    });
-                } else {
-                    cartEl.innerHTML = "<p>Chưa có sản phẩm nào.</p>";
-                }
+                    if (data.length) {
+                        data.forEach((cd) => {
+                            const div = document.createElement('div');
+                            div.classList.add('cart-item');
+                            div.innerHTML = `
+                                <span class="cart-item-name">${cd.productName} - ${cd.size}</span>
+                                <div class="cart-actions">
+                                    <button class="qty-btn" data-cart-detail-id="${cd.cartDetailID}" data-action="dec">-</button>
+                                    <span class="qty">${cd.quantity}</span>
+                                    <button class="qty-btn" data-cart-detail-id="${cd.cartDetailID}" data-action="inc">+</button>
+                                </div>
+                            `;
+                            cartEl.appendChild(div);
+                            total += cd.total;
+                        });
+                    } else {
+                        cartEl.innerHTML = "<p>Chưa có sản phẩm nào.</p>";
+                    }
 
-                cartTotalEl.textContent = total.toLocaleString() + " đ";
-            });
+                    cartTotalEl.textContent = total.toLocaleString() + " đ";
+                });
         }
 
         document.getElementById('cart-items').addEventListener('click', function (e) {

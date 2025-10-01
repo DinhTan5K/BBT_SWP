@@ -1,13 +1,37 @@
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
+using start.Models;
+
+[Table("Branch")]
+
 public class Branch
 {
-    public int BranchID { get; set; }  // đổi từ Id cho chuẩn
-    public string? Name { get; set; }
-    public string? Address { get; set; }
-    public string? Phone { get; set; }
-    public string? Region { get; set; }
-    public string? City { get; set; }
-    public double Latitude { get; set; }
-    public double Longitude { get; set; }
+    [Key]
+    [Column("Id")]  
+    public int Id { get; set; }
 
+    [Required]
+    [StringLength(255)]
+    public string? Name { get; set; }
+
+    [StringLength(500)]
+    public string? Address { get; set; }
+
+    [StringLength(20)]
+    public string? Phone { get; set; }
+
+    public int Region { get; set; }
+
+    [StringLength(100)]
+    public string? City { get; set; }
+    
+    [Precision(18, 15)]
+    public decimal Latitude { get; set; }
+
+    [Precision(18, 15)]
+    public decimal Longitude { get; set; }
     public ICollection<Order>? Orders { get; set; }
 }
+
+ 

@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using start.Data;
 
 namespace start.Controllers
@@ -12,16 +13,20 @@ namespace start.Controllers
             _context = context;
         }
 
-        public IActionResult Index()
-        {
-            var branches = _context.Branches.ToList();
-            return View(branches);
-        }
-
         [HttpGet]
-        public IActionResult GetAll()
+        public async Task<IActionResult> GetAll()
         {
-            var branches = _context.Branches.ToList();
+            var branches = await _context.Branches
+                .Select(b => new
+                {
+                    branchID = b.Id,    // ⚡ dùng Id, không phải BranchID
+                    name = b.Name,
+                    address = b.Address,
+                    latitude = b.Latitude,
+                    longitude = b.Longitude
+                })
+                .ToListAsync();
+
             return Json(branches);
         }
     }
