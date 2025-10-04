@@ -1,21 +1,35 @@
-@model start.Models.Order
 
-<div class="order-confirmed text-center p-5">
-    <div class="icon mb-3">
-        <i class="bi bi-check-circle-fill text-success" style="font-size: 4rem;"></i>
+@model start.Models.Order
+@{
+    ViewData["Step"] = 3; // Hoàn tất
+}
+
+<partial name="_CheckoutSteps" view-data="ViewData" />
+
+
+
+<link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700&family=Poppins:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/order.css">
+<link rel="stylesheet" href="/css/orderconfirmed.css">
+<div class="order-confirmed">
+    
+    <div class="icon-circle mb-3">
+        <!-- SVG tick đẹp hơn -->
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M20.285 6.709a1 1 0 0 0-1.414-1.418l-9.192 9.192-4.192-4.192a1 1 0 1 0-1.414 1.414l4.899 4.899a1 1 0 0 0 1.414 0l9.899-9.89z"/>
+        </svg>
     </div>
+
     <h2>Order Confirmed</h2>
     <p>Order #@Model.OrderID</p>
     <p>ORDER CODE: @Model.OrderCode</p>
 
-    <h5 class="mt-4">Delivery Address</h5>
-
     <div class="order-items mt-4">
         @foreach (var item in Model.OrderDetails)
         {
-            <div class="d-flex align-items-center justify-content-between border-bottom py-2">
-                <div class="d-flex align-items-center">
-                    <img src="@item.Product.Image_Url" style="width:50px;height:50px;object-fit:cover" class="me-2" />
+            <div class="item-row">
+                <div class="item-info">
+                    <img src="@item.Product.Image_Url" />
                     <div>
                         <b>@item.Product.ProductName</b><br />
                         <small>Size: @item.ProductSize?.Size • SL: @item.Quantity</small>
@@ -26,11 +40,11 @@
         }
     </div>
 
-    <div class="mt-4 fw-bold fs-5">
-          Tổng cộng: @(Model.OrderDetails.Sum(d => d.Total).ToString("#,0")) đ
+    <div class="total">
+        Tổng cộng: @(Model.OrderDetails.Sum(d => d.Total).ToString("#,0")) đ
     </div>
 
-    <div class="mt-4">
+    <div class="btn-container">
         <a asp-controller="Order" asp-action="Track" asp-route-id="@Model.OrderID" class="btn btn-dark">Track Order</a>
         <a asp-controller="Product" asp-action="Product" class="btn btn-outline-dark">Return to Menu</a>
     </div>

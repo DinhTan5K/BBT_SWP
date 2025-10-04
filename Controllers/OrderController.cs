@@ -1,179 +1,80 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using start.Data; // DbContext của bạn
 using start.Models;
+using start.Data;
 
-namespace start.Controllers
+[Route("Order")]
+public class OrderController : Controller
 {
-    [Route("Order")]
-    public class OrderController : Controller
+    private readonly IOrderService _orderService;
+    private readonly ApplicationDbContext _context;
+
+    public OrderController(IOrderService orderService, ApplicationDbContext context)
     {
-        private readonly ApplicationDbContext _context;
-
-        public OrderController(ApplicationDbContext context)
-        {
-            _context = context;
-        }
-
-        private string GenerateOrderCode()
-        {
-            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-            var random = new Random();
-            return new string(Enumerable.Repeat(chars, 5)
-                .Select(s => s[random.Next(s.Length)]).ToArray());
-        }
-
-        [HttpGet("Track")]
-        public IActionResult Track() => View();
-
-        [HttpGet("TrackByCode/{orderCode}")]
-        public async Task<IActionResult> TrackByCode(string orderCode)
-        {
-            var order = await _context.Orders
-                .Where(o => o.OrderCode == orderCode)
-                .Select(o => new
-                {
-                    o.OrderID,
-                    o.CustomerID,
-                    o.BranchID,
-                    o.CreatedAt,
-                    o.OrderCode,
-                    o.Status,
-                    o.Total
-                })
-                .FirstOrDefaultAsync();
-
-            if (order == null)
-                return Json(new { success = false, message = "Order không tồn tại" });
-
-            return Json(new { success = true, order });
-        }
-
-
-
-        [HttpGet("Confirmed/{id}")]
-        public async Task<IActionResult> OrderConfirmed(int id)
-        {
-            var order = await _context.Orders
-                .Include(o => o.OrderDetails!)
-                    .ThenInclude(od => od.Product!)
-                .Include(o => o.OrderDetails!)
-                    .ThenInclude(od => od.ProductSize)
-                .Include(o => o.Customer)
-                .FirstOrDefaultAsync(o => o.OrderID == id);
-
-            if (order == null)
-                return NotFound();
-
-            return View(order);
-        }
-
-
-        // Hiển thị trang checkout (GET)
-        [HttpGet]
-        public async Task<IActionResult> Order()
-        {
-            var cart = await _context.Carts
-                .Include(c => c.CartDetails)
-                .ThenInclude(cd => cd.Product)
-                .Include(c => c.CartDetails)
-                .ThenInclude(cd => cd.ProductSize)
-                .FirstOrDefaultAsync();
-
-            return View(cart);
-        }
-
-        [HttpPost("CreateOrder")]
-        public async Task<IActionResult> CreateOrder([FromForm] OrderFormModel form)
-        {
-            using var transaction = await _context.Database.BeginTransactionAsync();
-            try
-            {
-                Console.WriteLine($"📦 Nhận Order: Name={form.Name}, Phone={form.Phone}, BranchID={form.BranchID}");
-
-                var branch = await _context.Branches.FindAsync(form.BranchID);
-                if (branch == null)
-                    return Json(new { success = false, message = "Chi nhánh không tồn tại" });
-
-                var customer = await _context.Customers
-                    .FirstOrDefaultAsync(c => c.Phone == form.Phone);
-
-                if (customer == null)
-                {
-                    customer = new Customer
-                    {
-                        Name = form.Name,
-                        Phone = form.Phone,
-                        Address = form.Address
-                    };
-                    _context.Customers.Add(customer);
-                    await _context.SaveChangesAsync();
-                }
-
-                // 🔹 Tạo Order
-                var order = new Order
-                {
-                    CustomerID = customer.CustomerID,
-                    BranchID = form.BranchID,
-                    CreatedAt = DateTime.Now,
-                    Status = "Chờ xác nhận",
-                    OrderCode = GenerateOrderCode(),
-                    Total = 0
-                };
-                _context.Orders.Add(order);
-                await _context.SaveChangesAsync();
-
-                // 🔹 Lấy Cart + CartDetails
-                var cart = await _context.Carts
-                    .Include(c => c.CartDetails)
-                    .FirstOrDefaultAsync(c => c.CustomerID == customer.CustomerID);
-
-                if (cart == null || !cart.CartDetails.Any())
-                {
-                    return Json(new { success = false, message = "❌ Giỏ hàng trống." });
-                }
-
-                // 🔹 Copy sang OrderDetail
-                var orderDetails = cart.CartDetails.Select(cd => new OrderDetail
-                {
-                    OrderID = order.OrderID,
-                    ProductID = cd.ProductID,
-                    ProductSizeID = cd.ProductSizeID,
-                    Quantity = cd.Quantity,
-                    UnitPrice = cd.UnitPrice,
-                    Total = cd.UnitPrice * cd.Quantity
-                }).ToList();
-
-                _context.OrderDetails.AddRange(orderDetails);
-
-                 order.Total = orderDetails.Sum(d => d.Total);
-                 _context.Orders.Update(order);
-                // 🔹 Clear Cart
-                _context.CartDetails.RemoveRange(cart.CartDetails);
-
-                await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
-
-                // ✅ Trả về JSON cho JS
-                return Json(new { success = true, orderId = order.OrderID });
-            }
-            catch (Exception ex)
-            {
-                await transaction.RollbackAsync();
-                Console.WriteLine("❌ Lỗi khi tạo order: " + ex.Message);
-                return Json(new { success = false, message = ex.Message });
-            }
-        }
-
+        _orderService = orderService;
+        _context = context;
     }
 
-    // Model trung gian để bind dữ liệu từ FormData
-    public class OrderFormModel
+    [HttpGet("Track")]
+    public IActionResult Track() => View();
+
+    [HttpGet("TrackByCode/{orderCode}")]
+    public async Task<IActionResult> TrackByCode(string orderCode)
     {
-        public int BranchID { get; set; }
-        public string Name { get; set; } = "";
-        public string Phone { get; set; } = "";
-        public string Address { get; set; } = "";
-        public string? Note { get; set; }
+        var order = await _orderService.GetOrderByCodeAsync(orderCode);
+        if (order == null)
+            return Json(new { success = false, message = "Order không tồn tại" });
+
+        return Json(new { success = true, order });
+    }
+
+    [HttpGet("Confirmed/{id}")]
+    public async Task<IActionResult> OrderConfirmed(int id)
+    {
+        var order = await _orderService.GetOrderByIdAsync(id);
+        if (order == null)
+            return NotFound();
+
+        return View(order);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Order()
+    {
+        // Lấy ID khách hàng từ session
+        int? customerId = HttpContext.Session.GetInt32("CustomerID");
+
+        if (customerId == null)
+        {
+            // Nếu chưa login, cho về trang đăng nhập
+            return RedirectToAction("Login", "Home");
+        }
+
+        // Lấy giỏ hàng kèm sản phẩm và size
+        var cart = await _context.Carts
+            .Include(c => c.CartDetails)
+                .ThenInclude(cd => cd.Product)
+            .Include(c => c.CartDetails)
+                .ThenInclude(cd => cd.ProductSize)
+            .FirstOrDefaultAsync(c => c.CustomerID == customerId.Value);
+
+        // Nếu không có giỏ, tạo giỏ trống
+        if (cart == null)
+        {
+            cart = new Cart { CartDetails = new List<CartDetail>() };
+        }
+
+        return View(cart);
+    }
+
+    [HttpPost("CreateOrder")]
+    public async Task<IActionResult> CreateOrder([FromForm] OrderFormModel form)
+    {
+        var result = await _orderService.CreateOrderAsync(form);
+
+        if (!result.success)
+            return Json(new { success = false, message = result.message });
+
+        return Json(new { success = true, orderId = result.orderId });
     }
 }

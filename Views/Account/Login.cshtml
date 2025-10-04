@@ -18,24 +18,31 @@
             </div>
         </div>
         <form asp-controller="Account" asp-action="Login" method="post">
+            <!-- Hiển thị lỗi tổng quát -->
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <div class="alert alert-danger error-message" role="alert">
+                    <i class="fa-solid fa-exclamation-triangle"></i>
+                    @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                    {
+                        <span>@error.ErrorMessage</span>
+                    }
+                </div>
+            }
 
             <div class="mb-3 input-group">
                 <span class="input-group-text"><i class="fa-solid fa-user"></i></span>
-                <input type="text" name="loginId" class="form-control" placeholder="Email hoặc Username" />
+                <input type="text" name="loginId" class="form-control" placeholder="Email hoặc Username" required />
             </div>
             <div class="mb-3 input-group">
                 <span class="input-group-text"><i class="fa-solid fa-lock"></i></span>
-                <input type="password" name="password" class="form-control" placeholder="Password" />
+                <input type="password" name="password" class="form-control" placeholder="Mật khẩu" required />
             </div>
             <button type="submit" class="btn-login btn-main w-100">Đăng nhập</button>
             <button type="button" class="btn-login btn-google w-100 mt-3" onclick="location.href='/login-google'">
                 <i class="fa-brands fa-google"></i> Đăng nhập với Google
             </button>
         </form>
-
-      <div class="text-danger" style="margin-top: 20px">
-    <p>@(ViewData.ModelState["LoginError"]?.Errors?.FirstOrDefault()?.ErrorMessage ?? "")</p>
-</div>
 
 
 
@@ -45,3 +52,53 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    const inputs = form.querySelectorAll('input[required]');
+    
+    // Add real-time validation
+    inputs.forEach(input => {
+        input.addEventListener('blur', function() {
+            validateField(this);
+        });
+        
+        input.addEventListener('input', function() {
+            if (this.classList.contains('is-invalid')) {
+                validateField(this);
+            }
+        });
+    });
+    
+    // Form submission validation
+    form.addEventListener('submit', function(e) {
+        let isValid = true;
+        
+        inputs.forEach(input => {
+            if (!validateField(input)) {
+                isValid = false;
+            }
+        });
+        
+        if (!isValid) {
+            e.preventDefault();
+        }
+    });
+    
+    function validateField(input) {
+        const inputGroup = input.closest('.input-group');
+        const value = input.value.trim();
+        
+        if (input.hasAttribute('required') && !value) {
+            inputGroup.classList.add('error');
+            input.classList.add('is-invalid');
+            return false;
+        } else {
+            inputGroup.classList.remove('error');
+            input.classList.remove('is-invalid');
+            return true;
+        }
+    }
+});
+</script>

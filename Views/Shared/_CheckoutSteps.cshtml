@@ -1,0 +1,16 @@
+@{
+    var currentStep = ViewData["Step"] as int? ?? 1;
+    var extraClass = currentStep == 3 ? "checkout-steps-confirmed" : "";
+}
+
+<div class="checkout-steps @extraClass mb-4">
+    <div class="step @(currentStep == 1 ? "active" : "")">
+        <span class="step-index">1</span> Thông tin 
+    </div>
+    <div class="step @(currentStep == 2 ? "active" : "")">
+        <span class="step-index">2</span> Thanh toán
+    </div>
+    <div class="step @(currentStep == 3 ? "active" : "")">
+        <span class="step-index">3</span> Hoàn tất
+    </div>
+</div>

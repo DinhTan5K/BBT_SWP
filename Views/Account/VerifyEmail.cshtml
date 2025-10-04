@@ -1,4 +1,4 @@
-@model start.Models.VerifyEmailViewModel
+@model VerifyEmailViewModel
 <link rel="stylesheet" href="/css/login.css" />
 <div class="login-form">
     <div class="background"></div>
@@ -15,7 +15,22 @@
 
         @if (ViewBag.ErrorMessage != null)
         {
-            <div class="alert alert-danger">@ViewBag.ErrorMessage</div>
+            <div class="alert alert-danger error-message" role="alert">
+                <i class="fa-solid fa-exclamation-triangle"></i>
+                @ViewBag.ErrorMessage
+            </div>
+        }
+
+        <!-- Hiển thị lỗi tổng quát -->
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div class="alert alert-danger error-message" role="alert">
+                <i class="fa-solid fa-exclamation-triangle"></i>
+                @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                {
+                    <span>@error.ErrorMessage</span>
+                }
+            </div>
         }
 
         <form asp-action="VerifyEmail" method="post">
@@ -23,9 +38,9 @@
 
             <div class="mb-3 input-group">
                 <span class="input-group-text"><i class="fa-solid fa-key"></i></span>
-                <input asp-for="OtpCode" class="form-control" placeholder="Nhập mã OTP" />
+                <input asp-for="OtpCode" class="form-control" placeholder="Nhập mã OTP" required />
             </div>
-            <span asp-validation-for="OtpCode" class="text-danger"></span>
+            <span asp-validation-for="OtpCode" class="text-danger small validation-error"></span>
 
             <button type="submit" class="btn-login btn-main w-100">Xác nhận</button>
         </form>
@@ -36,3 +51,34 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    const otpInput = form.querySelector('input[name="OtpCode"]');
+    
+    // OTP validation
+    otpInput.addEventListener('blur', function() {
+        const otp = this.value.trim();
+        
+        if (otp && otp.length < 4) {
+            this.closest('.input-group').classList.add('error');
+            this.classList.add('is-invalid');
+        } else {
+            this.closest('.input-group').classList.remove('error');
+            this.classList.remove('is-invalid');
+        }
+    });
+    
+    // Form submission validation
+    form.addEventListener('submit', function(e) {
+        const otp = otpInput.value.trim();
+        
+        if (!otp) {
+            otpInput.closest('.input-group').classList.add('error');
+            otpInput.classList.add('is-invalid');
+            e.preventDefault();
+        }
+    });
+});
+</script>

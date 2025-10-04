@@ -1,4 +1,4 @@
-@model start.Models.EditProfile
+@model EditProfileModel
 @{
     ViewData["Title"] = "Chỉnh sửa hồ sơ";
 }
@@ -11,37 +11,48 @@
 
         @if (ViewBag.Message != null)
         {
-            <div class="alert alert-success text-center fw-bold">
+            <div class="alert alert-success success-message text-center fw-bold">
+                <i class="fa-solid fa-check-circle"></i>
                 @ViewBag.Message
             </div>
         }
 
-
+        <!-- Hiển thị lỗi tổng quát -->
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div class="alert alert-danger error-message" role="alert">
+                <i class="fa-solid fa-exclamation-triangle"></i>
+                @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                {
+                    <span>@error.ErrorMessage</span>
+                }
+            </div>
+        }
 
         <form asp-action="EditProfile" method="post" enctype="multipart/form-data">
             <div class="form-group mb-3">
-                <label asp-for="Name" class="form-label"></label>
-                <input asp-for="Name" class="form-control" placeholder="Nhập họ tên" />
-                <span asp-validation-for="Name" class="text-danger"></span>
+                <label asp-for="Name" class="form-label"><i class="fa-solid fa-user"></i> Họ tên</label>
+                <input asp-for="Name" class="form-control" placeholder="Nhập họ tên" required />
+                <span asp-validation-for="Name" class="text-danger validation-error"></span>
             </div>
 
             <div class="form-group mb-3">
-                <label asp-for="Phone" class="form-label"></label>
-                <input asp-for="Phone" class="form-control" placeholder="Số điện thoại" />
-                <span asp-validation-for="Phone" class="text-danger"></span>
+                <label asp-for="Phone" class="form-label"><i class="fa-solid fa-phone"></i> Số điện thoại</label>
+                <input asp-for="Phone" class="form-control" placeholder="Số điện thoại" required />
+                <span asp-validation-for="Phone" class="text-danger validation-error"></span>
             </div>
 
             <div class="form-group mb-3">
-                <label asp-for="Address" class="form-label"></label>
+                <label asp-for="Address" class="form-label"><i class="fa-solid fa-home"></i> Địa chỉ</label>
                 <input asp-for="Address" class="form-control" placeholder="Địa chỉ" />
-                <span asp-validation-for="Address" class="text-danger"></span>
+                <span asp-validation-for="Address" class="text-danger validation-error"></span>
             </div>
 
             <div class="form-group mb-3">
-                <label asp-for="BirthDate" class="form-label"></label>
+                <label asp-for="BirthDate" class="form-label"><i class="fa-solid fa-calendar"></i> Ngày sinh</label>
                 <input asp-for="BirthDate" type="date" class="form-control" id="Birthday"
                     max="@DateTime.Today.ToString("yyyy-MM-dd")" />
-                <span asp-validation-for="BirthDate" class="text-danger"></span>
+                <span asp-validation-for="BirthDate" class="text-danger validation-error"></span>
             </div>
 
             <div class="button-group">
@@ -57,23 +68,87 @@
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
-}
+    
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.querySelector('form');
+        const inputs = form.querySelectorAll('input[required]');
+        
+        // Add real-time validation
+        inputs.forEach(input => {
+            input.addEventListener('blur', function() {
+                validateField(this);
+            });
+            
+            input.addEventListener('input', function() {
+                if (this.classList.contains('is-invalid')) {
+                    validateField(this);
+                }
+            });
+        });
+        
+        // Form submission validation
+        form.addEventListener('submit', function(e) {
+            let isValid = true;
+            
+            inputs.forEach(input => {
+                if (!validateField(input)) {
+                    isValid = false;
+                }
+            });
+            
+            if (!isValid) {
+                e.preventDefault();
+            }
+        });
+        
+        function validateField(input) {
+            const formGroup = input.closest('.form-group');
+            const value = input.value.trim();
+            
+            if (input.hasAttribute('required') && !value) {
+                formGroup.classList.add('error');
+                input.classList.add('is-invalid');
+                return false;
+            } else {
+                formGroup.classList.remove('error');
+                input.classList.remove('is-invalid');
+                return true;
+            }
+        }
+        
+        // Birthday validation
+        const birthdayInput = document.getElementById('Birthday');
+        if (birthdayInput) {
+            birthdayInput.addEventListener('change', function() {
+                const selectedDate = new Date(this.value);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
 
-<script>
-    const birthdayInput = document.getElementById('Birthday');
-    const errorSpan = document.getElementById('birthdayError');
-
-    birthdayInput.addEventListener('change', () => {
-        const selectedDate = new Date(birthdayInput.value);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        if (selectedDate > today) {
-            errorSpan.textContent = "Ngày sinh không được lớn hơn hôm nay";
-            birthdayInput.value = "";
-        } else {
-            errorSpan.textContent = "";
+                if (selectedDate > today) {
+                    this.closest('.form-group').classList.add('error');
+                    this.classList.add('is-invalid');
+                    this.value = "";
+                } else {
+                    this.closest('.form-group').classList.remove('error');
+                    this.classList.remove('is-invalid');
+                }
+            });
+        }
+        
+        // Phone validation
+        const phoneInput = document.querySelector('input[name="Phone"]');
+        if (phoneInput) {
+            phoneInput.addEventListener('blur', function() {
+                const phone = this.value.trim();
+                const phoneRegex = /^[0-9]{10,11}$/;
+                
+                if (phone && !phoneRegex.test(phone)) {
+                    this.closest('.form-group').classList.add('error');
+                    this.classList.add('is-invalid');
+                }
+            });
         }
     });
-
-</script>
+    </script>
+}

@@ -1,0 +1,111 @@
+.order-confirmed {
+    text-align: center;
+    padding: 2rem 1rem;
+    height: 900px;
+}
+
+.order-confirmed h2, 
+.order-confirmed h5 {
+    font-family: 'Nunito Sans', sans-serif;
+}
+
+.order-confirmed .icon-circle {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    margin: 0 auto 1rem auto;
+    border: 3px solid #8B5E3C;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    transform: scale(0);
+    animation: popIn 0.6s forwards;
+}
+
+.order-confirmed .icon-circle svg {
+    width: 70px;
+    height: 70px;
+    fill: #8B5E3C;
+    display: block;
+}
+
+.order-confirmed .icon-circle svg path {
+    stroke-dasharray: 100;
+    stroke-dashoffset: 100;
+    stroke: #8B5E3C;
+    fill: transparent;
+    stroke-width: 2;
+    animation: drawTick 0.8s forwards 0.6s;
+}
+
+.order-confirmed h2 {
+    margin-bottom: 0.5rem;
+    color: #8B5E3C;
+    font-weight: bold;
+}
+
+.order-confirmed .order-items .item-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #ddd;
+    padding: 0.5rem 0;
+}
+
+.order-confirmed .order-items .item-info {
+    display: flex;
+    align-items: center;
+}
+
+.order-confirmed .order-items img {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    margin-right: 0.5rem;
+    border-radius: 5px;
+}
+
+.order-confirmed .total {
+    margin-top: 1.5rem;
+    font-weight: bold;
+    font-size: 1.25rem;
+}
+
+.order-confirmed .btn-container {
+    margin-top: 1.5rem;
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+@keyframes popIn {
+    0% {
+        transform: scale(0);
+        opacity: 0;
+    }
+
+    70% {
+        transform: scale(1.2);
+        opacity: 1;
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+
+.order-confirmed .icon-circle {
+    animation: popIn 0.6s cubic-bezier(0.68, -0.55, 0.27, 1.55) forwards;
+}
+
+@keyframes drawTick {
+    to {
+        stroke-dashoffset: 0;
+        fill: #8B5E3C;
+    }
+}
+

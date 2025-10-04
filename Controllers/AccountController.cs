@@ -1,549 +1,312 @@
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;
 using start.Models;
-using start.Data;
-using Microsoft.EntityFrameworkCore;
-using System.Security.Cryptography;
-using System.Text;
 using start.Services;
 using System.Security.Claims;
-
-
-
-public class AccountController : Controller
+using System.Threading.Tasks;
+namespace start.Controllers
 {
-
-    private readonly ApplicationDbContext _context;
-    private readonly EmailService _emailService;
-    
-
-    public AccountController(ApplicationDbContext context, EmailService emailService)
+    public class AccountController : Controller
     {
-        _context = context;
-        _emailService = emailService;
-    }
-    private string HashPassword(string password)
-    {
-        using (var sha256 = SHA256.Create())
+        private readonly IAuthService _authService;
+        private readonly IProfileService _profileService;
+        private readonly IEmailService _emailService;
+
+        public AccountController(IAuthService authService, IProfileService profileService, IEmailService emailService)
         {
-            var bytes = Encoding.UTF8.GetBytes(password);
-            var hash = sha256.ComputeHash(bytes);
-            return Convert.ToBase64String(hash);
-        }
-    }
-
-    private bool VerifyPassword(string inputPassword, string hashedPassword)
-    {
-        var hashOfInput = HashPassword(inputPassword);
-        return hashOfInput == hashedPassword;
-    }
-
-
-    [HttpGet]
-    public IActionResult VerifyEmail(string email)
-    {
-        return View(new VerifyEmailViewModel { Email = email });
-    }
-
-    [HttpPost]
-    public IActionResult VerifyEmail(VerifyEmailViewModel model)
-    {
-        var customer = _context.Customers.FirstOrDefault(c => c.Email == model.Email);
-
-        if (customer != null && customer.OtpCode == model.OtpCode)
-        {
-            customer.IsEmailConfirmed = true;
-            customer.OtpCode = null;
-            _context.SaveChanges();
-
-            return RedirectToAction("Login", "Account");
+            _authService = authService;
+            _profileService = profileService;
+            _emailService = emailService;
         }
 
-        ModelState.AddModelError("", "Mã OTP không đúng.");
-        return View(model);
-    }
+        #region Login
 
+        [HttpGet]
+        public IActionResult Login() => View();
 
-
-
-
-    [HttpPost]
-    public IActionResult SendOtp(string email, string purpose = "general")
-    {
-        if (string.IsNullOrEmpty(email))
+        [HttpPost]
+        public IActionResult Login(string loginId, string password)
         {
-            ViewBag.ErrorMessage = "Email không được để trống";
-            return View("ForgotPassword");
-        }
-
-        if (purpose == "reset")
-        {
-            var user = _context.Customers.FirstOrDefault(c => c.Email == email);
-            if (user == null)
+            if (string.IsNullOrWhiteSpace(loginId) || string.IsNullOrWhiteSpace(password))
             {
-                ViewBag.ErrorMessage = "Email không tồn tại trong hệ thống";
-                return View("ForgotPassword");
+                ModelState.AddModelError("", "Vui lòng nhập Email/Username và mật khẩu");
+                return View();
             }
-
-            string otp = new Random().Next(100000, 999999).ToString();
-            HttpContext.Session.SetString("ResetOtp", otp);
-            HttpContext.Session.SetString("ResetEmail", email);
 
             try
             {
-                _emailService.SendOtp(email, otp);
-                return RedirectToAction("ResetPassword", "Account");
+                var user = _authService.Login(loginId, password);
+                if (user == null)
+                {
+                    ModelState.AddModelError("", "Sai Email/Username hoặc mật khẩu");
+                    return View();
+                }
+                HttpContext.Session.SetInt32("CustomerID", user.CustomerID);
+                HttpContext.Session.SetString("CustomerName", user.Name ?? "");
+
+                return RedirectToAction("Index", "Home");
             }
             catch (Exception ex)
             {
-                ViewBag.ErrorMessage = "Lỗi khi gửi email: " + ex.Message;
-                return View("ForgotPassword");
+                ModelState.AddModelError("", ex.Message);
+                return View();
             }
         }
 
-        string otpGeneral = new Random().Next(100000, 999999).ToString();
-        HttpContext.Session.SetString("OTP", otpGeneral);
-        HttpContext.Session.SetString("EmailForOtp", email);
+        #endregion
 
-        try
+        #region Register
+
+        [HttpGet]
+        public IActionResult Register() => View();
+
+        [HttpPost]
+        public IActionResult Register(Customer model)
         {
-            _emailService.SendOtp(email, otpGeneral);
-            return Json(new { success = true, message = "OTP đã được gửi tới email" });
-        }
-        catch (Exception ex)
-        {
-            return Json(new { success = false, message = "Lỗi khi gửi email: " + ex.Message });
-        }
-    }
+            var user = _authService.Register(model, out string otp, out var errors);
 
-    [HttpGet]
-    public IActionResult ChangePassword()
-    {
-        return View();
-    }
-
-    [HttpPost]
-    public IActionResult ChangePassword(ChangePassword model)
-    {
-        int? userId = HttpContext.Session.GetInt32("CustomerID");
-        if (userId == null)
-            return RedirectToAction("Login");
-
-        var user = _context.Customers.FirstOrDefault(c => c.CustomerID == userId.Value);
-        if (user == null)
-            return RedirectToAction("Login");
-
-        var hashedCurrent = HashPassword(model.CurrentPassword ?? "");
-        if (user.Password != hashedCurrent)
-        {
-            ModelState.AddModelError("", "Mật khẩu hiện tại không đúng.");
-            return View(model);
-        }
-
-        if (model.NewPassword != model.ConfirmNewPassword)
-        {
-            ModelState.AddModelError("", "Mật khẩu mới không trùng nhau.");
-            return View(model);
-        }
-
-        user.Password = HashPassword(model.NewPassword);
-        _context.SaveChanges();
-
-        ViewBag.Message = "✅ Đổi mật khẩu thành công!";
-        return View();
-    }
-
-
-    [HttpGet]
-    public IActionResult ForgotPassword()
-    {
-        return View();
-    }
-
-    [HttpGet]
-    public IActionResult ResetPassword()
-    {
-        return View(new ResetPasswordViewModel());
-    }
-
-
-    [HttpPost]
-    public IActionResult ResetPassword(ResetPasswordViewModel model)
-    {
-        var sessionOtp = HttpContext.Session.GetString("ResetOtp");
-        var sessionEmail = HttpContext.Session.GetString("ResetEmail");
-
-        if (model.OtpCode != sessionOtp)
-        {
-            ModelState.AddModelError("", "OTP không đúng");
-            return View(model);
-        }
-
-        var user = _context.Customers.FirstOrDefault(c => c.Email == sessionEmail);
-        if (user != null)
-        {
-            user.Password = HashPassword(model.NewPassword);
-            _context.SaveChanges();
-        }
-
-        HttpContext.Session.Remove("ResetOtp");
-        HttpContext.Session.Remove("ResetEmail");
-
-        ViewBag.Message = "✅ Đổi mật khẩu thành công!";
-        return View();
-    }
-
-
-
-    [HttpGet("login-google")]
-    public IActionResult LoginGoogle()
-    {
-        var props = new AuthenticationProperties
-        {
-            RedirectUri = Url.Action("GoogleResponse")
-        };
-        return Challenge(props, "Google");
-    }
-    [HttpGet]
-    public async Task<IActionResult> GoogleResponse()
-    {
-        var result = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-        if (!result.Succeeded) return RedirectToAction("Login");
-
-        var claims = result.Principal.Claims.ToList();
-        var email = claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
-        var name = claims.FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value;
-        var picture = claims.FirstOrDefault(c => c.Type == "picture")?.Value;
-
-        Console.WriteLine("=== Google Claims ===");
-        foreach (var c in claims)
-        {
-            Console.WriteLine($"Type: {c.Type}, Value: {c.Value}");
-        }
-
-        var user = _context.Customers.FirstOrDefault(u => u.Email == email);
-
-        if (user == null)
-        {
-            user = new Customer
+            if (user == null)
             {
-                Name = name ?? "Unknown",
-                Email = email ?? "noemail@example.com",
-                Username = email != null ? email.Split('@')[0] : $"user{Guid.NewGuid()}",
-                Password = null,
-                Phone = null,
-                CreatedAt = DateTime.Now,
-                IsEmailConfirmed = true
+                foreach (var kv in errors)
+                {
+                    ModelState.AddModelError(kv.Key, kv.Value);
+                    Console.WriteLine($"Debug: {kv.Key} -> {kv.Value}");
+                }
+                return View(model);
+            }
+
+            _emailService.SendOtp(user.Email!, otp);
+
+            Console.WriteLine($"Debug Register success: CustomerID={user.CustomerID}, OTP={otp}");
+            return RedirectToAction("VerifyEmail", new { email = user.Email });
+        }
+
+
+        #endregion
+
+        #region Verify Email
+
+        [HttpGet]
+        public IActionResult VerifyEmail(string email)
+        {
+            return View(new VerifyEmailViewModel { Email = email });
+        }
+
+        [HttpPost]
+        public IActionResult VerifyEmail(VerifyEmailViewModel model)
+        {
+            if (string.IsNullOrWhiteSpace(model.Email) || string.IsNullOrWhiteSpace(model.OtpCode))
+            {
+                ModelState.AddModelError("", "Email hoặc OTP không được để trống.");
+                return View(model);
+            }
+            try
+            {
+                _authService.VerifyEmail(model.Email, model.OtpCode);
+                TempData["Success"] = "Xác thực email thành công!";
+                return RedirectToAction("Login");
+            }
+            catch (Exception ex)
+            {
+                ModelState.AddModelError("", ex.Message);
+                return View(model);
+            }
+        }
+
+        #endregion
+
+        #region Google Login
+
+        [HttpGet("login-google")]
+        public IActionResult LoginGoogle()
+        {
+            var props = new AuthenticationProperties
+            {
+                RedirectUri = Url.Action("GoogleResponse")
+            };
+            return Challenge(props, "Google");
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GoogleResponse()
+        {
+            var result = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            if (!result.Succeeded) return RedirectToAction("Login");
+
+            var claims = result.Principal.Claims.ToList();
+            var email = claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
+            var name = claims.FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value;
+
+            if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(name))
+            {
+                return RedirectToAction("Login");
+            }
+
+            var user = _authService.HandleGoogleLogin(email!, name);
+
+            HttpContext.Session.SetInt32("CustomerID", user.CustomerID);
+            HttpContext.Session.SetString("CustomerName", user.Name ?? "");
+
+            return RedirectToAction("Index", "Home");
+        }
+
+        #endregion
+
+        #region Logout
+
+        [HttpGet]
+        public async Task<IActionResult> Logout()
+        {
+            HttpContext.Session.Clear();
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            return RedirectToAction("Index", "Home");
+        }
+
+        #endregion
+
+        #region Profile & Edit
+
+        [HttpGet]
+        public IActionResult Profile()
+        {
+            int? userId = HttpContext.Session.GetInt32("CustomerID");
+            if (userId == null) return RedirectToAction("Login");
+
+            var user = _profileService.GetUserById(userId.Value);
+            if (user == null) return RedirectToAction("Login");
+
+            return View(user);
+        }
+
+        [HttpGet]
+        public IActionResult EditProfile()
+        {
+            int? userId = HttpContext.Session.GetInt32("CustomerID");
+            if (userId == null) return RedirectToAction("Login");
+
+            var user = _profileService.GetUserById(userId.Value);
+            if (user == null) return RedirectToAction("Login");
+
+            var vm = new EditProfileModel
+            {
+                Name = user.Name,
+                Phone = user.Phone,
+                Address = user.Address,
+                BirthDate = user.BirthDate
             };
 
-            Console.WriteLine("=== New Customer ===");
-            Console.WriteLine($"Name: {user.Name}");
-            Console.WriteLine($"Email: {user.Email}");
-            Console.WriteLine($"Username: {user.Username}");
-            Console.WriteLine($"Phone: {user.Phone}");
-            Console.WriteLine($"Password: {(user.Password == null ? "NULL" : user.Password)}");
+            ViewBag.IsGoogleLogin = string.IsNullOrEmpty(user.Password);
 
-            _context.Customers.Add(user);
-            _context.SaveChanges();
+            return View(vm);
         }
-        else
+
+        [HttpPost]
+        public IActionResult EditProfile(EditProfileModel model)
         {
-            Console.WriteLine($"User already exists: {user.CustomerID} - {user.Email}");
-        }
+            int? userId = HttpContext.Session.GetInt32("CustomerID");
+            if (userId == null) return RedirectToAction("Login");
 
-        HttpContext.Session.SetInt32("CustomerID", user.CustomerID);
-
-        return RedirectToAction("Index", "Home");
-    }
-
-
-
-
-    [HttpGet]
-    public async Task<IActionResult> Logout()
-    {
-
-        HttpContext.Session.Clear();
-
-        await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-
-        return RedirectToAction("Index", "Home");
-    }
-
-    //Register
-
-    [HttpGet]
-    public IActionResult Register()
-    {
-        return View();
-    }
-
-
-    [HttpPost]
-    public IActionResult Register(Customer model)
-    {
-        bool isGoogleLogin = false;
-
-        if (!isGoogleLogin && string.IsNullOrEmpty(model.Password))
-        {
-            ModelState.AddModelError("", "Password không được trống");
-        }
-
-        if (_context.Customers.Any(c => c.Email == model.Email))
-        {
-            ModelState.AddModelError("Email", "Email đã được đăng ký.");
-        }
-
-        if (_context.Customers.Any(c => c.Username == model.Username))
-        {
-            ModelState.AddModelError("Username", "Username đã tồn tại.");
-        }
-
-        if (_context.Customers.Any(c => c.Phone == model.Phone))
-        {
-            ModelState.AddModelError("Phone", "Số điện thoại đã tồn tại.");
-        }
-
-        if (string.IsNullOrWhiteSpace(model.Password) || model.Password.Length < 6)
-        {
-            ModelState.AddModelError("Password", "Mật khẩu phải có ít nhất 6 ký tự và không được để trống.");
-        }
-
-
-        if (ModelState.IsValid)
-        {
-            model.Password = HashPassword(model.Password ?? "");
-            model.IsEmailConfirmed = false;
-
-            var otp = new Random().Next(100000, 999999).ToString();
-            model.OtpCode = otp;
-
-            _context.Customers.Add(model);
-            _context.SaveChanges();
-
-            _emailService.SendOtp(model.Email ?? "", otp);
-
-            return RedirectToAction("VerifyEmail", new { email = model.Email });
-        }
-
-        return View(model);
-    }
-
-
-
-
-    //Login
-
-    [HttpGet]
-    public IActionResult Login()
-    {
-        return View();
-    }
-
-    //change passord
-
-    [HttpPost]
-    public IActionResult Login(string loginId, string password)
-    {
-        Console.WriteLine($"LoginId: {loginId}");
-        Console.WriteLine($"Password: {password}");
-
-        if (string.IsNullOrWhiteSpace(loginId) || string.IsNullOrWhiteSpace(password))
-        {   
-            ModelState.AddModelError("LoginError", "Vui lòng nhập Email/Username và mật khẩu");
-            return View();
-        }
-
-        var hashedPassword = HashPassword(password);
-
-
-        var user = _context.Customers
-            .FirstOrDefault(c =>
-                (c.Email == loginId || c.Username == loginId) &&
-                c.Password == hashedPassword);
-
-        if (user == null)
-        {
-            ModelState.AddModelError("ErrorAccount", "Sai Email/Username hoặc mật khẩu");
-            return View();
-        }
-
-        if (!user.IsEmailConfirmed)
-        {
-            ModelState.AddModelError("", "Email chưa được xác thực. Vui lòng kiểm tra Gmail.");
-            return View();
-        }
-
-        HttpContext.Session.SetInt32("CustomerID", user.CustomerID);
-        HttpContext.Session.SetString("CustomerName", user.Name ?? "");
-
-        return RedirectToAction("Index", "Home");
-    }
-
-
-
-    [HttpGet]
-    public IActionResult Profile()
-    {
-        Customer? user = null;
-
-        int? userId = HttpContext.Session.GetInt32("CustomerID");
-        if (userId != null)
-        {
-            user = _context.Customers
-                .AsNoTracking()
-                .FirstOrDefault(c => c.CustomerID == userId.Value);
-
-            if (user != null)
+            if (_profileService.EditProfile(userId.Value, model, out string error))
             {
-                return View(user);
-            }
-        }
-
-
-        if (User.Identity != null && User.Identity.IsAuthenticated)
-        {
-            var email = User.FindFirst(ClaimTypes.Email)?.Value
-                        ?? User.FindFirst("email")?.Value;
-
-            user = _context.Customers
-                .AsNoTracking()
-                .FirstOrDefault(c => c.Email == email);
-
-            if (user != null)
-            {
-                return View(user);
-            }
-        }
-
-        return RedirectToAction("Login", "Account");
-    }
-
-
-    [HttpGet]
-    public IActionResult EditProfile()
-    {
-         
-        int? userId = HttpContext.Session.GetInt32("CustomerID");
-        if (userId == null) return RedirectToAction("Privacy", "Home");
-
-        var user = _context.Customers.FirstOrDefault(c => c.CustomerID == userId.Value);
-        if (user == null) return RedirectToAction("Privacy", "Home");
-        bool isGoogleLogin = string.IsNullOrEmpty(user.Password); 
-        var vm = new EditProfile
-        {
-            Name = user.Name,
-            Phone = user.Phone,
-            Address = user.Address,
-            BirthDate = user.BirthDate,
-        };
-         ViewBag.IsGoogleLogin = isGoogleLogin;
-        return View(vm);
-    }
-
-    [HttpPost]
-    public IActionResult EditProfile(EditProfile model)
-    {
-        int? userId = HttpContext.Session.GetInt32("CustomerID");
-
-        if (userId == null)
-        {
-            return RedirectToAction("Login", "Account");
-        }
-
-
-        var customer = _context.Customers.FirstOrDefault(c => c.CustomerID == userId.Value);
-        if (customer == null) return NotFound();
-
-
-        if (_context.Customers.Any(c => c.Phone == model.Phone && c.CustomerID != userId.Value))
-        {
-            ModelState.AddModelError("Phone", "Số điện thoại đã tồn tại.");
-        }
-
-        if (model.CurrentPassword != null)
-        {
-            if (!VerifyPassword(model.CurrentPassword, customer.Password!))
-            {
-                ModelState.AddModelError("CurrentPassword", "Mật khẩu hiện tại không đúng.");
-            }
-        }
-        if (!string.IsNullOrEmpty(customer.Password))
-            {
-                if (!string.IsNullOrEmpty(model.NewPassword))
-                {
-                    if (string.IsNullOrEmpty(model.CurrentPassword))
-                    {
-                        ModelState.AddModelError("CurrentPassword", "Vui lòng nhập mật khẩu hiện tại.");
-                    }
-                }
+                TempData["SuccessMessage"] = "Cập nhật hồ sơ thành công!";
+                return RedirectToAction("Profile");
             }
 
-        if (!ModelState.IsValid)
-        {
+            ModelState.AddModelError("", error);
             return View(model);
         }
 
-        customer.Name = model.Name;
-        customer.Phone = model.Phone;
-        customer.Address = model.Address;
-        customer.BirthDate = model.BirthDate;
-
-        if (!string.IsNullOrEmpty(model.NewPassword))
+        [HttpPost]
+        public async Task<IActionResult> UploadAvatar(IFormFile avatar)
         {
-            customer.Password = HashPassword(model.NewPassword);
+            int? userId = HttpContext.Session.GetInt32("CustomerID");
+            if (userId == null) return RedirectToAction("Login");
+
+            await _profileService.UploadAvatar(userId.Value, avatar);
+            return RedirectToAction("Profile");
         }
 
-        _context.SaveChanges();
-        TempData["SuccessMessage"] = "Cập nhật hồ sơ thành công!";
-        return RedirectToAction("Profile", "Account");
-    }
+        #endregion
 
-    [HttpPost]
-    public async Task<IActionResult> UploadAvatar(IFormFile avatar)
-    {
-        var customerId = HttpContext.Session.GetInt32("CustomerID");
-        if (customerId == null) return RedirectToAction("Login");
+        #region Change / Reset Password
 
-        if (avatar != null && avatar.Length > 0)
+        [HttpGet]
+        public IActionResult ChangePassword() => View();
+
+        [HttpPost]
+        public IActionResult ChangePassword(ChangePasswordModel model)
         {
-            var customer = _context.Customers.Find(customerId);
-            if (customer == null) return NotFound();
+            int? userId = HttpContext.Session.GetInt32("CustomerID");
+            if (userId == null) return RedirectToAction("Login");
 
-            if (!string.IsNullOrEmpty(customer.ProfileImagePath)
-                && !customer.ProfileImagePath.Contains("/img/"))
+            if (_authService.ChangePassword(userId.Value, model.CurrentPassword!, model.NewPassword!, out string error))
             {
-                var oldPath = Path.Combine(
-                    Directory.GetCurrentDirectory(),
-                    "wwwroot",
-                    customer.ProfileImagePath.TrimStart('/')
-                );
-                if (System.IO.File.Exists(oldPath))
-                {
-                    System.IO.File.Delete(oldPath);
-                }
+                ViewBag.Message = "✅ Đổi mật khẩu thành công!";
+                return View();
             }
 
-            var fileName = $"{Guid.NewGuid()}_{Path.GetFileName(avatar.FileName)}";
-            var path = Path.Combine(
-                Directory.GetCurrentDirectory(),
-                "wwwroot/uploads/avatars",
-                fileName
-            );
-
-            using (var stream = new FileStream(path, FileMode.Create))
-            {
-                await avatar.CopyToAsync(stream);
-            }
-
-            var dbPath = $"/uploads/avatars/{fileName}";
-            customer.ProfileImagePath = dbPath;
-            _context.SaveChanges();
+            ModelState.AddModelError("", error);
+            return View(model);
         }
 
-        return RedirectToAction("Profile");
+        [HttpGet]
+        public IActionResult ForgotPassword() => View();
+
+
+        [HttpGet]
+        public IActionResult ResetAgain()
+        {
+            var email = TempData["Email"]?.ToString();
+            if (string.IsNullOrEmpty(email))
+            {
+                return RedirectToAction("ForgotPassword");
+            }
+
+            if (!_authService.SendOtp(email, "reset", out string otp, out string error))
+            {
+                ViewBag.ErrorMessage = error;
+                return View("ResetPassword");
+            }
+
+            TempData["Email"] = email;
+            ViewBag.SuccessMessage = "Mã OTP đã được gửi lại!";
+            return View("ResetPassword");
+        }
+
+        [HttpPost]
+        public IActionResult SendOtpReset(string email)
+        {
+            if (!_authService.SendOtp(email, "reset", out string otp, out string error))
+            {
+                ViewBag.ErrorMessage = error;
+                return View("ForgotPassword");
+            }
+
+            TempData["Email"] = email;
+            return RedirectToAction("ResetPassword");
+        }
+
+        [HttpGet]
+        public IActionResult ResetPassword() => View(new ResetPasswordViewModel());
+
+        [HttpPost]
+        public IActionResult ResetPassword(ResetPasswordViewModel model)
+        {
+            var email = TempData["Email"] as string;
+            if (email == null) return RedirectToAction("ForgotPassword");
+
+            if (!_authService.ResetPassword(email, model.NewPassword!, out string error))
+            {
+                ModelState.AddModelError("", error);
+                return View(model);
+            }
+
+            ViewBag.Message = "✅ Mật khẩu đã được đặt lại thành công!";
+            return View();
+        }
+
+        #endregion
     }
-
-
 }

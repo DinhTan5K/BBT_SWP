@@ -28,10 +28,10 @@ public class HomeController : Controller
     {
         return View();
     }
-public IActionResult Introduce()
-{
-    return View();
-}
+    public IActionResult Introduce()
+    {
+        return View();
+    }
 
     public IActionResult Index()
     {
@@ -48,7 +48,7 @@ public IActionResult Introduce()
         return View();
     }
 
-  
+
 
     public IActionResult Privacy()
     {
@@ -56,7 +56,7 @@ public IActionResult Introduce()
     }
 
 
-    
+
 
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public IActionResult Error()

@@ -2,9 +2,8 @@ using System;
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Http;
 
-namespace start.Models
-{
-    public class EditProfile
+
+    public class EditProfileModel
     {
         public int CustomerID { get; set; }
 
@@ -20,8 +19,8 @@ namespace start.Models
 
         [DataType(DataType.Date)]
         public DateTime? BirthDate { get; set; }
-        
-        
+
+
         [DataType(DataType.Password)]
         public string? CurrentPassword { get; set; }
 
@@ -33,4 +32,3 @@ namespace start.Models
         [Compare("NewPassword", ErrorMessage = "Mật khẩu xác nhận không khớp.")]
         public string? ConfirmPassword { get; set; }
     }
-}

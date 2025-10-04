@@ -41,5 +41,7 @@ public class Customer
 
     [StringLength(255)]
     public string? ProfileImagePath { get; set; }
-        
+    
+    public DateTime? OtpExpired { get; set; }
+
 }

@@ -23,33 +23,33 @@
 
             <div class="mb-3 input-group">
                 <span class="input-group-text"><i class="fa-solid fa-user"></i></span>
-                <input asp-for="Name" class="form-control" placeholder="Tên khách hàng" />
+                <input asp-for="Name" class="form-control" placeholder="Tên khách hàng" required />
             </div>
-            <span class="text-danger small">@Html.ValidationMessageFor(m => m.Name)</span>
+            <span class="text-danger small validation-error">@Html.ValidationMessageFor(m => m.Name)</span>
 
             <div class="mb-3 input-group">
                 <span class="input-group-text"><i class="fa-solid fa-phone"></i></span>
-                <input asp-for="Phone" class="form-control" placeholder="Số điện thoại" />
+                <input asp-for="Phone" class="form-control" placeholder="Số điện thoại" required />
             </div>
-            <span class="text-danger small">@Html.ValidationMessageFor(m => m.Phone)</span>
+            <span class="text-danger small validation-error">@Html.ValidationMessageFor(m => m.Phone)</span>
 
             <div class="mb-3 input-group">
                 <span class="input-group-text"><i class="fa-solid fa-envelope"></i></span>
-                <input asp-for="Email" class="form-control" placeholder="Email" />
+                <input asp-for="Email" class="form-control" placeholder="Email" required />
             </div>
-            <span class="text-danger small">@Html.ValidationMessageFor(m => m.Email)</span>
+            <span class="text-danger small validation-error">@Html.ValidationMessageFor(m => m.Email)</span>
 
             <div class="mb-3 input-group">
                 <span class="input-group-text"><i class="fa-solid fa-id-card"></i></span>
-                <input asp-for="Username" class="form-control" placeholder="Tên đăng nhập" />
+                <input asp-for="Username" class="form-control" placeholder="Tên đăng nhập" required />
             </div>
-            <span class="text-danger small">@Html.ValidationMessageFor(m => m.Username)</span>
+            <span class="text-danger small validation-error">@Html.ValidationMessageFor(m => m.Username)</span>
 
             <div class="mb-3 input-group">
                 <span class="input-group-text"><i class="fa-solid fa-lock"></i></span>
-                <input asp-for="Password" type="password" class="form-control" placeholder="Mật khẩu" />
+                <input asp-for="Password" type="password" class="form-control" placeholder="Mật khẩu" required />
             </div>
-            <span class="text-danger small">@Html.ValidationMessageFor(m => m.Password)</span>
+            <span class="text-danger small validation-error">@Html.ValidationMessageFor(m => m.Password)</span>
 
             <button type="submit" class="btn-login btn-main w-100">Đăng ký</button>
         </form>
@@ -64,4 +64,84 @@
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
+    
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.querySelector('form');
+        const inputs = form.querySelectorAll('input[required]');
+        
+        // Add real-time validation
+        inputs.forEach(input => {
+            input.addEventListener('blur', function() {
+                validateField(this);
+            });
+            
+            input.addEventListener('input', function() {
+                if (this.classList.contains('is-invalid')) {
+                    validateField(this);
+                }
+            });
+        });
+        
+        // Form submission validation
+        form.addEventListener('submit', function(e) {
+            let isValid = true;
+            
+            inputs.forEach(input => {
+                if (!validateField(input)) {
+                    isValid = false;
+                }
+            });
+            
+            if (!isValid) {
+                e.preventDefault();
+            }
+        });
+        
+        function validateField(input) {
+            const inputGroup = input.closest('.input-group');
+            const value = input.value.trim();
+            
+            if (input.hasAttribute('required') && !value) {
+                inputGroup.classList.add('error');
+                input.classList.add('is-invalid');
+                return false;
+            } else {
+                inputGroup.classList.remove('error');
+                input.classList.remove('is-invalid');
+                return true;
+            }
+        }
+        
+        // Email validation
+        const emailInput = document.querySelector('input[type="email"], input[name="Email"]');
+        if (emailInput) {
+            emailInput.addEventListener('blur', function() {
+                const email = this.value.trim();
+                const hasAt = email.includes('@@');
+                const hasDot = email.includes('.');
+                const isValidEmail = hasAt && hasDot && email.length > 5;
+                
+                if (email && !isValidEmail) {
+                    this.closest('.input-group').classList.add('error');
+                    this.classList.add('is-invalid');
+                }
+            });
+        }
+        
+        // Phone validation
+        const phoneInput = document.querySelector('input[name="Phone"]');
+        if (phoneInput) {
+            phoneInput.addEventListener('blur', function() {
+                const phone = this.value.trim();
+                const phoneRegex = /^[0-9]{10,11}$/;
+                
+                if (phone && !phoneRegex.test(phone)) {
+                    this.closest('.input-group').classList.add('error');
+                    this.classList.add('is-invalid');
+                }
+            });
+        }
+    });
+    </script>
 }

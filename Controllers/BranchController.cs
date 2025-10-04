@@ -19,7 +19,7 @@ namespace start.Controllers
             var branches = await _context.Branches
                 .Select(b => new
                 {
-                    branchID = b.Id,    // ⚡ dùng Id, không phải BranchID
+                    branchID = b.Id, 
                     name = b.Name,
                     address = b.Address,
                     latitude = b.Latitude,

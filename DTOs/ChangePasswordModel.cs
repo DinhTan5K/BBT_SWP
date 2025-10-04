@@ -1,6 +1,8 @@
-namespace start.Models
-{
-    public class ChangePassword
+
+
+
+
+    public class ChangePasswordModel
     {
 
         public string CurrentPassword { get; set; } = "";
@@ -8,4 +10,3 @@ namespace start.Models
         public string ConfirmNewPassword { get; set; } = "";
 
     }
-}

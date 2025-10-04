@@ -8,7 +8,21 @@ using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IProfileService, ProfileService>();
+builder.Services.AddScoped<ICartService, CartService>();
+builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<IOrderService, OrderService>();
 
+
+builder.Logging.ClearProviders();
+builder.Logging.AddSimpleConsole(options =>
+{
+    options.IncludeScopes = false;
+    options.TimestampFormat = "HH:mm:ss ";
+    options.ColorBehavior = Microsoft.Extensions.Logging.Console.LoggerColorBehavior.Enabled;
+});
 
 builder.Services.AddDistributedMemoryCache();
 
