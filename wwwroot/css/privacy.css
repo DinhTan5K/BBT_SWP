@@ -1,0 +1,353 @@
+/* === Replace your current <style> block with this CSS === */
+
+/* reset */
+* { margin:0; padding:0; box-sizing:border-box; }
+
+/* palette: be background + hover = red */
+:root{
+  --bg-be: #f5f5dc;        /* nền tổng thể (be) */
+  --box-bg: #fffaf0;       /* box/card */
+  --text-dark: #000000;    /* chữ chính (nâu đậm) */
+  --text-sub: #000000;     /* chữ phụ */
+  --border-color: #e8e0d3;
+  --shadow: 0 6px 20px rgba(0,0,0,0.06);
+
+  /* accents: keep hover red that you wanted */
+  --hover-bg: #c0392b;     /* hover nền đỏ */
+  --hover-text: #f5f5dc;   /* chữ be on hover */
+
+  /* neutral secondary accents (be tones) */
+  --accent-1: #d2b48c;     /* be đậm */
+  --accent-2: #e9d8b7;     /* be nhạt */
+}
+
+/* page */
+body{
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  color: var(--text-dark);
+  background: var(--bg-be);
+  min-height:100vh;
+  line-height:1.6;
+}
+
+/* hero (convert gradient -> soft be header card) */
+.hero{
+  background: linear-gradient(180deg, rgba(255,250,240,0.9), rgba(250,245,235,0.95));
+  padding: 3.2rem 1.25rem;
+  margin-bottom: 2.5rem;
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+}
+.hero-content{
+  max-width:1200px;
+  margin:0 auto;
+  display:flex;
+  gap:2rem;
+  align-items:center;
+  justify-content:space-between;
+}
+.hero-text{ flex:1; }
+.hero-text h1{
+  font-size:2.25rem;
+  margin-bottom:0.5rem;
+  color:var(--text-dark);
+  font-weight:700;
+}
+.hero-subtitle{ color:var(--text-sub); margin-bottom:0.5rem; font-size:1rem; }
+.last-updated{ color:var(--text-sub); font-size:0.9rem; }
+
+/* hero image smaller and softer */
+.hero-image{ flex:0 0 260px; }
+.hero-image img{ width:100%; height:auto; border-radius:10px; }
+
+/* layout container */
+.container{
+  max-width:1200px;
+  margin:0 auto;
+  padding: 0 1.25rem 3rem;
+  display:flex;
+  gap:1.75rem;
+  align-items:flex-start;
+}
+
+/* sidebar */
+.sidebar{
+  position:sticky;
+  top:1.5rem;
+  width:280px;
+  background:var(--box-bg);
+  border-radius:12px;
+  padding:1.2rem;
+  box-shadow: var(--shadow);
+  border:1px solid var(--border-color);
+  flex-shrink:0;
+}
+.sidebar h3{ font-size:1.05rem; margin-bottom:0.75rem; color:var(--text-dark); font-weight:700; }
+.nav-list{ list-style:none; }
+.nav-list li{ margin-bottom:0.25rem; }
+.nav-list a{
+  display:flex; align-items:center; gap:0.75rem;
+  padding:0.65rem 0.9rem;
+  color:var(--text-dark);
+  text-decoration:none;
+  border-radius:8px;
+  transition: all .22s ease;
+  font-size:0.95rem;
+  background:transparent;
+  /* keep original look: text dark, no bg */
+}
+.nav-list a .nav-icon{ font-size:1.1rem; opacity:0.9; }
+
+/* HOVER: red bg + be text (preserve your previous behavior) */
+.nav-list a:hover,
+.nav-list a.active{
+  background: var(--hover-bg);       /* đỏ */
+  color: var(--hover-text);          /* be text */
+  transform: translateX(6px);
+}
+.nav-list a:hover .nav-icon,
+.nav-list a.active .nav-icon { color: var(--hover-text); }
+
+
+
+/* main content */
+.main-content{
+  flex:1;
+  background:var(--box-bg);
+  border-radius:12px;
+  padding:2rem;
+  box-shadow: var(--shadow);
+  border:1px solid var(--border-color);
+}
+
+/* section layout */
+.section{ margin-bottom:2.5rem; opacity:0; transform:translateY(18px); transition: all .5s ease; }
+.section.visible{ opacity:1; transform:translateY(0); }
+
+.section-header{ display:flex; gap:1.25rem; align-items:flex-start; margin-bottom:1rem; }
+.section-text{ flex:1; color:var(--text-dark); }
+.section-image{ flex:0 0 180px; }
+.section-image img{ width:100%; border-radius:10px; }
+
+.section h2{
+  font-size:1.5rem; margin-bottom:0.6rem; color:var(--text-dark); position:relative; padding-bottom:0.4rem; font-weight:700;
+}
+.section h2::after{ content:""; position:absolute; left:0; bottom:0; width:48px; height:3px; background:var(--accent-1); border-radius:2px; }
+
+.section p, .section li { color:var(--text-sub); margin-bottom:0.85rem; line-height:1.6; }
+
+/* accordion (keep prior behavior but softer) */
+.accordion{ margin-top:1rem; }
+.accordion-item{
+  border:1px solid var(--border-color);
+  border-radius:10px; margin-bottom:0.85rem; overflow:hidden; transition: box-shadow .2s ease;
+  background:var(--box-bg);
+}
+.accordion-item:hover{ box-shadow: 0 8px 18px rgba(0,0,0,0.06); }
+.accordion-header{
+  padding:1rem; display:flex; justify-content:space-between; align-items:center; cursor:pointer; background:transparent;
+}
+.accordion-header h3{ font-size:1rem; color:var(--text-dark); margin:0; font-weight:600; }
+.accordion-icon{
+  width:34px; height:34px; border-radius:50%; background:var(--accent-2); color:var(--text-dark); display:flex; align-items:center; justify-content:center;
+  transition: transform .22s ease, background .22s ease;
+}
+.accordion-item.active .accordion-icon{ transform: rotate(45deg); background:var(--accent-1); color:var(--box-bg); }
+.accordion-content{ max-height:0; overflow:hidden; transition:max-height .35s ease, padding .35s ease; padding:0 1rem; }
+.accordion-item.active .accordion-content{ max-height:800px; padding:1rem; }
+
+
+.contact-info{ background:var(--bg-be); padding:1rem; border-radius:8px; border:1px solid var(--border-color); color:var(--text-dark); }
+
+/* progress bar color use hover (keeps visible accent) */
+.progress-bar{ position:fixed; top:0; left:0; height:4px; width:0; background:var(--hover-bg); z-index:9999; transition:width .08s linear; }
+
+/* animations */
+@keyframes fadeInLeft{ from{opacity:0; transform:translateX(-18px);} to{opacity:1; transform:none;} }
+@keyframes fadeInRight{ from{opacity:0; transform:translateX(18px);} to{opacity:1; transform:none;} }
+@keyframes fadeInUp{ from{opacity:0; transform:translateY(18px);} to{opacity:1; transform:none;} }
+
+/* responsive */
+@media (max-width:968px){
+  .hero-content{ flex-direction:column; text-align:center; gap:1rem; }
+  .hero-image{ flex:0 0 260px; margin:0 auto; }
+  .container{ flex-direction:column; padding:0 1rem; }
+  .sidebar{ position:relative; width:100%; margin-bottom:1rem; top:0; }
+  .nav-list{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:0.5rem; }
+  .section-header{ flex-direction:column; }
+  .section-image{ width:100%; max-width:300px; margin:0 auto; }
+  .main-content{ padding:1rem; }
+}
+
+/* small screens */
+@media (max-width:640px){
+  .hero{ padding:1.8rem 1rem; }
+  .hero-text h1{ font-size:1.6rem; }
+  .hero-subtitle{ font-size:0.95rem; }
+  .hero-image{ flex:0 0 200px; }
+  .sidebar{ padding:1rem; }
+  .nav-list a{ padding:0.6rem; font-size:0.92rem; }
+}
+
+/* ---------- Header block (REPLACED .privacy-title block with this new header CSS) ---------- */
+
+/* Header layout (like your screenshot) */
+.header {
+  width: 100%;
+  background: linear-gradient(180deg, rgba(250,245,235,1) 0%, rgba(245,240,226,1) 100%);
+  padding: 36px 20px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.04);
+  border-radius: 10px;
+  margin-bottom: 28px;
+  overflow: hidden;
+}
+
+.header-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  gap: 28px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Left column (title + subtitle + ctas) */
+.header-left {
+  flex: 1 1 60%;
+  min-width: 280px;
+}
+
+
+/* right small icon spacing */
+.privacy-logo.small.right { margin-left: 4px; }
+
+/* subtitle + updated */
+.privacy-subtitle {
+  margin: 0 0 10px 0;
+  color: #6b4c3b;
+  font-size: 21px;
+  max-width: 780px;
+  font-style: italic;
+}
+
+
+.privacy-title {
+    display: flex;
+    align-items: center;
+    justify-content: left ;
+    gap: 12px;
+    font-size: 2rem;
+    font-weight: bold;
+    color: #6b4226; /* nâu trà sữa */
+    margin: 20px 0;
+}
+
+.privacy-title i {
+    font-size: 2.2rem;
+    color: #6b4226;
+    transition: transform 0.3s ease, color 0.3s ease;
+    cursor: pointer;
+}
+
+/* Hiệu ứng hover: phóng to nhẹ + đổi màu be-đỏ */
+.privacy-title i:hover {
+    transform: scale(1.2) rotate(-5deg);
+    color: #c0392b; /* đỏ hover */
+}
+
+
+
+/* CTA buttons under title (optional) */
+.header-ctas {
+  margin-top: 18px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.btn-hero {
+  background: #d4b58a;    /* be button */
+  color: #432d20;
+  padding: 10px 16px;
+  border-radius: 999px;   /* pill */
+  text-decoration: none;
+  font-weight: 600;
+  box-shadow: 0 6px 14px rgba(0,0,0,0.08);
+  transition: transform .16s ease, box-shadow .16s ease, background .16s ease;
+}
+.btn-hero:hover { transform: translateY(-3px); background: #c49a65; }
+.btn-hero.alt { background: transparent; border: 2px solid #c49a65; color:#5a4635; }
+.btn-hero.alt:hover { background:#c49a65; color:#fff; }
+
+/* Right column (illustration) */
+.header-right {
+  flex: 0 0 360px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.header-illustration {
+  width: 100%;
+  max-width: 360px;
+  height: auto;
+  border-radius: 12px;
+  box-shadow: 0 18px 40px rgba(0,0,0,0.08);
+  object-fit: cover;
+  transition: transform .25s ease, filter .25s ease;
+}
+
+/* Hover effects for logos / illustration (subtle) */
+.privacy-logo.small:hover { transform: scale(1.07) rotate(-4deg); }
+.header-illustration:hover { transform: translateY(-4px) scale(1.02); }
+
+/* responsive: stack columns on small screens */
+@media (max-width: 968px) {
+  .header-inner { flex-direction: column; gap: 18px; text-align: center; }
+  .header-right { order: -1; }              /* show image above on small if desired */
+  .privacy-title { font-size: 28px; justify-content: center; }
+  .privacy-logo.small { width: 44px; }
+  .header-illustration { max-width: 260px; }
+  .header-left { width: 100%; }
+  .hero-subtitle { margin-left:0; margin-right:0; }
+}
+
+/* keep progress bar color as your hover accent */
+.progress-bar { background: var(--hover-bg, #c0392b); height: 4px; width: 0; position: fixed; top: 0; left: 0; z-index: 9999; transition: width .08s linear; }
+
+/* === Font setup === */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Quicksand:wght@400;500;600&display=swap');
+
+/* Cấu hình font tổng thể */
+body {
+  font-family: 'Quicksand', sans-serif;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+  color: var(--text-dark);
+}
+
+/* Tiêu đề lớn – dùng Poppins cho nổi bật hơn */
+h1, h2, h3, .section h2, .privacy-title {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  color: #4b2e1e; /* nâu đậm để nổi bật trên nền be */
+}
+
+/* Đoạn văn & danh sách */
+.section p,
+.section li {
+  font-family: 'Quicksand', sans-serif;
+  font-weight: 500;
+  color: #3e2f25;
+  line-height: 1.75;
+  font-size: 1.05rem;
+}
+
+/* Làm đậm tiêu đề phụ và mục nổi bật */
+.section h3,
+.accordion-header h3 {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  color: #5a3b2e;
+}
+
+

@@ -1,5 +1,357 @@
-﻿@using Microsoft.AspNetCore.Http
+﻿@{
 
-@{
-    ViewData["Title"] = "Privacy"; 
+    Layout = null;
 }
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] Chính sách</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
+
+    <link rel="stylesheet" href="@(Url.Content("~/css/privacy.css"))" />
+
+</head>
+
+<body>
+    <!-- Progress bar (fixed) -->
+    <div class="progress-bar" id="progressBar"></div>
+
+    <!-- Header (full-width, giống bố cục bạn gửi) -->
+    <header class="header">
+        <div class="header-inner">
+            <!-- Left: text block -->
+            <div class="header-left">
+                <h1 class="privacy-title">
+                    <i class="fa-solid fa-mug-saucer drink-icon"></i>
+                    <span>Buble Tea's Privacy</span>
+                    <i class="fa-solid fa-file-contract policy-icon"></i>
+                </h1>
+
+                <p class="privacy-subtitle">
+                    Quyền riêng tư của bạn rất quan trọng với chúng tôi. Tìm hiểu cách chúng tôi bảo vệ và tôn trọng dữ
+                    liệu của bạn.
+                </p>
+
+
+
+
+                <div class="header-ctas">
+                    <a asp-controller="Home" asp-action="Index" class="btn-hero">Quay về trang chủ</a>
+
+                </div>
+            </div>
+
+            <!-- Right: illustration -->
+            <div class="header-right" aria-hidden="true">
+                <!-- Thay bằng ảnh minh hoạ phù hợp (đặt trong wwwroot/images hoặc /img) -->
+                <img src="/img/BublePrivacy.png" alt="Privacy illustration" class="header-illustration">
+            </div>
+        </div>
+    </header>
+
+
+    <!-- Body -->
+    <div class="container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar" aria-label="Mục lục chính sách bảo mật">
+            <h3>Mục Lục</h3>
+            <ul class="nav-list">
+                <li><a href="#introduction" class="nav-link">
+                        <span class="nav-icon">📋</span>
+                        <span>Giới thiệu</span>
+                <li><a href="#data-collection" class="nav-link">
+                        <span class="nav-icon">📊</span>
+                        <span>Thu Thập Dữ Liệu</span>
+                    </a></li>
+                <li><a href="#cookies" class="nav-link">
+                        <span class="nav-icon">🍪</span>
+                        <span>Cookies & Theo Dõi</span>
+                    </a></li>
+                <li><a href="#data-usage" class="nav-link">
+                        <span class="nav-icon">⚙️</span>
+                        <span>Cách Chúng Tôi Sử Dụng Dữ Liệu</span>
+                    </a></li>
+                <li><a href="#security" class="nav-link">
+                        <span class="nav-icon">🔒</span>
+                        <span>Bảo Mật</span>
+                    </a></li>
+                <li><a href="#user-rights" class="nav-link">
+                        <span class="nav-icon">✅</span>
+                        <span>Quyền Của Bạn</span>
+                    </a></li>
+                <li><a href="#contact" class="nav-link">
+                        <span class="nav-icon">📧</span>
+                        <span>Liên Hệ</span>
+                    </a></li>
+            </ul>
+
+
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content" role="main">
+            <!-- Introduction -->
+            <section id="introduction" class="section">
+                <h2>Giới thiệu</h2>
+                <p>Chào mừng bạn đến với Chính sách Bảo mật của Buble Tea. Quyền riêng tư của bạn rất quan trọng đối với
+                    chúng tôi. Chính sách này mô tả cách chúng tôi thu thập, sử dụng và bảo vệ thông tin cá nhân khi bạn
+                    sử dụng dịch vụ.</p>
+                <div class="info-box">
+                    <p><strong>Quan trọng:</strong> Khi sử dụng dịch vụ của chúng tôi, bạn đồng ý cho phép chúng tôi thu
+                        thập và sử dụng thông tin theo chính sách này.</p>
+                </div>
+                <p>Chính sách này áp dụng cho tất cả thông tin thu thập thông qua website và các dịch vụ liên quan.</p>
+            </section>
+
+            <!-- Thu thập dữ liệu -->
+            <section id="data-collection" class="section">
+                <h2>Thu thập dữ liệu</h2>
+                <p>Chúng tôi thu thập các loại thông tin khác nhau để cung cấp và cải thiện dịch vụ:</p>
+
+                <div class="accordion">
+                    <div class="accordion-item">
+                        <div class="accordion-header" role="button" tabindex="0">
+                            <h3>Thông tin cá nhân</h3>
+                            <div class="accordion-icon">+</div>
+                        </div>
+                        <div class="accordion-content">
+                            <p>Chúng tôi có thể thu thập thông tin cá nhân mà bạn cung cấp tự nguyện, bao gồm:</p>
+                            <ul>
+                                <li>Họ tên và thông tin liên hệ (email, số điện thoại)</li>
+                                <li>Thông tin đăng nhập (tên tài khoản, mật khẩu)</li>
+                                <li>Thông tin thanh toán (khi bạn mua hàng)</li>
+                                <li>Thông tin hồ sơ và sở thích</li>
+                                <li>Lịch sử trao đổi với bộ phận hỗ trợ</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <div class="accordion-header" role="button" tabindex="0">
+                            <h3>Dữ liệu sử dụng</h3>
+                            <div class="accordion-icon">+</div>
+                        </div>
+                        <div class="accordion-content">
+                            <p>Chúng tôi tự động thu thập một số thông tin khi bạn sử dụng dịch vụ:</p>
+                            <ul>
+                                <li>Địa chỉ IP và thông tin thiết bị</li>
+                                <li>Loại và phiên bản trình duyệt</li>
+                                <li>Trang đã truy cập và thời gian trên trang</li>
+                                <li>Trang giới thiệu (referrer)</li>
+                                <li>Hệ điều hành và nền tảng</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <div class="accordion-header" role="button" tabindex="0">
+                            <h3>Dữ liệu vị trí</h3>
+                            <div class="accordion-icon">+</div>
+                        </div>
+                        <div class="accordion-content">
+                            <p>Với sự cho phép của bạn, chúng tôi có thể thu thập dữ liệu vị trí bằng:</p>
+                            <ul>
+                                <li>GPS và cảm biến thiết bị</li>
+                                <li>Xác định vị trí dựa trên địa chỉ IP</li>
+                                <li>Thông tin Wi-Fi / trạm thu phát</li>
+                            </ul>
+                            <p>Bạn có thể tắt dịch vụ vị trí qua cài đặt thiết bị bất kỳ lúc nào.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Cookies -->
+            <section id="cookies" class="section">
+                <h2>Cookie &amp; Công nghệ theo dõi</h2>
+                <p>Chúng tôi sử dụng cookie và công nghệ tương tự để theo dõi hoạt động trên dịch vụ và lưu một số thông
+                    tin. Cookie là các tệp dữ liệu nhỏ được gửi tới trình duyệt và lưu trên thiết bị của bạn.</p>
+
+                <div class="accordion">
+                    <div class="accordion-item">
+                        <div class="accordion-header" role="button" tabindex="0">
+                            <h3>Cookie thiết yếu</h3>
+                            <div class="accordion-icon">+</div>
+                        </div>
+                        <div class="accordion-content">
+                            <p>Cookie thiết yếu cần thiết để website hoạt động đúng chức năng (ví dụ: điều hướng trang,
+                                truy cập khu vực bảo mật).</p>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <div class="accordion-header" role="button" tabindex="0">
+                            <h3>Cookie phân tích</h3>
+                            <div class="accordion-icon">+</div>
+                        </div>
+                        <div class="accordion-content">
+                            <p>Cookie phân tích giúp chúng tôi hiểu cách người dùng tương tác với website một cách ẩn
+                                danh, hỗ trợ cải thiện trải nghiệm.</p>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <div class="accordion-header" role="button" tabindex="0">
+                            <h3>Cookie tiếp thị</h3>
+                            <div class="accordion-icon">+</div>
+                        </div>
+                        <div class="accordion-content">
+                            <p>Cookie tiếp thị được sử dụng để hiển thị quảng cáo phù hợp với sở thích của bạn trên các
+                                trang web khác.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Data usage -->
+            <section id="data-usage" class="section">
+                <h2>Cách chúng tôi sử dụng dữ liệu</h2>
+                <p>Chúng tôi sử dụng dữ liệu để:</p>
+                <ul>
+                    <li>Cung cấp và duy trì dịch vụ</li>
+                    <li>Thông báo về thay đổi dịch vụ</li>
+                    <li>Hỗ trợ khách hàng và trả lời thắc mắc</li>
+                    <li>Phân tích và cải thiện dịch vụ</li>
+                    <li>Giám sát hiệu năng và xử lý vấn đề kỹ thuật</li>
+                    <li>Cá nhân hóa nội dung và đề xuất</li>
+                    <li>Gửi thông tin khuyến mãi (khi bạn đồng ý)</li>
+                </ul>
+
+                <div class="info-box">
+                    <p><strong>Lưu ý:</strong> Chúng tôi cam kết không bán dữ liệu cá nhân của bạn cho bên thứ ba. Thông
+                        tin chỉ được sử dụng nhằm nâng cao trải nghiệm sử dụng dịch vụ.</p>
+                </div>
+            </section>
+
+            <!-- Security -->
+            <section id="security" class="section">
+                <h2>Bảo mật dữ liệu</h2>
+                <p>An toàn dữ liệu của bạn là ưu tiên của chúng tôi. Chúng tôi áp dụng các biện pháp tiêu chuẩn ngành để
+                    bảo vệ thông tin cá nhân:</p>
+
+                <div class="accordion">
+    
+
+                    <div class="accordion-item">
+                        <div class="accordion-header" role="button" tabindex="0">
+                            <h3>Kiểm soát truy cập</h3>
+                            <div class="accordion-icon">+</div>
+                        </div>
+                        <div class="accordion-content">
+                            <p>Quyền truy cập dữ liệu chỉ được cấp cho nhân sự có thẩm quyền. Chúng tôi áp dụng các cơ
+                                chế xác thực và kiểm soát chặt chẽ.</p>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <div class="accordion-header" role="button" tabindex="0">
+                            <h3>Kiểm tra định kỳ</h3>
+                            <div class="accordion-icon">+</div>
+                        </div>
+                        <div class="accordion-content">
+                            <p>Chúng tôi tiến hành đánh giá bảo mật và quét lỗ hổng định kỳ để phát hiện và xử lý rủi ro
+                                kịp thời.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <p style="margin-top:1.5rem;">Dù nỗ lực bảo vệ, không phương thức truyền tải hay lưu trữ điện tử nào an
+                    toàn tuyệt đối. Chúng tôi không thể đảm bảo 100% nhưng cam kết giảm thiểu rủi ro tối đa.</p>
+            </section>
+
+            <!-- User rights -->
+            <section id="user-rights" class="section">
+                <h2>Quyền riêng tư của bạn</h2>
+                <p>Bạn có một số quyền liên quan đến dữ liệu cá nhân. Tùy theo nơi bạn sinh sống, các quyền có thể bao
+                    gồm:</p>
+
+                <div class="accordion">
+                    <div class="accordion-item">
+                        <div class="accordion-header" role="button" tabindex="0">
+                            <h3>Quyền truy cập</h3>
+                            <div class="accordion-icon">+</div>
+                        </div>
+                        <div class="accordion-content">
+                            <p>Bạn có quyền yêu cầu sao chép dữ liệu cá nhân mà chúng tôi lưu giữ. Trong trường hợp yêu
+                                cầu quá lớn, chúng tôi có thể tính phí hợp lý.</p>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <div class="accordion-header" role="button" tabindex="0">
+                            <h3>Quyền chỉnh sửa</h3>
+                            <div class="accordion-icon">+</div>
+                        </div>
+                        <div class="accordion-content">
+                            <p>Bạn có quyền yêu cầu sửa thông tin không chính xác hoặc bổ sung thông tin thiếu.</p>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <div class="accordion-header" role="button" tabindex="0">
+                            <h3>Quyền xóa</h3>
+                            <div class="accordion-icon">+</div>
+                        </div>
+                        <div class="accordion-content">
+                            <p>Bạn có quyền yêu cầu xóa dữ liệu cá nhân trong một số trường hợp (quyền được quên).</p>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <div class="accordion-header" role="button" tabindex="0">
+                            <h3>Quyền hạn chế xử lý</h3>
+                            <div class="accordion-icon">+</div>
+                        </div>
+                        <div class="accordion-content">
+                            <p>Bạn có thể yêu cầu hạn chế xử lý dữ liệu trong một số điều kiện nhất định.</p>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <div class="accordion-header" role="button" tabindex="0">
+                            <h3>Quyền chuyển dữ liệu</h3>
+                            <div class="accordion-icon">+</div>
+                        </div>
+                        <div class="accordion-content">
+                            <p>Bạn có quyền yêu cầu chuyển dữ liệu mà chúng tôi đã thu thập sang tổ chức khác, dưới một
+                                số điều kiện.</p>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <div class="accordion-header" role="button" tabindex="0">
+                            <h3>Quyền phản đối</h3>
+                            <div class="accordion-icon">+</div>
+                        </div>
+                        <div class="accordion-content">
+                            <p>Bạn có quyền phản đối việc chúng tôi xử lý dữ liệu của bạn trong một số trường hợp, đặc
+                                biệt là tiếp thị trực tiếp.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <p style="margin-top:1.5rem;">Để thực hiện quyền của bạn, vui lòng liên hệ theo thông tin ở phần Liên hệ
+                    bên dưới.</p>
+            </section>
+
+            <!-- Contact -->
+            <section id="contact" class="section">
+                <h2>Liên hệ</h2>
+                <p>Nếu bạn có câu hỏi về Chính sách Bảo mật hoặc cách chúng tôi xử lý dữ liệu, bạn có thể chuyển sang
+                    phần liên hệ bằng cách bấm vào nút liên hệ bên dưới:</p>
+                <div class="header-ctas">
+                    <a asp-controller="Home" asp-action="Contact" class="btn-hero">Liên Hệ</a>
+                </div>
+
+            </section>
+        </main>
+    </div>
+
+    <!-- JS -->
+    <script src="@(Url.Content("~/js/privacy.js"))"></script>
+</body>
+
+</html>

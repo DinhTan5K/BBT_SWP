@@ -48,20 +48,7 @@ public class HomeController : Controller
         return View();
     }
 
-    public IActionResult Product()
-    {
-        string folderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "img", "milktea");
-
-        var files = Directory.Exists(folderPath) ? Directory.GetFiles(folderPath) : Array.Empty<string>();
-
-        var list = files.Select(file =>
-            "/img/milktea/" + Path.GetFileName(file)
-        ).ToList();
-
-        ViewBag.TraSuaList = list;
-
-        return View();
-    }
+    
 
     public IActionResult Privacy()
     {
