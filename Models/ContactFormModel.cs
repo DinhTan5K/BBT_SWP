@@ -15,8 +15,12 @@ namespace start.Models
         [StringLength(20)]
         public string Phone { get; set; } = string.Empty;
 
+        public int? RegionId { get; set; }
+
         public string City { get; set; } = string.Empty; // Tỉnh/Thành
 
+        // Branch selection (Store) - store = Branch.Id
+        public int? StoreId { get; set; }
         public string Store { get; set; } = string.Empty; // Cửa hàng phản hồi
 
         public string IssueType { get; set; } = string.Empty; // Loại vấn đề

@@ -1,4 +1,6 @@
+using System.Globalization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Identity.Client;
 using start.Models;
 
 namespace start.Data
@@ -15,6 +17,7 @@ namespace start.Data
 
         public DbSet<Branch> Branches { get; set; }
 
+        public DbSet<Region> Regions { get; set; }
         public DbSet<Cart> Carts { get; set; }
         public DbSet<CartDetail> CartDetails { get; set; }
 

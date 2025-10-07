@@ -41,6 +41,7 @@ html { scroll-padding-top: var(--nav-height); }
 .contact-banner h1 {
     font-size: 42px;
     font-weight: 700;
+    margin: 0;
 }
 .contact-banner .subtitle {
     font-size: 20px;
@@ -52,47 +53,104 @@ html { scroll-padding-top: var(--nav-height); }
 .contact-container {
     position: relative;
     z-index: 1;
-    max-width: 900px;
+    max-width: 920px;
     margin: 0 auto; /* đặt giữa */
-    padding: 40px;
+    padding: 36px;
     background: rgba(255,255,255,0.95);
     border-radius: 12px;
     box-shadow: 0 6px 30px rgba(0,0,0,0.15);
+    -webkit-backdrop-filter: blur(1px);
+    backdrop-filter: blur(1px);
 }
 
 /* Text */
 .intro-text {
     font-size: 16px;
     margin-bottom: 20px;
+    color: #444;
 }
 
-/* Row layout */
+/* ---- ensure two columns align and controls have same heights ---- */
+/* Dùng CSS Grid để đảm bảo mọi thứ fit chính xác theo 2 cột */
 .form-row {
-    display: flex;
-    gap: 20px;
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* 2 cột bằng nhau */
+    gap: 18px 28px; /* row-gap, column-gap */
+    align-items: start;
     margin-bottom: 20px;
 }
+
+/* make columns stack vertical groups evenly */
 .col-left, .col-right {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* If you still have .double-input use it for 2 small fields inline */
+.double-input {
+    display: flex;
+    gap: 12px;
+}
+.double-input > div {
     flex: 1;
+    min-width: 0;
 }
+
+/* form-group spacing */
 .form-group {
-    margin-bottom: 16px;
+    margin: 0; /* gap controlled by parent flex/grid */
 }
+
+/* labels */
 .form-group label {
     display: block;
     font-weight: 600;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
+    color: #222;
+    font-size: 14px;
 }
 
-/* Input */
-.form-control {
+/* Inputs / selects / textarea: always fill 100% of the column */
+.form-control,
+select.form-control,
+.form-group select {
+    display: block;
     width: 100%;
+    min-height: 44px;
     padding: 10px 12px;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    font-size: 14px;
+    border: 1px solid #e6e6e6;
+    border-radius: 8px;
     background: #fff;
     box-sizing: border-box;
+    font-size: 14px;
+    transition: border-color .15s ease, box-shadow .15s ease, transform .08s ease;
+}
+
+/* disabled style */
+.form-control[disabled],
+select.form-control[disabled] {
+    background: #f3f4f6;
+    color: #6b6b6b;
+}
+
+/* focus */
+.form-control:focus,
+select.form-control:focus,
+textarea.form-control:focus {
+    outline: none;
+    border-color: #A70014;
+    box-shadow: 0 6px 18px rgba(167,0,20,0.08);
+    background: #fff;
+}
+
+/* Textarea specifics */
+textarea.form-control {
+    min-height: 200px;
+    padding: 12px;
+    border-radius: 8px;
+    resize: vertical;
+    font-size: 15px;
 }
 
 /* ---------- Radio list styling (Chip/Tag style) ---------- */
@@ -134,8 +192,7 @@ html { scroll-padding-top: var(--nav-height); }
 }
 
 /* khi radio được check -> thay style của label tương ứng
-   sử dụng selector: input:checked + label hơi khác since inputs are before labels in markup.
-   Do mã HTML của bạn đặt input trước label, ta dùng input:checked + label.
+   selector sử dụng input:checked + label (do input đặt trước label trong markup)
 */
 .radio-list input[type="radio"]:checked + label {
     background: #A70014; /* màu chủ đạo đỏ rượu */
@@ -145,19 +202,7 @@ html { scroll-padding-top: var(--nav-height); }
     transform: none;
 }
 
-/* nếu muốn nhấn label cũng chọn radio: HTML đã có for/id mapping */
-
-/* Textarea */
-textarea.form-control {
-    min-height: 200px;
-    padding: 12px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    resize: vertical;
-    font-size: 15px;
-}
-
-/* Agreement box */
+/* ---------- Agreement box ---------- */
 .agreement {
     margin-top: 24px;
     padding: 16px;
@@ -191,9 +236,12 @@ textarea.form-control {
     font-size: 15px;
     font-weight: 600;
     cursor: pointer;
+    transition: transform .12s ease, box-shadow .12s ease;
 }
 .btn-submit:hover {
     background: #a00000;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 26px rgba(160,0,20,0.18);
 }
 
 /* ---------- Alerts ---------- */
@@ -213,12 +261,19 @@ footer {
 }
 
 /* Responsive */
-@media (max-width: 980px) {
-    .form-row { flex-direction: column; gap: 12px; }
-    .contact-container { padding: 24px; margin: 0 18px; }
+/* Khi màn hẹp, stack 1 cột */
+@media (max-width: 900px) {
+    .form-row {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    .contact-container {
+        padding: 22px;
+        margin: 0 16px;
+    }
+    .contact-banner h1 { font-size: 30px; }
 }
 @media (max-width: 480px) {
-    .contact-banner h1 { font-size: 28px; }
     textarea.form-control { min-height: 160px; }
     .radio-list label { padding: 8px 12px; font-size: 13px; }
 }

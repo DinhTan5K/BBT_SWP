@@ -1,13 +1,35 @@
-public class Branch
-{
-    public int BranchID { get; set; }  // đổi từ Id cho chuẩn
-    public string? Name { get; set; }
-    public string? Address { get; set; }
-    public string? Phone { get; set; }
-    public string? Region { get; set; }
-    public string? City { get; set; }
-    public double Latitude { get; set; }
-    public double Longitude { get; set; }
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
-    public ICollection<Order>? Orders { get; set; }
+namespace start.Models
+{
+    [Table("Branch")]
+    public class Branch
+    {
+        [Key]
+        public int Id { get; set; }
+
+        [Required, StringLength(255)]
+        public string Name { get; set; } = string.Empty;
+
+        [StringLength(255)]
+        public string Address { get; set; } = string.Empty;
+
+        [StringLength(20)]
+        public string? Phone { get; set; }
+
+        public int RegionID { get; set; }   // FK
+
+        [StringLength(100)]
+        public string? City { get; set; }
+
+        public decimal? Latitude { get; set; }
+        public decimal? Longitude { get; set; }
+
+        // Navigation
+        public Region? Region { get; set; }
+
+        public ICollection<Order>? Orders { get; set; }
+    }
 }
+
