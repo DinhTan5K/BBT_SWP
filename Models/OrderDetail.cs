@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using start.Models;
 
@@ -13,7 +14,7 @@ public class OrderDetail
     public ProductSize? ProductSize { get; set; }
     public int Quantity { get; set; }
     [Column(TypeName = "decimal(18,2)")]
-
     public decimal Total { get; set; }
+    [Column(TypeName = "decimal(18,2)")]
     public decimal UnitPrice { get; set; }
 }

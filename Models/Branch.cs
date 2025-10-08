@@ -8,8 +8,8 @@ using start.Models;
 public class Branch
 {
     [Key]
-    [Column("Id")]  
-    public int Id { get; set; }
+    [Column("BranchID")]  
+    public int BranchID { get; set; }
 
     [Required]
     [StringLength(255)]
@@ -21,7 +21,7 @@ public class Branch
     [StringLength(20)]
     public string? Phone { get; set; }
 
-    public int Region { get; set; }
+    public int RegionID { get; set; }
 
     [StringLength(100)]
     public string? City { get; set; }

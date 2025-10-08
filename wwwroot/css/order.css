@@ -468,7 +468,7 @@ h5 {
 }
 
 /* Payment method radios - scoped to delivery form */
-#deliveryForm .form-check {
+ .form-check {
     background: #fff;
     border: 1px solid var(--tea-light);
     border-radius: 12px;
@@ -477,26 +477,26 @@ h5 {
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-#deliveryForm .form-check:hover {
+.form-check:hover {
     border-color: var(--mt-brand);
     box-shadow: 0 0 0 3px rgba(255, 183, 77, 0.15);
 }
 
-#deliveryForm .form-check-input {
+.form-check-input {
     border-color: var(--tea-medium);
 }
 
-#deliveryForm .form-check-input:focus {
+.form-check-input:focus {
     box-shadow: 0 0 0 3px rgba(255, 183, 77, 0.25);
     border-color: var(--mt-brand);
 }
 
-#deliveryForm .form-check-input:checked {
+ .form-check-input:checked {
     background-color: var(--mt-brand);
     border-color: var(--mt-brand);
 }
 
-#deliveryForm .form-check-label {
+.form-check-label {
     color: var(--mt-text);
 }
 

@@ -31,8 +31,16 @@ public class OrderController : Controller
     [HttpGet("Confirmed/{id}")]
     public async Task<IActionResult> OrderConfirmed(int id)
     {
+        int? customerId = HttpContext.Session.GetInt32("CustomerID");
+        if (customerId == null)
+        {
+            return RedirectToAction("Login", "Account");
+        }
         var order = await _orderService.GetOrderByIdAsync(id);
         if (order == null)
+            return NotFound();
+
+        if (order.CustomerID != customerId.Value)
             return NotFound();
 
         return View(order);
@@ -47,7 +55,7 @@ public class OrderController : Controller
         if (customerId == null)
         {
             // Nếu chưa login, cho về trang đăng nhập
-            return RedirectToAction("Login", "Home");
+            return RedirectToAction("Login", "Account");
         }
 
         // Lấy giỏ hàng kèm sản phẩm và size
@@ -70,11 +78,26 @@ public class OrderController : Controller
     [HttpPost("CreateOrder")]
     public async Task<IActionResult> CreateOrder([FromForm] OrderFormModel form)
     {
-        var result = await _orderService.CreateOrderAsync(form);
+        int? customerId = HttpContext.Session.GetInt32("CustomerID");
+        if (customerId == null)
+        {
+            return Json(new { success = false, message = "Bạn cần đăng nhập" });
+        }
+
+        var result = await _orderService.CreateOrderAsync(customerId.Value, form);
 
         if (!result.success)
             return Json(new { success = false, message = result.message });
 
         return Json(new { success = true, orderId = result.orderId });
     }
+
+    [HttpPost("ValidatePromoCodes")]
+    [IgnoreAntiforgeryToken]
+    public async Task<IActionResult> ValidatePromoCodes([FromBody] PromoValidationRequest request)
+    {
+        var result = await _orderService.ValidateAndApplyPromoCodesAsync(request);
+        return Json(result);
+    }
+
 }

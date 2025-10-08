@@ -22,6 +22,7 @@ namespace start.Data
         public DbSet<OrderDetail> OrderDetails { get; set; }
         public DbSet<ProductSize> ProductSizes { get; set; }
 
+        public DbSet<Discount> Discounts { get; set; }
 
     }
 }

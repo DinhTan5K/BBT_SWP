@@ -102,6 +102,9 @@ public class AuthService : IAuthService
         if (string.IsNullOrWhiteSpace(model.Password))
             errors["Password"] = "Mật khẩu không được để trống.";
 
+        if (!string.IsNullOrWhiteSpace(model.Password) && model.Password.Length <= 6)
+            errors["Password"] = "Mật khẩu phải dài hơn 6 ký tự.";
+
         if (_context.Customers.Any(c => c.Email.ToLower() == model.Email.ToLower()))
             errors["Email"] = "Email đã tồn tại.";
 
@@ -151,6 +154,13 @@ public class AuthService : IAuthService
             return false;
         }
 
+        // Enforce password length > 6 characters (i.e., at least 7)
+        if (string.IsNullOrWhiteSpace(newPassword) || newPassword.Length <= 6)
+        {
+            error = "Mật khẩu mới phải dài hơn 6 ký tự.";
+            return false;
+        }
+
         user.Password = HashPassword(newPassword);
         _context.SaveChanges();
 
@@ -166,6 +176,13 @@ public class AuthService : IAuthService
         if (user == null)
         {
             error = "Email không tồn tại.";
+            return false;
+        }
+
+        // Enforce password length > 6 characters (i.e., at least 7)
+        if (string.IsNullOrWhiteSpace(newPassword) || newPassword.Length <= 6)
+        {
+            error = "Mật khẩu mới phải dài hơn 6 ký tự.";
             return false;
         }
 

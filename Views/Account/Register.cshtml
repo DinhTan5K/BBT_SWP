@@ -47,7 +47,7 @@
 
             <div class="mb-3 input-group">
                 <span class="input-group-text"><i class="fa-solid fa-lock"></i></span>
-                <input asp-for="Password" type="password" class="form-control" placeholder="Mật khẩu" required />
+                <input asp-for="Password" type="password" class="form-control" placeholder="Mật khẩu" required minlength="7" />
             </div>
             <span class="text-danger small validation-error">@Html.ValidationMessageFor(m => m.Password)</span>
 

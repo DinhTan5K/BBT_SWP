@@ -2,7 +2,53 @@
 @{
     ViewData["Title"] = "Thanh toán";
 }
+
 <link rel="stylesheet" href="/css/order.css" />
+<style>
+    /* Style cho các tag mã giảm giá */
+    .promo-tag {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.35em 0.5em 0.35em 0.75em;
+        font-size: 0.9em;
+        font-weight: 500;
+        line-height: 1;
+        color: #fff;
+        background-color: #198754;
+        border-radius: 0.375rem;
+        animation: fadeIn 0.3s ease;
+        transition: background-color 0.2s;
+    }
+
+    .promo-tag.invalid {
+        background-color: #dc3545;
+    }
+
+    .promo-tag .btn-close {
+        width: 0.5em;
+        height: 0.5em;
+        padding: 0;
+        margin-left: 0.5rem;
+        opacity: 0.7;
+        transition: opacity 0.2s;
+    }
+
+    .promo-tag .btn-close:hover {
+        opacity: 1;
+    }
+
+    @@keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: scale(0.9);
+        }
+
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+</style>
 
 <div class="page-header d-flex align-items-center justify-content-between mb-3">
     <h2 class="mb-0 d-flex align-items-center gap-2">
@@ -29,468 +75,206 @@
         </a>
     </div>
 }
-
 else
 {
-    <div class="container">
-        <!-- Progress Steps -->
-        <div class="checkout-steps mb-4">
-            <div class="step active"><span class="step-index">1</span> Thông tin</div>
-            <div class="step"><span class="step-index">2</span> Thanh toán</div>
-            <div class="step"><span class="step-index">3</span> Hoàn tất</div>
-        </div>
-
-        <div class="row">
-            <!-- Cột trái -->
-            <div class="col-md-8">
-                <!-- Tabs -->
-                <ul class="nav nav-tabs mb-3" id="orderTab">
-                    <li class="nav-item">
-                        <a class="nav-link active d-flex align-items-center gap-2" data-bs-toggle="tab" href="#deliveryTab">
-                            <i class="fa-solid fa-truck"></i>
-                            <span>Giao hàng tận nơi</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link d-flex align-items-center gap-2" data-bs-toggle="tab" href="#pickupTab">
-                            <i class="fa-solid fa-store"></i>
-                            <span>Nhận tại cửa hàng</span>
-                        </a>
-                    </li>
-                </ul>
-
-                <div class="tab-content">
-                    <!-- Tab: Giao hàng tận nơi -->
-                    <div class="tab-pane fade show active" id="deliveryTab">
-                        <form id="deliveryForm" class="p-3 border rounded bg-light shadow-sm">
-                            <input type="hidden" name="BranchID" id="branchIdInput" />
-
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label"><i class="fa-regular fa-user me-1"></i>Họ tên</label>
-                                    <input type="text" name="Name" id="nameInput" class="form-control input-focus"
-                                        required />
-                                    <small id="nameError" class="text-danger d-none"></small>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label"><i class="fa-solid fa-phone me-1"></i>Số điện thoại</label>
-                                    <input type="text" name="Phone" id="phoneInput" class="form-control input-focus"
-                                        required />
-                                    <small id="phoneError" class="text-danger d-none"></small>
-                                </div>
-                            </div>
-
-                            <div class="mb-3">
-                                <label class="form-label"><i class="fa-solid fa-location-dot me-1"></i>Địa chỉ giao
-                                    hàng</label>
-                                <div class="input-group">
-                                    <input type="text" name="Address" id="addressInput" class="form-control input-focus"
-                                        required />
-                                    <button type="button" id="btnLocation"
-                                        class="btn btn-outline-primary d-flex align-items-center gap-2">
-                                        <i class="fa-solid fa-crosshairs"></i>
-                                        <span>Vị trí của tôi</span>
-                                    </button>
-                                </div>
-                                <small id="addressError" class="text-danger d-none"></small>
-                                <div class="nearest-branch-box p-3 rounded mt-2 bg-warning bg-opacity-10 border">
-                                    <label class="form-label fw-bold">Chi nhánh gần nhất</label>
-                                    <input type="text" id="nearestBranchInput" class="form-control near" readonly />
-                                    <small class="text-muted">Hệ thống tự động chọn chi nhánh gần nhất</small>
-                                    <small id="branchWarning" class="text-danger d-block mt-1"
-                                        style="display:none;"></small>
-                                </div>
-                            </div>
-
-                            <div class="mb-3">
-                                <label class="form-label"><i class="fa-regular fa-note-sticky me-1"></i>Ghi chú</label>
-                                <textarea name="Note" class="form-control input-focus" id="detailAddress"
-                                placeholder="Ghi chú địa chỉ chi tiết"></textarea>
-                                <small id="detailError" class="text-danger d-none"></small>
-                            </div>
-
-                            <div class="mb-3">
-                                <label class="form-label"><i class="fa-regular fa-credit-card me-1"></i>Phương thức thanh
-                                    toán</label><br />
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="Payment" value="COD">
-                                    <label class="form-check-label">Thanh toán khi nhận hàng</label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="Payment" value="Momo">
-                                    <label class="form-check-label">Thanh toán qua Momo</label>
-                                </div>
-                                <small id="paymentError" class="text-danger d-none"></small>
-                            </div>
-                        </form>
-                    </div>
-
-                    <!-- Tab: Nhận tại cửa hàng -->
-                    <div class="tab-pane fade" id="pickupTab">
-                        <form id="pickupForm" class="p-3 border rounded bg-light shadow-sm">
-                            <div class="mb-3">
-                                <label class="form-label"><i class="fa-solid fa-store me-1"></i>Chọn cửa hàng</label>
-                                <select id="branchSelect" name="BranchID" class="form-select input-focus" required>
-                                    <option value="">-- Chọn chi nhánh --</option>
-                                </select>
-                            </div>
-
-                            <div class="mb-3">
-                                <label class="form-label"><i class="fa-regular fa-user me-1"></i>Họ tên</label>
-                                <input type="text" name="Name" id="pickupName" class="form-control input-focus" required />
-                                <small id="pickupNameError" class="text-danger d-none"></small>
-                            </div>
-
-                            <div class="mb-3">
-                                <label class="form-label"><i class="fa-solid fa-phone me-1"></i>Số điện thoại</label>
-                                <input type="text" name="Phone" id="pickupPhone" class="form-control input-focus" required />
-                                <small id="pickupPhoneError" class="text-danger d-none"></small>
-                            </div>
-                        </form>
-                    </div>
-                </div>
+    <form id="checkoutForm" onsubmit="return false;">
+        @Html.AntiForgeryToken()
+        <div class="container">
+            <div class="checkout-steps mb-4">
+                <div class="step active"><span class="step-index">1</span> Thông tin</div>
+                <div class="step"><span class="step-index">2</span> Thanh toán</div>
+                <div class="step"><span class="step-index">3</span> Hoàn tất</div>
             </div>
 
-            <!-- Cột phải: Thông tin đơn hàng -->
-            <div class="col-md-4">
-                <div class="order-summary shadow-lg p-3 rounded sticky-md-top" style="top: 88px;">
-                    <h5 class="cart-title mb-3">Thông tin đơn hàng</h5>
-
-                    <ul class="cart-list">
-                        @foreach (var item in Model.CartDetails)
-                        {
-                            <li class="cart-item d-flex align-items-center mb-3">
-                                <div class="position-relative cart-img me-2">
-                                    <img src="@item.Product?.Image_Url" alt="@item.Product?.ProductName" />
-                                    <span class="qty-badge">@item.Quantity</span>
-                                </div>
-                                <div class="cart-info flex-fill">
-                                    <b>@item.Product?.ProductName</b>
-                                    <small class="text-muted d-block">
-                                        Size: @item.ProductSize?.Size
-                                    </small>
-                                </div>
-                                <div class="cart-price text-end fw-bold">
-                                    @item.Total.ToString("#,0") đ
-                                </div>
-                            </li>
-                        }
+            <div class="row">
+                <div class="col-md-8">
+                    <ul class="nav nav-tabs mb-3" id="orderTab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link active d-flex align-items-center gap-2" id="delivery-tab-link"
+                                data-bs-toggle="tab" href="#deliveryTab" role="tab" aria-controls="deliveryTab"
+                                aria-selected="true">
+                                <i class="fa-solid fa-truck"></i>
+                                <span>Giao hàng tận nơi</span>
+                            </a>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link d-flex align-items-center gap-2" id="pickup-tab-link" data-bs-toggle="tab"
+                                href="#pickupTab" role="tab" aria-controls="pickupTab" aria-selected="false">
+                                <i class="fa-solid fa-store"></i>
+                                <span>Nhận tại cửa hàng</span>
+                            </a>
+                        </li>
                     </ul>
 
-                    <!-- Khuyến mãi -->
-                    <div class="promo-code mt-3">
-                        <label for="promoCode" class="form-label">Mã khuyến mãi</label>
-                        <div class="input-group">
-                            <input type="text" id="promoCode" class="form-control" placeholder="Nhập mã" />
-                            <button type="button" id="btnApplyPromo" class="btn btn-outline-success"><i
-                                    class="fa-solid fa-badge-percent me-1"></i>Áp dụng</button>
+                    <div class="tab-content">
+                        <div class="tab-pane fade show active" id="deliveryTab" role="tabpanel"
+                            aria-labelledby="delivery-tab-link">
+                            <div class="p-3 border rounded bg-light shadow-sm">
+                                <input type="hidden" name="BranchID" id="branchIdInput" />
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label"><i class="fa-regular fa-user me-1"></i>Họ tên</label>
+                                        <input type="text" name="Name" id="nameInput" class="form-control input-focus"
+                                            required />
+                                        <small id="nameError" class="text-danger d-none"></small>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label"><i class="fa-solid fa-phone me-1"></i>Số điện
+                                            thoại</label>
+                                        <input type="text" name="Phone" id="phoneInput" class="form-control input-focus"
+                                            required />
+                                        <small id="phoneError" class="text-danger d-none"></small>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label"><i class="fa-solid fa-location-dot me-1"></i>Địa chỉ giao
+                                        hàng</label>
+                                    <div class="card shadow-sm border-0 p-4 rounded-4">
+                                        <div class="input-group mb-3">
+                                            <input type="text" name="Address" id="addressInput"
+                                                class="form-control input-focus" placeholder="Nhập địa chỉ của bạn...">
+                                            <button type="button" id="btnLocation"
+                                                class="btn btn-outline-primary d-flex align-items-center gap-2">
+                                                <i class="fa-solid fa-crosshairs"></i>
+                                                <span>Vị trí</span>
+                                            </button>
+                                        </div>
+                                        <small id="addressError" class="text-danger d-none"></small>
+                                        <div class="form-floating mb-2">
+                                            <textarea name="DetailAddress" class="form-control input-focus"
+                                            id="detailAddress" style="height: 100px"></textarea>
+                                            <label for="detailAddress">Ghi chú địa chỉ (số nhà, tên đường...)</label>
+                                            <small id="detailError" class="text-danger d-none"></small>
+                                        </div>
+                                    </div>
+                                    <div class="nearest-branch-box p-3 rounded mt-2 bg-warning bg-opacity-10 border">
+                                        <label class="form-label fw-bold">Chi nhánh gần nhất</label>
+                                        <input type="text" id="nearestBranchInput" class="form-control near" readonly />
+                                        <small id="branchWarning" class="text-danger d-block mt-1 d-none"></small>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label"><i class="fa-regular fa-note-sticky me-1"></i>Ghi chú</label>
+                                    <textarea name="Note" class="form-control input-focus" id="orderNoteDelivery"
+                                    placeholder="Ghi chú cho đơn hàng..."></textarea>
+                                </div>
+                            </div>
                         </div>
-                        <div id="promoMessage" class="mt-2 small text-success d-none"></div>
+                        <div class="tab-pane fade" id="pickupTab" role="tabpanel" aria-labelledby="pickup-tab-link">
+                            <div class="p-3 border rounded bg-light shadow-sm">
+                                <div class="mb-3">
+                                    <label class="form-label"><i class="fa-solid fa-store me-1"></i>Chọn cửa hàng</label>
+                                    <select id="branchSelect" name="BranchID_Pickup" class="form-select input-focus">
+                                        <option value="">-- Chọn chi nhánh --</option>
+                                    </select>
+                                    <small id="pickupBranchError" class="text-danger d-none"></small>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label"><i class="fa-regular fa-user me-1"></i>Họ tên</label>
+                                    <input type="text" name="Name_Pickup" id="pickupNameInput"
+                                        class="form-control input-focus" />
+                                    <small id="pickupNameError" class="text-danger d-none"></small>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label"><i class="fa-solid fa-phone me-1"></i>Số điện thoại</label>
+                                    <input type="text" name="Phone_Pickup" id="pickupPhoneInput"
+                                        class="form-control input-focus" />
+                                    <small id="pickupPhoneError" class="text-danger d-none"></small>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label"><i class="fa-regular fa-note-sticky me-1"></i>Ghi chú</label>
+                                    <textarea name="Note" class="form-control input-focus" id="orderNotePickup"
+                                    placeholder="Ghi chú cho đơn hàng..."></textarea>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-
-
-                    <div class="cart-fee d-flex justify-content-between align-items-center mt-2">
-                        <span class="text-muted">Phí vận chuyển</span>
-                        <span id="shippingFee">0 đ</span>
+                    <div class="mt-3 p-3 border rounded bg-light shadow-sm">
+                        <label class="form-label fw-bold"><i class="fa-regular fa-credit-card me-1"></i>Phương thức thanh
+                            toán</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="Payment" id="paymentCOD" value="COD">
+                            <label class="form-check-label" for="paymentCOD">Thanh toán khi nhận hàng (COD)</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="Payment" id="paymentMomo" value="Momo">
+                            <label class="form-check-label" for="paymentMomo">Thanh toán qua ví MoMo</label>
+                        </div>
                     </div>
+                </div>
 
-                    <div class="divider my-2"></div>
+                <div class="col-md-4">
+                    <div class="order-summary shadow-lg p-3 rounded sticky-md-top" style="top: 88px;">
+                        <h5 class="cart-title mb-3">Thông tin đơn hàng</h5>
+                        <ul class="cart-list">
+                            @foreach (var item in Model.CartDetails)
+                            {
+                                <li class="cart-item d-flex align-items-center mb-3">
+                                    <div class="position-relative cart-img me-2">
+                                        <img src="@item.Product?.Image_Url" alt="@item.Product?.ProductName" />
+                                        <span class="qty-badge">@item.Quantity</span>
+                                    </div>
+                                    <div class="cart-info flex-fill">
+                                        <b>@item.Product?.ProductName</b>
+                                        <small class="text-muted d-block">Size: @item.ProductSize?.Size</small>
+                                    </div>
+                                    <div class="cart-price text-end fw-bold">@item.Total.ToString("#,0") đ</div>
+                                </li>
+                            }
+                        </ul>
 
-                    <div class="cart-total d-flex justify-content-between fw-bold">
-                        <span>Tổng cộng</span>
-                        <span id="grandTotal" data-items-total="@Model.CartDetails.Sum(cd => cd.Total)">
-                            @Model.CartDetails.Sum(cd => cd.Total).ToString("#,0") đ
-                        </span>
+                        <div class="promo-section mt-3">
+                            <label for="promoCodeInput" class="form-label">Mã khuyến mãi</label>
+                            <div class="input-group">
+                                <input type="text" id="promoCodeInput" class="form-control"
+                                    placeholder="Nhập mã & nhấn Áp dụng" />
+                                <button type="button" id="btnApplyPromo" class="btn btn-outline-success">
+                                    <span class="spinner-border spinner-border-sm d-none me-1" role="status"
+                                        aria-hidden="true"></span>
+                                    Áp dụng
+                                </button>
+                            </div>
+                            <div id="promoMessage" class="mt-2 small"></div>
+                            <div id="appliedCodesContainer" class="mt-2 d-flex flex-wrap gap-2"></div>
+                        </div>
 
+                        <div class="cart-details-summary mt-3">
+                            <div class="d-flex justify-content-between">
+                                <span class="text-muted">Tạm tính</span>
+                                <span id="itemsTotal" data-value="@Model.CartDetails.Sum(cd => cd.Total)">
+                                    @Model.CartDetails.Sum(cd => cd.Total).ToString("#,0") đ
+                                </span>
+                            </div>
+                            <div class="d-flex justify-content-between mt-1">
+                                <span class="text-muted">Phí vận chuyển</span>
+                                <span id="shippingFee" data-value="0">0 đ</span>
+                            </div>
+                            <div id="discountRow" class="d-flex justify-content-between mt-1 text-success fw-bold d-none">
+                                <span class="text-muted">Giảm giá</span>
+                                <span id="discountAmount">0 đ</span>
+                            </div>
+                        </div>
+
+                        <div class="divider my-2"></div>
+
+                        <div class="cart-total d-flex justify-content-between fw-bold">
+                            <span>Tổng cộng</span>
+                            <span id="grandTotal">@Model.CartDetails.Sum(cd => cd.Total).ToString("#,0") đ</span>
+                        </div>
+
+                        <button type="button" id="btnSubmitOrder" class="btn-place-order mt-3">
+                            <span class="spinner-border spinner-border-sm d-none me-1" role="status"
+                                aria-hidden="true"></span>
+                            ĐẶT HÀNG
+                        </button>
+                         <a asp-controller="Product" asp-action="Product" class="btn-continue">⬅ Tiếp tục mua hàng</a>
                     </div>
-
-                    <button id="btnSubmitOrder" class="btn-place-order mt-3">ĐẶT HÀNG</button>
-                    <a asp-controller="Product" asp-action="Product" class="btn-continue">⬅ Tiếp tục mua hàng</a>
                 </div>
             </div>
         </div>
-    </div>
+    </form>
 }
 
 @section Scripts {
-    <script>
-        let userPos = null;
-        let branches = [];
-        const shippingRate = 5000;
-
-        const productTotal = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.CartDetails.Sum(cd => cd.Total)));
-
-
-        // ===== Load danh sách chi nhánh =====
-        async function loadBranches() {
-            try {
-                const res = await fetch('/Branch/GetAll');
-                const data = await res.json();
-                branches = data;
-                // Fill dropdown cho tab pickup
-                const branchSelect = document.getElementById("branchSelect");
-                branchSelect.innerHTML = '<option value="">-- Chọn chi nhánh --</option>';
-                data.forEach(b => {
-                    branchSelect.innerHTML += `<option value="${b.branchID}">${b.name} - ${b.address}</option>`;
-                });
-            } catch (e) { console.error("Load branches error:", e); }
-        }
-        loadBranches();
-
-        // ===== Button vị trí của tôi =====
-        document.getElementById("btnLocation").addEventListener("click", () => {
-            if (!navigator.geolocation) return alert("Trình duyệt không hỗ trợ định vị.");
-
-            navigator.geolocation.getCurrentPosition(async pos => {
-                userPos = { lat: pos.coords.latitude, lon: pos.coords.longitude };
-
-                try {
-                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${userPos.lat}&lon=${userPos.lon}&zoom=18&addressdetails=1`);
-                    const data = await res.json();
-                    const addr = data?.display_name || `${userPos.lat}, ${userPos.lon}`;
-                    document.getElementById("addressInput").value = addr;
-                } catch (e) { console.error("Reverse geocode error:", e); }
-
-                if (branches.length) {
-                    branches.forEach(b => {
-                        b.distance = calcDistance(userPos.lat, userPos.lon, b.latitude, b.longitude);
-                    });
-                    branches.sort((a, b) => a.distance - b.distance);
-                    const nearest = branches[0];
-                    document.getElementById("branchIdInput").value = nearest.branchID;
-
-                    // Show nearest branch info
-                    document.getElementById("nearestBranchInput").value =
-                        `${nearest.name} - ${nearest.address} - ${nearest.distance.toFixed(2)} km`;
-
-                    // Warning check
-                    const warningEl = document.getElementById("branchWarning");
-                    if (nearest.distance > 12) {
-                        warningEl.textContent = "Khoảng cách tới chi nhánh gần nhất quá xa (> 12 km). Vui lòng chọn Nhận tại cửa hàng.";
-                        warningEl.style.display = "block";
-                        document.getElementById("btnSubmitOrder").disabled = true;
-                    } else {
-                        warningEl.style.display = "none";
-                        document.getElementById("btnSubmitOrder").disabled = false;
-                    }
-                    // ===== TÍNH PHÍ SHIP =====
-                    const fee = Math.round(nearest.distance * shippingRate);
-                    document.getElementById("shippingFee").innerText = fee.toLocaleString() + " đ";
-
-                    const grand = productTotal + fee;
-                    document.getElementById("grandTotal").innerText = grand.toLocaleString() + " đ";
-                }
-            }, err => alert("❌ Không thể lấy vị trí: " + err.message));
-        });
-
-        // ===== Tính khoảng cách Haversine =====
-        function calcDistance(lat1, lon1, lat2, lon2) {
-            const R = 6371;
-            const dLat = (lat2 - lat1) * Math.PI / 180;
-            const dLon = (lon2 - lon1) * Math.PI / 180;
-            const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) *
-                Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
-            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        }
-
-       
-
-            let form;
- // ===== Submit Order =====
-        document.getElementById("btnSubmitOrder").addEventListener("click", async () => {
-
-            ["nameError", "phoneError", "addressError", "paymentError", "detailError","pickupNameError","pickupPhoneError"].forEach(id => {
-                const el = document.getElementById(id);
-                if (el) el.classList.add("d-none");
-            });
-
-            const isDelivery = document.querySelector("#deliveryTab").classList.contains("active");
-            let valid = true;
-
-            if (isDelivery) {
-                // validate form Giao hàng
-                const name = document.getElementById("nameInput").value.trim();
-                const phone = document.getElementById("phoneInput").value.trim();
-                const address = document.getElementById("addressInput").value.trim();
-                const detail = document.getElementById("detailAddress").value.trim();
-                const payment = document.querySelector("input[name='Payment']:checked");
-
-                if (!name) {
-                    document.getElementById("nameError").textContent = "Vui lòng nhập họ tên.";
-                    document.getElementById("nameError").classList.remove("d-none");
-                    valid = false;
-                }
-
-                if (!/^[0-9]{9,11}$/.test(phone)) {
-                    document.getElementById("phoneError").textContent = "Số điện thoại không hợp lệ.";
-                    document.getElementById("phoneError").classList.remove("d-none");
-                    valid = false;
-                }
-
-                if (!address) {
-                    document.getElementById("addressError").textContent = "Vui lòng nhập địa chỉ giao hàng.";
-                    document.getElementById("addressError").classList.remove("d-none");
-                    valid = false;
-                }
-
-                if (!detail) {
-                    document.getElementById("detailError").textContent = "Vui lòng nhập chi tiết địa chỉ giao hàng.";
-                    document.getElementById("detailError").classList.remove("d-none");
-                    valid = false;
-                }
-                if (!payment) {
-                    document.getElementById("paymentError").textContent = "Vui lòng chọn phương thức thanh toán.";
-                    document.getElementById("paymentError").classList.remove("d-none");
-                    valid = false;
-                }
-            } else {
-                // validate form Nhận tại cửa hàng
-                const name = document.getElementById("pickupName").value.trim();
-                const phone = document.getElementById("pickupPhone").value.trim();
-
-                if (!name) {
-                    document.getElementById("pickupNameError").textContent = "Vui lòng nhập họ tên.";
-                    document.getElementById("pickupNameError").classList.remove("d-none");
-                    valid = false;
-                }
-
-                if (!/^[0-9]{9,11}$/.test(phone)) {
-                    document.getElementById("pickupPhoneError").textContent = "Số điện thoại không hợp lệ.";
-                    document.getElementById("pickupPhoneError").classList.remove("d-none");
-                    valid = false;
-                }
-            }
-
-            if (!valid) return;
-            // Xác định form nào đang active
-            if (document.querySelector("#deliveryTab").classList.contains("active")) {
-
-                // Nếu đang chọn giao hàng mà branch > 12km thì chặn
-                const nearestBranchText = document.getElementById("nearestBranchInput").value;
-                if (nearestBranchText.includes("km")) {
-                    const km = parseFloat(nearestBranchText.split("km")[0].split("-").pop());
-                    if (km > 12) {
-                        alert("Không thể giao hàng vì khoảng cách quá xa (> 12km). Hãy chọn Nhận tại cửa hàng.");
-                        return;
-                    }
-                }
-                form = document.getElementById("deliveryForm");
-            } else {
-                form = document.getElementById("pickupForm");
-            }
-
-            let formData = new FormData(form);
-
-            try {
-                const res = await fetch('/Order/CreateOrder', {
-                    method: 'POST',
-                    body: formData
-                });
-
-                if (!res.ok) {
-                    throw new Error("Server error: " + res.status);
-                }
-
-                const data = await res.json();
-
-                if (data.success) {
-                    // ✅ Redirect sang trang OrderConfirmed kèm OrderID
-                    window.location.href = `/Order/Confirmed/${data.orderId}`;
-                } else {
-                    alert("❌ " + data.message);
-                }
-            } catch (err) {
-                console.error("Order error:", err);
-                alert("❌ Đặt hàng thất bại, vui lòng thử lại.");
-            }
-        });
-
-    </script>
-
-    <script>
-        function setStep(stepIndex) {
-            const steps = document.querySelectorAll(".checkout-steps .step");
-            steps.forEach((s, i) => {
-                s.classList.toggle("active", i === stepIndex);
-            });
-        }
-
-        // ===== Validate và nhảy Step =====
-        function checkAndGoStep2(form) {
-            if (form.checkValidity()) {
-                const paymentSelected = form.querySelector("input[name='Payment']:checked");
-                if (paymentSelected) {
-                    setStep(1); // Step 2: Chọn thanh toán
-                }
-            }
-        }
-
-        // ====== Input blur ======
-        document.querySelectorAll("#deliveryForm input, #pickupForm input").forEach(inp => {
-            inp.addEventListener("blur", () => {
-                const form = inp.closest("form");
-                checkAndGoStep2(form);
-            });
-        });
-
-        // ====== Radio Payment Change ======
-        document.querySelectorAll("input[name='Payment']").forEach(radio => {
-            radio.addEventListener("change", () => {
-                const form = radio.closest("form");
-                checkAndGoStep2(form);
-            });
-        });
-
-        // ====== Ép check khi page load (COD mặc định) ======
-        window.addEventListener("DOMContentLoaded", () => {
-            const form = document.getElementById("deliveryForm");
-            checkAndGoStep2(form);
-        });
-
-        // ====== Promo Code Logic ======
-        document.addEventListener("DOMContentLoaded", () => {
-            const grandTotalEl = document.getElementById("grandTotal");
-            const shippingEl = document.getElementById("shippingFee");
-            const promoInput = document.getElementById("promoCode");
-            const promoMsg = document.getElementById("promoMessage");
-            const btnApplyPromo = document.getElementById("btnApplyPromo");
-
-            const originalItemsTotal = parseInt(grandTotalEl.dataset.itemsTotal) || 0;
-
-            function parseVND(str) {
-                if (!str) return 0;
-                return parseInt(str.replace(/[^\d]/g, "")) || 0;
-            }
-
-            function updateGrandTotal(discountPercent = 0) {
-                const shippingFee = parseVND(shippingEl.innerText);
-                let total = originalItemsTotal + shippingFee;
-                if (discountPercent > 0) total = Math.round(total * (1 - discountPercent / 100));
-                grandTotalEl.innerText = total.toLocaleString("vi-VN") + " đ";
-            }
-
-            updateGrandTotal();
-
-            btnApplyPromo.addEventListener("click", () => {
-                const code = promoInput.value.trim().toUpperCase();
-
-                if (code === "SALE10") {
-                    updateGrandTotal(10);
-                    promoMsg.classList.remove("d-none", "text-danger");
-                    promoMsg.classList.add("text-success");
-                    promoMsg.innerText = "✅ Giảm 10% đã áp dụng";
-                } else if (code === "") {
-                    updateGrandTotal();
-                    promoMsg.classList.add("d-none");
-                } else {
-                    updateGrandTotal();
-                    promoMsg.classList.remove("d-none", "text-success");
-                    promoMsg.classList.add("text-danger");
-                    promoMsg.innerText = "❌ Mã không hợp lệ";
-                }
-            });
-        });
-
-    </script>
-
+    <script src="/js/order.js" ></script>
 }

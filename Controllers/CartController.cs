@@ -8,8 +8,8 @@ public class CartController : Controller
     {
         _cartService = cartService;
     }
-#region Items
-    
+    #region Items
+
 
     [HttpGet]
     public IActionResult Items()
@@ -23,14 +23,14 @@ public class CartController : Controller
     }
     #endregion
 
-#region Add
+    #region Add
 
     [HttpPost]
     public IActionResult Add([FromBody] AddToCartRequest request)
     {
         int? customerId = HttpContext.Session.GetInt32("CustomerID");
         if (customerId == null)
-            return Json(new { success = false, message = "Bạn chưa đăng nhập" });
+            return Json(new { success = false, redirectUrl = Url.Action("Login", "Account")  });
 
         if (_cartService.AddToCart(customerId.Value, request, out string message))
             return Json(new { success = true });
@@ -40,8 +40,8 @@ public class CartController : Controller
     #endregion
 
 
-#region Update
-    
+    #region Update
+
 
     [HttpPost]
     public IActionResult Update([FromBody] UpdateCartRequest request)
@@ -55,5 +55,23 @@ public class CartController : Controller
 
         return Json(new { success = false, message });
     }
+
+    #endregion
+    
+    #region CheckCart
+    [HttpGet]
+    public IActionResult CheckCart()
+    {
+        int? customerId = HttpContext.Session.GetInt32("CustomerID");
+        if (customerId == null)
+            return Json(new { hasItems = false, message = "Bạn chưa đăng nhập" });
+
+        var items = _cartService.GetCartItems(customerId.Value);
+        bool hasItems = items != null && items.Any();
+
+        return Json(new { hasItems });
+    }
+    #endregion
+
+
 }
-#endregion

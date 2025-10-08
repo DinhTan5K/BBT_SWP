@@ -20,6 +20,15 @@ namespace start.Models
         public string? OrderCode { get; set; }
 
         public string? Status { get; set; } = "Chờ xác nhận";
+        public string? Address { get; set; }
+        public string? DetailAddress { get; set; }
+        public string? NoteOrder { get; set; }
+        public string? ReceiverName { get; set; }
+        public string? ReceiverPhone { get; set; }
+        public string? PaymentMethod { get; set; }
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal ShippingFee { get; set; }
+        public string? PromoCode { get; set; }
         [Column(TypeName = "decimal(18,2)")]
         public decimal Total { get; set; }
         public ICollection<OrderDetail>? OrderDetails

@@ -14,6 +14,11 @@ builder.Services.AddScoped<IProfileService, ProfileService>();
 builder.Services.AddScoped<ICartService, CartService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
+builder.Services.Configure<start.Models.Configurations.EmailSettings>(
+    builder.Configuration.GetSection("EmailSettings")
+);
+
+
 
 
 builder.Logging.ClearProviders();
@@ -100,6 +105,8 @@ if (!app.Environment.IsDevelopment())
 
 app.UseRouting();
 app.UseSession();
+
+app.UseAntiforgery();
 app.UseAuthentication();
 
 app.UseAuthorization();
