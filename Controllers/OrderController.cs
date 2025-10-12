@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using start.Models;
 using start.Data;
+using System.Security.Claims;
 
 [Route("Order")]
 public class OrderController : Controller
@@ -98,6 +99,71 @@ public class OrderController : Controller
     {
         var result = await _orderService.ValidateAndApplyPromoCodesAsync(request);
         return Json(result);
+    }
+
+     [HttpGet("OrderHistory")]
+    public async Task<IActionResult> OrderHistory()
+    {
+        // === BƯỚC 1: LẤY DỮ LIỆU TỪ DATABASE ===
+
+        // Lấy ID của khách hàng đang đăng nhập.
+        // Cách lấy ID có thể khác nhau tùy theo cách bạn cài đặt authentication.
+        // Đây là một cách phổ biến với ASP.NET Core Identity.
+         int? customerId = HttpContext.Session.GetInt32("CustomerID");
+
+        if (customerId == null)
+        {
+            // Nếu chưa login, cho về trang đăng nhập
+            return RedirectToAction("Login", "Account");
+        }
+
+        // Truy vấn tất cả các đơn hàng của khách hàng đó.
+        // Dùng Include và ThenInclude để lấy tất cả dữ liệu liên quan trong 1 lần gọi DB -> Tối ưu hiệu năng.
+        // Sắp xếp theo ngày tạo mới nhất lên đầu.
+        var customerOrders = await _context.Orders
+            .Where(o => o.CustomerID == customerId)
+            .Include(o => o.OrderDetails) // Lấy danh sách các OrderDetail
+                .ThenInclude(od => od.Product) // Trong mỗi OrderDetail, lấy thông tin Product
+            .Include(o => o.OrderDetails) // Lấy danh sách các OrderDetail một lần nữa
+                .ThenInclude(od => od.ProductSize) // Trong mỗi OrderDetail, lấy thông tin ProductSize
+            .OrderByDescending(o => o.CreatedAt)
+            .ToListAsync();
+
+
+        // === BƯỚC 2: CHUYỂN ĐỔI (MAP) SANG VIEWMODEL ===
+        // Đây là lúc "chế biến" dữ liệu thô thành "món ăn" đẹp đẽ cho View.
+
+        var orderHistoryViewModel = new OrderHistoryViewModel
+        {
+            Orders = customerOrders.Select(order => new OrderSummaryViewModel
+            {
+                OrderID = order.OrderID,
+                OrderCode = order.OrderCode,
+                CreatedAt = order.CreatedAt,
+                Total = order.Total,
+                Status = order.Status,
+                ReceiverName = order.ReceiverName,
+                ReceiverPhone = order.ReceiverPhone,
+                Address = order.Address,
+                DetailAddress = order.DetailAddress,
+                NoteOrder = order.NoteOrder,
+
+                // Map danh sách các sản phẩm chi tiết
+                OrderDetails = order.OrderDetails.Select(detail => new OrderDetailItemViewModel
+                {
+                    ProductName = detail.Product.ProductName, // Giả sử Product có thuộc tính Name
+                    ProductImageUrl = detail.Product.Image_Url, // Giả sử Product có thuộc tính ImageUrl
+                    SizeName = detail.ProductSize.Size, // Giả sử ProductSize có thuộc tính Name
+                    Quantity = detail.Quantity,
+                    UnitPrice = detail.UnitPrice,
+                    Total = detail.Total
+                }).ToList()
+            }).ToList()
+        };
+
+
+        // === BƯỚC 3: TRẢ VIEWMODEL VỀ CHO VIEW ===
+        return View(orderHistoryViewModel);
     }
 
 }

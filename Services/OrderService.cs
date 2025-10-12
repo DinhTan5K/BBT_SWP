@@ -489,7 +489,6 @@ public class OrderService : IOrderService
             {
                 o.OrderID,
                 o.CustomerID,
-                o.BranchID,
                 o.CreatedAt,
                 o.OrderCode,
                 o.Status,
@@ -497,7 +496,11 @@ public class OrderService : IOrderService
                 o.DetailAddress,
                 o.NoteOrder,
                 o.ShippingFee,
-                o.PromoCode
+                o.PromoCode,
+                o.Address,
+                o.ReceiverName,
+                o.ReceiverPhone,
+                o.PaymentMethod
             })
             .FirstOrDefaultAsync();
     }

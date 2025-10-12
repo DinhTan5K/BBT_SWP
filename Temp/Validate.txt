@@ -1,6 +1,10 @@
- [HttpPost("ValidatePromoCodes")]
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using start.Models;
+
+[HttpPost("ValidatePromoCodes")]
     [IgnoreAntiforgeryToken]
-    public async Task<IActionResult> ValidatePromoCodes([FromBody] PromoValidationRequest request)
+     async Task<IActionResult> ValidatePromoCodes([FromBody] PromoValidationRequest request)
     {
         // Kiểm tra trường hợp không có mã nào được áp dụng
         if (request?.Codes == null || !request.Codes.Any())
@@ -25,8 +29,8 @@
         var now = DateTime.Now;
         var distinctCodes = request.Codes.Distinct().Select(c => c.ToUpper().Trim()).ToList();
 
-        var discountsFromDb = await _context.Discounts
-            .Where(d => distinctCodes.Contains(d.Code))
+        //var discountsFromDb = await DbContext.Discounts
+        //    .Where(d => distinctCodes.Contains(d.Code))
             .ToListAsync();
 
         var validDiscounts = discountsFromDb
@@ -188,4 +192,7 @@
             successfullyAppliedCodes
         });
     }
+}IActionResult Json(object value)
+{
+    throw new NotImplementedException();
 }

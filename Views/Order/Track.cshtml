@@ -3,47 +3,204 @@
 @{
     ViewData["Title"] = "Tra cứu đơn hàng";
 }
+<link rel="stylesheet" href="/css/track.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
 
-<h2>Tra cứu đơn hàng</h2>
+<div class="page-content">
+    <h2>Tra Cứu Đơn Hàng Của Bạn</h2>
+    <p>Nhập mã đơn hàng để xem chi tiết và theo dõi hành trình.</p>
 
-<div style="margin-top: 100px">
-    <label for="orderCode">Nhập Order Code:</label>
-    <input type="text" id="orderCode" placeholder="VD: S1I8S" />
-    <button id="btnTrack">Tra cứu</button>
+    <div class="track-form">
+        <div class="input-wrapper">
+            <input type="text" id="orderCode" placeholder="Ví dụ: DYGLG, XK83Q" />
+        </div>
+        <button id="btnTrack">
+            <span class="button-text">Tra cứu</span>
+        </button>
+    </div>
+</div>
+<div id="result">
 </div>
 
-<div id="result" style="margin-top:20px;"></div>
+<div class="no-result" style="display: none; flex-direction: column; align-items: center; margin-top: 20px;">
+    <i class="fa fa-search" style="font-size: 40px; color: #999; margin-bottom: 10px;"></i>
+    <p>Không tìm thấy đơn hàng nào</p>
+</div>
 
 @section Scripts {
     <script>
-        document.getElementById("btnTrack").addEventListener("click", async () => {
-            const orderCode = document.getElementById("orderCode").value.trim();
+        function formatCurrency(amount) {
+            return parseFloat(amount).toLocaleString("vi-VN", {
+                style: "currency",
+                currency: "VND",
+            });
+        }
+
+        function buildProgressTracker(status) {
+            const steps = ["Chờ xác nhận", "Đã xác nhận", "Đã hủy"];
+            const icons = ["fa-hourglass-half", "fa-check-circle", "fa-times-circle"];
+            let activeIndex = steps.indexOf(status);
+            if (activeIndex === -1) activeIndex = 0;
+
+            let html = '<ul class="progress-tracker">';
+            steps.forEach((step, index) => {
+                const isActive = (status === "Đã hủy") ? (index === 2) : (index <= activeIndex);
+                html += `
+                                        <li class="progress-step ${isActive ? 'active' : ''}">
+                                            <div class="progress-step-icon">
+                                                <i class="fas ${icons[index]}"></i>
+                                            </div>
+                                            <div class="progress-step-label">${step}</div>
+                                        </li>
+                                    `;
+            });
+            html += '</ul>';
+            return html;
+        }
+
+        async function trackOrder() {
+            const orderCodeInput = document.getElementById("orderCode");
+            let orderCode = orderCodeInput.value.trim();
+            const resultDiv = document.getElementById("result");
+            const trackButton = document.getElementById("btnTrack");
+            const buttonText = trackButton.querySelector('.button-text');
+            const noResult = document.querySelector(".no-result");
+
+            resultDiv.innerHTML = "";
+
+            noResult.style.display = "none";
+
             if (!orderCode) {
-                alert("Vui lòng nhập Order Code");
+                resultDiv.innerHTML = `<p class="error-message">Vui lòng nhập mã đơn hàng để tra cứu.</p>`;
+                noResult.style.display = "flex";
                 return;
             }
 
-            const response = await fetch(`/Order/TrackByCode/${orderCode}`);
-            const data = await response.json();
-            console.log(data);
+            if (orderCode.startsWith("#")) {
+                orderCode = orderCode.substring(1);
+            }
 
-            const resultDiv = document.getElementById("result");
-            if (!data.success) {
-                resultDiv.innerHTML = `<span style="color:red;">${data.message}</span>`;
-            } else {
-                const order = data.order;
+            // Loading
+            trackButton.disabled = true;
+            buttonText.textContent = 'Đang tìm...';
+            trackButton.insertAdjacentHTML('afterbegin', '<div class="spinner"></div>');
+            resultDiv.innerHTML = `<div class="loader"></div>`;
 
-                resultDiv.innerHTML = `
-        <p><strong>OrderID:</strong> ${order.orderID}</p>
-        <p><strong>CustomerID:</strong> ${order.customerID}</p>
-        <p><strong>BranchID:</strong> ${order.branchID}</p>
-        <p><strong>CreatedAt:</strong> ${new Date(order.createdAt).toLocaleString()}</p>
-        <p><strong>OrderCode:</strong> ${order.orderCode}</p>
-        <p><strong>Status:</strong> ${order.status}</p>
-        <p><strong>Total:</strong> ${order.total.toLocaleString("vi-VN")}</p>
-    `;
+            try {
+                const response = await fetch(`/Order/TrackByCode/${orderCode}`);
+                const data = await response.json();
+                resultDiv.innerHTML = "";
 
+                if (!data.success) {
+                    noResult.style.display = "flex";
+                } else {
+                    noResult.style.display = "none";
+                    const order = data.order;
+                    const progressTrackerHTML = buildProgressTracker(order.status);
+
+                    const isDelivery = order.address && !order.address.startsWith("Nhận tại:");
+                    const deliveryInfo = isDelivery ? `
+                                            <div class="info-row">
+                                                <i class="fas fa-map-marker-alt"></i>
+                                                <div>
+                                                    <span>Địa chỉ nhận hàng: </span>
+                                                    <p>${order.address}, ${order.detailAddress || ''}</p>
+                                                    <span> Địa chỉ chi tiết: </span>
+                                                     <p>${order.detailAddress}</p>
+                                                </div>
+                                            </div>
+                                            <div class="info-row">
+                                                <i class="fas fa-credit-card"></i>
+                                                <div>
+                                                    <span>Thanh toán</span>
+                                                    <p>${order.paymentMethod || 'Khi nhận hàng (COD)'}</p>
+                                                </div>
+                                            </div>
+                                        ` : `
+                                            <div class="info-row">
+                                                <i class="fas fa-store"></i>
+                                                <div>
+                                                    <p>${order.address}</p>
+                                                </div>
+                                            </div>
+                                        `;
+
+                    resultDiv.innerHTML = `
+                                            <div class="order-card">
+                                                <div class="card-header">
+                                                    <h3>Mã đơn hàng: #${order.orderCode}</h3>
+                                                    <p>Đặt lúc: ${new Date(order.createdAt).toLocaleString("vi-VN")}</p>
+                                                </div>
+                                                ${progressTrackerHTML}
+                                                <div class="info-grid">
+                                                    <div class="info-row">
+                                                        <i class="fas fa-user"></i>
+                                                        <div>
+                                                            <span>Người nhận</span>
+                                                            <p>${order.receiverName}</p>
+                                                        </div>
+                                                    </div>
+                                                    <div class="info-row">
+                                                        <i class="fas fa-phone"></i>
+                                                        <div>
+                                                            <span>Số điện thoại</span>
+                                                            <p>${order.receiverPhone}</p>
+                                                        </div>
+                                                    </div>
+                                                    ${deliveryInfo}
+                                                    <div class="info-row">
+                                                        <i class="fas fa-tag"></i>
+                                                        <div>
+                                                            <span>Khuyến mãi</span>
+                                                            <p>${order.promoCode || 'Không áp dụng'}</p>
+                                                        </div>
+                                                    </div>
+                                                    <div class="info-row">
+                                                        <i class="fas fa-coins"></i>
+                                                        <div>
+                                                            <span>Tổng cộng</span>
+                                                            <p>${formatCurrency(order.total)}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                ${order.noteOrder ? `
+                                                    <div class="info-grid" style="grid-template-columns: 1fr;">
+                                                        <div class="info-row">
+                                                            <i class="fas fa-sticky-note"></i>
+                                                            <div>
+                                                                <span>Ghi chú</span>
+                                                                <p>${order.noteOrder}</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ` : ''}
+                                            </div>
+                                        `;
+                    resultDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            } catch (error) {
+                console.error("Fetch error:", error);
+                noResult.style.display = "flex";
+                resultDiv.innerHTML = `<p class="error-message">Đã xảy ra lỗi khi kết nối đến máy chủ.</p>`;
+                resultDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } finally {
+                trackButton.disabled = false;
+                trackButton.querySelector('.spinner')?.remove();
+                buttonText.textContent = 'Tra cứu';
+            }
+        }
+
+        // --- EVENT LISTENERS ---
+        const trackButton = document.getElementById("btnTrack");
+        const orderCodeInput = document.getElementById("orderCode");
+
+        trackButton.addEventListener("click", trackOrder);
+        orderCodeInput.addEventListener("keydown", (event) => {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                trackOrder();
             }
         });
     </script>
+
 }

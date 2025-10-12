@@ -1,0 +1,72 @@
+/* --- Import Variables & Fonts --- */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+:root {
+    --bg-color: #f4f1ec;
+    --surface-color: #ffffff;
+    --text-color: #3d2c1c;
+    --muted-color: #a38e7c;
+    --brand-color: #b9946a;
+    --brand-dark: #8b5e3c;
+    --success-color: #2e7d32;      /* Hoàn thành */
+    --pending-color: #ed6c02;      /* Chờ xác nhận */
+    --cancelled-color: #d32f2f;   /* Đã hủy */
+    --shadow: 0 5px 20px rgba(139, 94, 60, 0.08);
+    --font-main: 'Inter', sans-serif;
+}
+
+/* --- Main Container & Typography --- */
+body { background-color: var(--bg-color); font-family: var(--font-main)}
+.history-container { max-width: 900px; margin: 100px auto; padding: 20px; }
+.history-container h1 { font-size: 2.5rem; color: var(--text-color); margin-bottom: 8px; }
+.history-container > p { font-size: 1.1rem; color: var(--muted-color); margin-bottom: 40px; }
+
+/* --- Order Card Styling --- */
+.order-card { background-color: var(--surface-color); border-radius: 12px; margin-bottom: 20px; box-shadow: var(--shadow); overflow: hidden; }
+.order-summary { display: flex; align-items: center; padding: 20px 25px; cursor: pointer; transition: background-color 0.2s ease; }
+.order-summary:hover { background-color: #faf8f5; }
+.summary-info { flex-grow: 1; }
+.summary-info h4 { margin: 0 0 4px 0; color: var(--text-color); font-size: 1rem; }
+.summary-info p { margin: 0; color: var(--muted-color); font-size: 0.9rem; }
+.summary-total { text-align: right; margin-right: 30px; }
+.summary-total p { margin: 0 0 4px 0; color: var(--muted-color); font-size: 0.8rem; text-transform: uppercase; }
+.summary-total span { font-weight: 700; font-size: 1.1rem; color: var(--brand-dark); }
+.status-badge { padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 0.8rem; color: #fff; min-width: 110px; text-align: center; }
+.status-badge.status-đã-xác-nhận { background-color: var(--success-color); }
+.status-badge.status-chờ-xác-nhận { background-color: var(--pending-color); }
+.status-badge.status-đã-hủy { background-color: var(--cancelled-color); }
+.toggle-icon { margin-left: 20px; font-size: 1rem; color: var(--muted-color); transition: transform 0.4s ease; }
+
+/* --- Accordion Details Section --- */
+.order-details { max-height: 0; overflow: hidden; transition: max-height 0.5s ease-in-out; }
+.details-content { display: grid; grid-template-columns: 2fr 1fr; gap: 30px; padding: 25px; background-color: #fdfbf9; border-top: 1px solid #f0e9e1; }
+.order-card.active .order-details { max-height: 1500px; /* Set a height large enough to fit content */ }
+.order-card.active .toggle-icon { transform: rotate(180deg); }
+.items-section h5, .shipping-section h5 { font-size: 1.1rem; margin: 0 0 15px 0; padding-bottom: 10px; border-bottom: 1px solid #f0e9e1; }
+
+/* --- Individual Item Styling --- */
+.order-item { display: flex; align-items: center; gap: 15px; padding-bottom: 15px; margin-bottom: 15px; border-bottom: 1px solid #f0e9e1; }
+.items-section .order-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+.item-image { width: 60px; height: 60px; border-radius: 8px; object-fit: cover; }
+.item-info { flex-grow: 1; }
+.item-info h4 { margin: 0 0 4px 0; font-weight: 600; }
+.item-info p { margin: 0; color: var(--muted-color); font-size: 0.9rem; }
+.item-quantity p { margin: 0; font-size: 0.9rem; color: var(--muted-color); }
+.item-price span { font-weight: 600; min-width: 80px; text-align: right; }
+
+/* Shipping Info */
+.shipping-info p { margin: 0 0 8px 0; font-size: 0.9rem; line-height: 1.5; }
+.shipping-info strong { color: var(--text-color); }
+
+/* --- Action Buttons --- */
+.order-actions { text-align: right; padding: 15px 25px; background-color: #fdfbf9; border-top: 1px solid #f0e9e1; }
+.btn-action { background-color: transparent; color: var(--brand-dark); border: 1px solid #e9d6c1; text-decoration: none; display: inline-block; padding: 10px 20px; margin-left: 10px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; }
+.btn-action:hover { background-color: var(--brand-color); border-color: var(--brand-color); color: #fff; }
+.btn-action i { margin-right: 8px; }
+
+/* --- No Orders State --- */
+.no-orders { text-align: center; padding: 80px 20px; background-color: var(--surface-color); border-radius: 12px; }
+.no-orders i { font-size: 4rem; color: var(--brand-color); margin-bottom: 20px; }
+.no-orders h3 { font-size: 1.5rem; }
+.no-orders p { color: var(--muted-color); margin-bottom: 30px; }
+.btn-shop-now { background-color: var(--brand-dark); color: #fff; text-decoration: none; padding: 12px 30px; border-radius: 8px; font-weight: 600; }
