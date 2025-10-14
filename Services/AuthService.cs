@@ -195,6 +195,34 @@ public class AuthService : IAuthService
         return true;
     }
 
+    public bool SetPassword(int userId, string newPassword, out string error)
+    {
+        error = string.Empty;
+
+        var user = _context.Customers.FirstOrDefault(c => c.CustomerID == userId);
+        if (user == null)
+        {
+            error = "User không tồn tại.";
+            return false;
+        }
+
+        if (!string.IsNullOrEmpty(user.Password))
+        {
+            error = "Tài khoản đã có mật khẩu. Vui lòng dùng Đổi mật khẩu.";
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(newPassword) || newPassword.Length <= 6)
+        {
+            error = "Mật khẩu mới phải dài hơn 6 ký tự.";
+            return false;
+        }
+
+        user.Password = HashPassword(newPassword);
+        _context.SaveChanges();
+        return true;
+    }
+
     public bool VerifyEmail(string email, string otp)
     {
         if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(otp))
