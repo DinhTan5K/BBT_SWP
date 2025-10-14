@@ -243,7 +243,7 @@ namespace start.Controllers
 
             if (_authService.ChangePassword(userId.Value, model.CurrentPassword!, model.NewPassword!, out string error))
             {
-                ViewBag.Message = "✅ Đổi mật khẩu thành công!";
+                ViewBag.Message = "Đổi mật khẩu thành công!";
                 return View();
             }
 
@@ -303,7 +303,7 @@ namespace start.Controllers
                 return View(model);
             }
 
-            ViewBag.Message = "✅ Mật khẩu đã được đặt lại thành công!";
+            ViewBag.Message = "Mật khẩu đã được đặt lại thành công!";
             return View();
         }
 

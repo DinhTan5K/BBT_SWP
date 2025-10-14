@@ -1,9 +1,6 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using start.Data;
 using start.Models;
-using start.Services;
 
 
 public class HomeController : Controller
