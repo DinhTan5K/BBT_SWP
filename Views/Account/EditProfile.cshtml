@@ -57,7 +57,14 @@
 
             <div class="button-group">
                 <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
-                <a asp-controller="Account" asp-action="ChangePassword" class="btn btn-primary">Đổi mật khẩu</a>
+                @if (ViewBag.IsGoogleLogin == true)
+                {
+                    <a asp-controller="Account" asp-action="SetPassword" class="btn btn-primary">Đặt mật khẩu</a>
+                }
+                else
+                {
+                    <a asp-controller="Account" asp-action="ChangePassword" class="btn btn-primary">Đổi mật khẩu</a>
+                }
             </div>
 
         </form>

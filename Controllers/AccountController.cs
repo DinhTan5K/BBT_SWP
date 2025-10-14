@@ -198,6 +198,7 @@ namespace start.Controllers
             };
 
             ViewBag.IsGoogleLogin = string.IsNullOrEmpty(user.Password);
+            ViewBag.Message = TempData["SuccessMessage"];
 
             return View(vm);
         }
@@ -245,6 +246,32 @@ namespace start.Controllers
             {
                 ViewBag.Message = "Đổi mật khẩu thành công!";
                 return View();
+            }
+
+            ModelState.AddModelError("", error);
+            return View(model);
+        }
+
+        [HttpGet]
+        public IActionResult SetPassword()
+        {
+            int? userId = HttpContext.Session.GetInt32("CustomerID");
+            if (userId == null) return RedirectToAction("Login");
+
+            return View(new SetPasswordModel());
+        }
+
+        [HttpPost]
+        public IActionResult SetPassword(SetPasswordModel model)
+        {
+            int? userId = HttpContext.Session.GetInt32("CustomerID");
+            if (userId == null) return RedirectToAction("Login");
+            if (!ModelState.IsValid) return View(model);
+
+            if (_authService.SetPassword(userId.Value, model.NewPassword!, out string error))
+            {
+                TempData["SuccessMessage"] = "Đặt mật khẩu thành công!";
+                return RedirectToAction("EditProfile");
             }
 
             ModelState.AddModelError("", error);

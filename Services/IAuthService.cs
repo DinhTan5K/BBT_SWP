@@ -17,6 +17,9 @@ public interface IAuthService
     // Reset mật khẩu
     bool ResetPassword(string email, string newPassword, out string error);
 
+    // Đặt mật khẩu lần đầu (tài khoản Google chưa có password)
+    bool SetPassword(int userId, string newPassword, out string error);
+
     // Xác thực Email bằng OTP
     bool VerifyEmail(string email, string otp);
     Customer HandleGoogleLogin(string email, string name); 
