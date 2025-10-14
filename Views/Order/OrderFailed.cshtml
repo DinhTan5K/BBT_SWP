@@ -1,0 +1,7 @@
+@{
+    ViewData["Title"] = "Thanh toán thất bại";
+}
+<div class="alert alert-danger text-center">
+    <h3>@ViewBag.Message</h3>
+    <a asp-controller="Order" asp-action="Index" class="btn btn-primary mt-3">Thử lại</a>
+</div>
