@@ -12,6 +12,7 @@ public class OrderController : Controller
     private readonly ICheckoutService _checkoutService;
     private readonly ApplicationDbContext _context;
 
+
     public OrderController(IOrderService orderService, IOrderReadService orderReadService, ICheckoutService checkoutService, ApplicationDbContext context)
     {
         _orderService = orderService;
@@ -152,5 +153,20 @@ public class OrderController : Controller
         var result = await _orderService.CancelByCustomerAsync(id, customerId.Value, reason);
         return Json(new { success = result.success, message = result.message, cancelledAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm"), reason });
     }
+
+    #region Reorder
+    [HttpPost("Reorder")]
+    public IActionResult Reorder([FromForm] int orderId)
+    {
+        int? customerId = HttpContext.Session.GetInt32("CustomerID");
+        if (customerId == null)
+            return Json(new { success = false, message = "Bạn chưa đăng nhập" });
+
+        if (_orderService.Reorder(customerId.Value, orderId, out string message))
+            return Json(new { success = true, redirectUrl = Url.Action("Order", "Order") });
+
+        return Json(new { success = false, message });
+    }
+    #endregion
 }
 

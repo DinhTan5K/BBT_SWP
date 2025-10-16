@@ -529,4 +529,71 @@ public class OrderService : IOrderService
         await _context.SaveChangesAsync();
         return (true, "Đã hủy đơn thành công");
     }
+
+    public bool Reorder(int customerId, int orderId, out string message)
+    {
+        message = "";
+
+        var order = _context.Orders
+            .Include(o => o.OrderDetails)
+            .FirstOrDefault(o => o.OrderID == orderId && o.CustomerID == customerId);
+
+        if (order == null || order.OrderDetails == null || !order.OrderDetails.Any())
+        {
+            message = "Đơn hàng không tồn tại hoặc không có sản phẩm";
+            return false;
+        }
+
+        if (string.Equals(order.Status, "Chờ xác nhận", StringComparison.OrdinalIgnoreCase))
+        {
+            message = "Đơn đang chờ xác nhận, không thể đặt lại.";
+            return false;
+        }
+
+        var cart = _context.Carts
+            .Include(c => c.CartDetails)
+            .FirstOrDefault(c => c.CustomerID == customerId);
+
+        if (cart == null)
+        {
+            cart = new Cart
+            {
+                CustomerID = customerId,
+                CreatedAt = DateTime.Now,
+                CartDetails = new List<CartDetail>()
+            };
+            _context.Carts.Add(cart);
+            _context.SaveChanges();
+        }
+
+        foreach (var od in order.OrderDetails)
+        {
+            // Lấy giá hiện tại theo ProductSize, fallback dùng UnitPrice cũ
+            var size = _context.ProductSizes.FirstOrDefault(ps => ps.ProductSizeID == od.ProductSizeID);
+            var unitPrice = size?.Price ?? od.UnitPrice;
+
+            var existing = cart.CartDetails
+                .FirstOrDefault(cd => cd.ProductID == od.ProductID && cd.ProductSizeID == od.ProductSizeID);
+
+            if (existing != null)
+            {
+                existing.Quantity += od.Quantity;
+                existing.Total = existing.UnitPrice * existing.Quantity;
+            }
+            else
+            {
+                cart.CartDetails.Add(new CartDetail
+                {
+                    ProductID = od.ProductID,
+                    ProductSizeID = od.ProductSizeID,
+                    Quantity = od.Quantity,
+                    UnitPrice = unitPrice,
+                    Total = unitPrice * od.Quantity
+                });
+            }
+        }
+
+        _context.SaveChanges();
+        return true;
+    }
 }

@@ -10,4 +10,5 @@ public interface IOrderService
     Task<PromoCodeResponse> CalculateDiscountAsync(string promoCodes, decimal itemsTotal, decimal shippingFee);
      Task<PromoValidationResult> ValidateAndApplyPromoCodesAsync(PromoValidationRequest request);
     Task<(bool success, string message)> CancelByCustomerAsync(int orderId, int customerId, string? reason);
+      bool Reorder(int customerId, int orderId, out string message);
 }
