@@ -1,143 +1,240 @@
+/*
+   Lưu ý: CSS này không sử dụng biến CSS Root (var(--mt-bg), v.v.)
+   mà sử dụng các mã màu cứng bạn đã cung cấp.
+*/
+
+/* --- 1. PROFILE CONTAINER (Khối ngoài) --- */
 .profile-container {
-    max-width: 900px;
-    margin: 100px auto;
-    padding: 30px;
-    background: var(--mt-bg);
-    color: var(--mt-text);
-    border-radius: 20px;
-    box-shadow: 0 8px 28px rgba(0,0,0,0.4);
-    font-family: 'Montserrat', sans-serif;
+    max-width: 1200px; /* Chiều rộng cho bố cục 2 cột */
+    margin: 40px auto;
+    margin-top: 100px;
+    padding: 20px;
+    background-color: #f7f7f7; /* Nền trang */
+    border-radius: 12px;
 }
 
-.profile-container h2 {
-    font-size: 1.8rem;
-    margin-bottom: 25px;
+.profile-header h2 {
+    color: #6f4e37; /* Màu nâu đậm */
+    margin-bottom: 30px;
+    border-bottom: 2px solid #ffb74d; /* Màu cam thương hiệu */
+    padding-bottom: 10px;
+}
+
+/* --- 2. BỐ CỤC 2 CỘT CHÍNH (QUAN TRỌNG) --- */
+.profile-content-grid {
+    display: grid;
+    grid-template-columns: 280px 1fr; /* Sidebar 280px, Main Content chiếm phần còn lại */
+    gap: 30px;
+}
+
+/* --- 3. CỘT 1: PROFILE SIDEBAR CARD (Thẻ Cá nhân) --- */
+.profile-sidebar-card {
+    background-color: #ffffff;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
     text-align: center;
-    color: var(--mt-accent);
+    border: 1px solid #e9d6c1;
+}
+
+.customer-name {
+    color: #2d261f;
+    margin: 15px 0 5px;
+    font-size: 1.5em;
     font-weight: 700;
-    letter-spacing: 1px;
 }
 
-.profile-card {
-    display: flex;
-    gap: 40px;
-    flex-wrap: wrap;
-    align-items: center;
+.loyalty-level-badge {
+    display: inline-block;
+    background-color: #ffb74d; /* Màu cam thương hiệu */
+    color: #2d261f;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 0.9em;
+    font-weight: 600;
+}
+.loyalty-level-badge .fa { margin-right: 5px; }
+
+.divider {
+    border-top: 1px solid #f6efe6;
+    margin: 20px 0;
 }
 
+/* --- THÔNG TIN TRONG SIDEBAR (Quick Contact) --- */
+.quick-contact {
+    /* Đảm bảo căn trái cho nội dung Quick Contact */
+    text-align: left; 
+}
+.quick-contact p {
+    margin: 5px 0;
+    color: #6b5b4d;
+    font-size: 0.95em;
+    padding-left: 10px; /* Thụt lề nhẹ để khớp với icon */
+}
+.quick-contact .fa { margin-right: 10px; width: 15px; text-align: center;}
+
+.btn-edit-main {
+    display: block;
+    margin-top: 20px;
+    padding: 12px;
+    background-color: #6f4e37; /* Màu nâu accent */
+    color: white;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: background-color 0.2s, transform 0.2s;
+    font-weight: 600;
+}
+.btn-edit-main:hover {
+    background-color: #8b5e3c;
+    transform: translateY(-2px);
+}
+.btn-edit-main .fa { margin-right: 8px; }
+
+
+/* --- 4. AVATAR VÀ OVERLAY --- */
 .avatar-wrapper {
     position: relative;
-    width: 160px;
-    height: 160px;
-    flex-shrink: 0;
+    width: 120px;
+    height: 120px;
+    margin: 0 auto;
+    cursor: pointer;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 4px solid #f6efe6;
+    box-shadow: 0 0 0 2px #ffb74d;
 }
 
-.avatar-wrapper img {
+.profile-avatar-img {
     width: 100%;
     height: 100%;
-    border-radius: 50%;
     object-fit: cover;
-    border: 4px solid var(--mt-brand);
-    box-shadow: 0 8px 20px rgba(0,0,0,0.35);
-    transition: transform 0.3s;
-}
-
-.avatar-wrapper img:hover {
-    transform: scale(1.05);
+    display: block;
 }
 
 .avatar-overlay {
     position: absolute;
-    inset: 0;
-    background: rgba(0,0,0,0.55);
-    border-radius: 50%;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(111, 78, 55, 0.7);
+    color: white;
     display: flex;
     flex-direction: column;
-    align-items: center;
     justify-content: center;
-    color: #fff;
-    font-size: 15px;
-    font-weight: 600;
+    align-items: center;
     opacity: 0;
-    transition: opacity 0.3s ease;
-    cursor: pointer;
+    transition: opacity 0.3s;
+    border-radius: 50%;
 }
-
-.avatar-wrapper:hover .avatar-overlay {
-    opacity: 1;
-}
+.avatar-overlay span { margin-top: 5px; font-size: 0.9em; }
 
 
-.profile-info {
-    flex: 1;
-    min-width: 280px;
-}
-
-.profile-info h4 {
-    font-size: 1.6rem;
-    font-weight: 700;
+/* --- 5. CỘT 2: MAIN AREA (Chi tiết và Hành động) --- */
+.profile-main-area h4 {
+    color: #6f4e37;
     margin-bottom: 20px;
-    margin-left: 20px;
-    color: var(--mt-text);
+    font-size: 1.3em;
+    font-weight: 700;
 }
+.profile-main-area h4 .fa { margin-right: 10px; color: #ffb74d; }
 
-.info-item {
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.08);
-    padding: 14px 18px;
-    border-radius: 12px;
-    margin-bottom: 14px;
-    transition: transform 0.2s, box-shadow 0.25s;
-}
-
-.info-item i {
-    margin-right: 8px;
-    color: var(--mt-accent);
-}
-
-.info-item:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 16px rgba(0,0,0,0.25);
-}
-
-.info-item strong {
-    color: var(--mt-accent);
-    margin-right: 8px;
-}
-
-/* Actions */
-.profile-actions {
-    margin-top: 25px;
-}
-
-.profile-actions .btn {
-    padding: 10px 20px;
+.detail-block, .action-block {
+    background-color: #ffffff;
+    padding: 25px;
     border-radius: 10px;
+    margin-bottom: 30px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.03);
+    border: 1px solid #f6efe6;
+}
+
+/* --- THÔNG TIN CHI TIẾT CÁ NHÂN (Detail Block) --- */
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+}
+.info-item {
+    padding: 10px 0;
+    border-bottom: 1px dashed #e9d6c1;
+}
+.info-item:last-child { border-bottom: none; }
+.info-item strong {
+    display: block;
+    color: #6b5b4d;
+    font-weight: 500;
+    font-size: 0.9em;
+}
+.info-item span {
+    display: block;
+    color: #2d261f;
     font-weight: 600;
-    transition: all 0.25s ease;
+    margin-top: 3px;
+}
+.info-item.full-width {
+    grid-column: 1 / -1;
 }
 
-.profile-actions .btn-danger {
-    background: var(--mt-brand);
-    border: none;
-    color: #111;
+/* --- ACTION CARDS --- */
+.action-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 20px;
+    text-align: left;
+}
+.action-card {
+    display: block;
+    padding: 20px;
+    background-color: #f6efe6; /* Màu kem trà */
+    border-radius: 8px;
+    text-decoration: none;
+    color: #2d261f;
+    transition: transform 0.2s, box-shadow 0.2s;
+    position: relative;
+    overflow: hidden;
+}
+.action-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(111, 78, 55, 0.2);
+    background-color: #e9d6c1;
+}
+.action-card h5 {
+    font-size: 1.1em;
+    font-weight: 700;
+    margin-top: 0;
+    color: #6f4e37; /* Màu nâu accent */
+}
+.action-card p {
+    font-size: 0.85em;
+    color: #6b5b4d;
+}
+.action-card .fa {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    font-size: 2em;
+    color: rgba(255, 183, 77, 0.4);
 }
 
-.profile-actions .btn-danger:hover {
-    background: #111;
-    color: var(--mt-brand);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 18px rgba(0,0,0,0.4);
-}
 
-/* Responsive */
-@media (max-width: 768px) {
-    .profile-card {
-        flex-direction: column;
-        text-align: center;
+/* --- Responsive (Điều chỉnh trên màn hình nhỏ) --- */
+@media (max-width: 992px) {
+    .profile-content-grid {
+        grid-template-columns: 1fr; /* Chuyển thành 1 cột */
     }
-
-    .avatar-wrapper {
+    .profile-sidebar-card {
         margin-bottom: 20px;
+    }
+}
+
+@media (max-width: 576px) {
+    .info-grid {
+        grid-template-columns: 1fr; /* Trên điện thoại chỉ còn 1 cột cho info */
+    }
+    .info-item {
+        border-bottom: 1px dashed #e9d6c1 !important;
+    }
+    .action-card-grid {
+        grid-template-columns: 1fr; /* Trên điện thoại chỉ còn 1 cột cho action cards */
     }
 }

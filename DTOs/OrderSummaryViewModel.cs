@@ -5,6 +5,8 @@ public class OrderSummaryViewModel
     public DateTime CreatedAt { get; set; }
     public decimal Total { get; set; }
     public string?Status { get; set; } // "Hoàn thành", "Đã hủy", "Chờ xác nhận"
+    public DateTime? CancelledAt { get; set; }
+    public string? CancelReason { get; set; }
 
     // Thông tin giao hàng
     public string?ReceiverName { get; set; }

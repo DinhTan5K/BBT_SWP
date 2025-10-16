@@ -21,6 +21,7 @@ builder.Services.Configure<start.Models.Configurations.EmailSettings>(
     builder.Configuration.GetSection("EmailSettings")
 );
 builder.Services.AddScoped<IPaymentService, PaymentService>();
+builder.Services.AddScoped<AiService>();
 
 builder.Logging.ClearProviders();
 builder.Logging.AddSimpleConsole(options =>

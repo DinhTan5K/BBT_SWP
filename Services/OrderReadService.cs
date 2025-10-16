@@ -45,6 +45,8 @@ public class OrderReadService : IOrderReadService
                 CreatedAt = order.CreatedAt,
                 Total = order.Total,
                 Status = order.Status,
+                CancelledAt = order.CancelledAt,
+                CancelReason = order.CancelReason,
                 ReceiverName = order.ReceiverName,
                 ReceiverPhone = order.ReceiverPhone,
                 Address = order.Address,

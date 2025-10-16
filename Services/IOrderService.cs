@@ -9,4 +9,5 @@ public interface IOrderService
     Task<object?> GetOrderByCodeAsync(string orderCode);
     Task<PromoCodeResponse> CalculateDiscountAsync(string promoCodes, decimal itemsTotal, decimal shippingFee);
      Task<PromoValidationResult> ValidateAndApplyPromoCodesAsync(PromoValidationRequest request);
+    Task<(bool success, string message)> CancelByCustomerAsync(int orderId, int customerId, string? reason);
 }

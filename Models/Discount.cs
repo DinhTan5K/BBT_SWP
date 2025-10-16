@@ -2,8 +2,6 @@ using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace start.Models
-{
     public enum DiscountType
     {
         Percentage = 0,
@@ -38,6 +36,6 @@ namespace start.Models
         public int? UsageLimit { get; set; }
         public DiscountType Type { get; set; }
     }
-}
+
 
 

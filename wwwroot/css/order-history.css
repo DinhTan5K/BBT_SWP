@@ -59,10 +59,24 @@ body { background-color: var(--bg-color); font-family: var(--font-main)}
 .shipping-info strong { color: var(--text-color); }
 
 /* --- Action Buttons --- */
-.order-actions { text-align: right; padding: 15px 25px; background-color: #fdfbf9; border-top: 1px solid #f0e9e1; }
-.btn-action { background-color: transparent; color: var(--brand-dark); border: 1px solid #e9d6c1; text-decoration: none; display: inline-block; padding: 10px 20px; margin-left: 10px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; }
-.btn-action:hover { background-color: var(--brand-color); border-color: var(--brand-color); color: #fff; }
-.btn-action i { margin-right: 8px; }
+.order-actions { display: flex; gap: 12px; align-items: center; justify-content: flex-end; padding: 15px 25px; background-color: #fdfbf9; border-top: 1px solid #f0e9e1; }
+.order-actions .cancel-order-form { margin: 0; }
+.btn-action { background-color: transparent; color: var(--brand-dark); border: 1px solid #e9d6c1; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 10px; font-weight: 600; cursor: pointer; transition: transform 0.06s ease, background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease; }
+.btn-action:active { transform: translateY(1px); }
+.btn-action i { margin: 0; }
+
+/* Variants */
+.btn-track { background-color: #fff; color: var(--brand-dark); border-color: #e9d6c1; }
+.btn-track:hover { background-color: var(--brand-color); border-color: var(--brand-color); color: #fff; }
+
+.btn-reorder { background-color: var(--brand-dark); color: #fff; border-color: var(--brand-dark); }
+.btn-reorder:hover { background-color: #73482f; border-color: #73482f; color: #fff; }
+
+.btn-cancel { background-color: #fff; color: var(--cancelled-color); border-color: var(--cancelled-color); }
+.btn-cancel:hover { background-color: var(--cancelled-color); color: #fff; border-color: var(--cancelled-color); }
+
+/* Disabled state for cancel after action */
+.btn-action[disabled], .btn-action:disabled { opacity: .6; cursor: not-allowed; transform: none; }
 
 /* --- No Orders State --- */
 .no-orders { text-align: center; padding: 80px 20px; background-color: var(--surface-color); border-radius: 12px; }

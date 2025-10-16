@@ -138,5 +138,19 @@ public class OrderController : Controller
         ViewBag.Message = "Thanh toán thất bại, vui lòng thử lại.";
         return View();
     }
+
+    [HttpPost("Cancel/{id}")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Cancel(int id, [FromForm] string? reason)
+    {
+        int? customerId = HttpContext.Session.GetInt32("CustomerID");
+        if (customerId == null)
+        {
+            return Json(new { success = false, message = "Bạn cần đăng nhập" });
+        }
+
+        var result = await _orderService.CancelByCustomerAsync(id, customerId.Value, reason);
+        return Json(new { success = result.success, message = result.message, cancelledAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm"), reason });
+    }
 }
 
