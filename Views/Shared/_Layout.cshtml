@@ -58,7 +58,7 @@
             <nav class="function">
                 <ul>
                     <li><a asp-controller="Home" asp-action="Introduce">GIỚI THIỆU</a></li>
-                  <li><a asp-controller="Product" asp-action="Product">THỰC ĐƠN</a></li>
+                    <li><a asp-controller="Product" asp-action="Product">THỰC ĐƠN</a></li>
                     <li><a href="#">TIN TỨC</a></li>
                     <li><a asp-controller="Home" asp-action="Contact">LIÊN HỆ</a></li>
                     <li><a href="#">CỬA HÀNG</a></li>
@@ -120,7 +120,7 @@
         @RenderBody()
     </main>
 
-    
+
     <footer class="fnb-footer" style="position: relative; z-index: 10;">
         <div class="footer-container">
             <div class="footer-left">
@@ -138,6 +138,363 @@
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
+
+    <div id="chatbot-container">
+        <div id="chatbot-header">
+            <span>Buble Tea Chat</span>
+            <button id="close-chat">✕</button>
+        </div>
+        <div id="chatbot-body">
+            <div id="chatbot-messages"></div>
+        </div>
+        <div id="chatbot-input">
+            <input type="text" id="chatbot-question" placeholder="Nhập câu hỏi..." />
+            <button id="send-chat"><i class="fa-solid fa-paper-plane"></i></button>
+        </div>
+    </div>
+
+    <button id="chatbot-toggle">
+        <img id="chatbot-avatar" src="@Url.Content("~/img/milktea.jpg")" alt="AI Avatar" />
+    </button>
+
+    <script>
+        const chatbotContainer = document.getElementById("chatbot-container");
+        const chatbotToggle = document.getElementById("chatbot-toggle");
+        const closeChat = document.getElementById("close-chat");
+        const sendChat = document.getElementById("send-chat");
+        const questionInput = document.getElementById("chatbot-question");
+        const messagesDiv = document.getElementById("chatbot-messages");
+
+        // ✨ Cập nhật URL Avatar và lời chào
+        const aiAvatarUrl = '@Url.Content("~/img/milktea.jpg")';
+        const userAvatarUrl = '@avatarUrl';
+        const defaultWelcomeMessage = "Xin chào bro! Mình là AI tư vấn của Buble Tea. Bro cần mình hỗ trợ thông tin gì về menu, sản phẩm, hoặc chương trình khuyến mãi không? Cứ hỏi nhé! 😉";
+
+        // ✨ HÀM HIỂN THỊ TIN NHẮN TỪ BOT (có hỗ trợ avatar và loading)
+        function displayBotMessage(message, is_loading = false) {
+            const loadingId = is_loading ? " id='loading-ai-msg'" : "";
+            const safeMessage = String(message).trim();
+            messagesDiv.innerHTML += `<div class='ai-msg'><img class='ai-avatar' src='${aiAvatarUrl}' alt='AI Avatar'/><div class='ai-msg-content'${loadingId}>${safeMessage}</div></div>`;
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        // ✨ HÀM HIỂN THỊ TIN NHẮN TỪ USER (có hỗ trợ avatar)
+        function displayUserMessage(question) {
+            const safeQuestion = String(question).trim();
+
+            // ✨✨✨ ĐÂY LÀ PHẦN QUAN TRỌNG NHẤT ✨✨✨
+            // Đảo ngược thứ tự: Avatar lên trước, Content ra sau.
+            // CSS flex-direction: row-reverse sẽ đảo lại thành Content (trái) -> Avatar (phải).
+            messagesDiv.innerHTML += `
+        <div class='user-msg'>
+            <img class='user-avatar' src='${userAvatarUrl}' alt='User Avatar'/>
+            <div class='ai-msg-content'>${safeQuestion}</div>
+        </div>
+    `;
+            // ------------------------------------------
+
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        // ✨ HÀM HIỂN THỊ LỜI CHÀO MỪNG TỰ ĐỘNG
+        function displayWelcomeMessage() {
+            // Chỉ hiển thị nếu chưa có tin nhắn nào
+            if (messagesDiv.children.length === 0) {
+                displayBotMessage(defaultWelcomeMessage);
+            }
+        }
+
+        chatbotToggle.addEventListener("click", () => {
+            chatbotContainer.style.display = "flex";
+            chatbotToggle.style.display = "none";
+            displayWelcomeMessage(); // GỌI HÀM CHÀO MỪNG KHI MỞ CHAT
+        });
+
+        closeChat.addEventListener("click", () => {
+            chatbotContainer.style.display = "none";
+            chatbotToggle.style.display = "flex";
+        });
+
+        async function sendMessage() {
+            const question = questionInput.value.trim();
+            if (!question) return;
+
+            // hiển thị câu hỏi người dùng (Dùng hàm mới)
+            displayUserMessage(question);
+            questionInput.value = "";
+
+            // hiển thị loading (Dùng hàm mới)
+            displayBotMessage(`<i class='fas fa-spinner fa-spin'></i> Đang suy nghĩ...`, true);
+
+            try {
+                // gọi API
+                const res = await fetch("/Ai/Ask", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    body: "question=" + encodeURIComponent(question)
+                });
+
+                const data = await res.json();
+
+                // 4. XÓA loading message (BẰNG CÁCH GỌI ID)
+                const loadingMsgContent = document.getElementById('loading-ai-msg');
+                if (loadingMsgContent) {
+                    // Xóa phần tử cha (.ai-msg) chứa cả avatar và loading text
+                    loadingMsgContent.parentElement.remove();
+                }
+
+                // hiển thị câu trả lời (Dùng hàm mới)
+                displayBotMessage(data.answer);
+
+            } catch (error) {
+                // Xử lý lỗi
+                const loadingMsgContent = document.getElementById('loading-ai-msg');
+                if (loadingMsgContent) {
+                    loadingMsgContent.parentElement.remove();
+                }
+
+                displayBotMessage("Có lỗi xảy ra khi kết nối AI. Vui lòng thử lại sau.");
+            }
+        }
+
+        sendChat.addEventListener("click", sendMessage);
+        questionInput.addEventListener("keypress", e => {
+            if (e.key === "Enter") sendMessage();
+        });
+    </script>
+
+    <style>
+        /* ✨ BẢNG MÀU THƯƠNG HIỆU (ROOT VARIABLES) */
+        :root {
+            --mt-bg: #fffaf2;
+            --mt-surface: #ffffff;
+            --mt-text: #2d261f;
+            --mt-muted: #6b5b4d;
+            --mt-brand: #ffb74d;
+            /* Màu cam/vàng nhạt */
+            --mt-brand-dark: #d98c2b;
+            --mt-accent: #6f4e37;
+            /* Màu nâu đậm (dùng cho header, nút) */
+            --mt-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+
+            --tea-cream: #f6efe6;
+            /* Màu kem nhạt cho tin nhắn AI */
+            --tea-light: #e9d6c1;
+            --tea-medium: #c9a77a;
+            --tea-dark: #8b5e3c;
+            --shadow: rgba(0, 0, 0, 0.12);
+        }
+
+        /* Chat icon (Nút Toggle) */
+        #chatbot-toggle {
+            position: fixed;
+            bottom: 20px;
+            right: 25px;
+            /* Màu nút theo Brand Accent */
+            background-color: var(--mt-accent);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            font-size: 24px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            z-index: 999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        #chatbot-toggle:hover {
+            background-color: var(--tea-dark);
+        }
+
+        /* Avatar trên nút toggle */
+        #chatbot-toggle #chatbot-avatar {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        /* Chat box */
+        #chatbot-container {
+            position: fixed;
+            bottom: 20px;
+            right: 25px;
+            width: 350px;
+            height: 450px;
+            background: var(--mt-surface);
+            border: 1px solid var(--tea-light);
+            border-radius: 10px;
+            box-shadow: var(--mt-shadow);
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+            z-index: 1000;
+        }
+
+        #chatbot-header {
+            /* Màu Header theo Brand Accent */
+            background-color: var(--mt-accent);
+            color: var(--mt-surface);
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #chatbot-header button {
+            background: none;
+            border: none;
+            color: var(--mt-surface);
+            font-size: 18px;
+            cursor: pointer;
+        }
+
+        #chatbot-body {
+            flex: 1;
+            padding: 10px;
+            overflow-y: auto;
+            font-size: 14px;
+            /* Màu nền cho body chat */
+            background-color: var(--mt-bg);
+        }
+
+        /* --- Input Container (Khối bao quanh Input và nút gửi) --- */
+        #chatbot-input {
+            display: flex;
+            /* Đã dùng border-top: 1px solid var(--tea-light) ở phần trước, ta giữ nguyên */
+            border-top: 1px solid var(--tea-light);
+            background-color: var(--mt-surface);
+            /* Nền trắng */
+            padding: 5px;
+            /* Thêm padding nhẹ cho toàn bộ khối input */
+        }
+
+        /* --- Trường Nhập liệu (Input Text) --- */
+        #chatbot-input input {
+            flex: 1;
+            /* Xóa viền gốc */
+            border: none;
+            /* Viền mới: dùng màu trà sữa nhạt */
+            border-radius: 20px;
+            padding: 10px 15px;
+            /* Tăng padding để trông dày dặn hơn */
+            outline: none;
+            background-color: var(--tea-cream);
+            /* Màu nền nhẹ cho trường nhập liệu */
+            color: var(--mt-text);
+            /* Bỏ padding cũ, đã gộp vào padding mới */
+        }
+
+        /* --- Nút Gửi (Send Button) --- */
+        #chatbot-input button {
+            /* Đã sửa ở lần trước, giữ nguyên */
+            background-color: var(--mt-accent);
+            border: none;
+            color: white;
+            padding: 10px 12px;
+            cursor: pointer;
+            border-radius: 50%;
+            /* Làm nút tròn */
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 5px;
+            /* Khoảng cách với input */
+        }
+
+        #chatbot-input button i {
+            font-size: 16px;
+        }
+
+        /* Messages container */
+        .user-msg,
+        .ai-msg {
+            margin: 8px 0;
+            max-width: 90%;
+            word-wrap: break-word;
+            display: flex;
+        }
+
+        /* AI Message (Left side) */
+        .ai-msg {
+            align-items: flex-start;
+            align-self: flex-start;
+            margin-right: auto;
+        }
+
+        /* User Message (Right side) */
+        .user-msg {
+            align-items: flex-end;
+            align-self: flex-end;
+            margin-left: auto;
+            flex-direction: row-reverse;
+        }
+
+        /* Avatar cho AI và User */
+        .ai-avatar,
+        .user-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            object-fit: cover;
+            flex-shrink: 0;
+        }
+
+        /* Khoảng cách cho Avatar AI */
+        .ai-msg .ai-avatar {
+            margin-right: 8px;
+            margin-left: 0;
+            align-self: flex-start;
+        }
+
+        /* Khoảng cách cho Avatar User */
+        .user-msg .user-avatar {
+            margin-left: 8px;
+            margin-right: 0;
+            align-self: flex-end;
+        }
+
+
+        /* Nội dung tin nhắn chính */
+        .ai-msg-content {
+            padding: 10px 12px;
+            font-family: 'Muli', sans-serif;
+            font-weight: 500;
+            font-size: 15px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            /* ✨ Đã sửa lại thành pre-wrap để xử lý Markdown/xuống dòng tốt hơn */
+            min-width: 0;
+            box-shadow: 0 1px 1px var(--shadow);
+            max-width: 100%;
+        }
+
+        /* Style cho tin nhắn AI */
+        .ai-msg .ai-msg-content {
+            /* Màu tin nhắn AI theo màu kem trà */
+            background-color: var(--tea-cream);
+            color: var(--mt-text);
+            border-radius: 0 12px 12px 12px;
+        }
+
+        /* Style cho tin nhắn người dùng */
+        .user-msg .ai-msg-content {
+            /* Màu tin nhắn người dùng theo màu Brand */
+            background-color: var(--mt-brand);
+            color: var(--mt-text);
+            border-radius: 12px 0 12px 12px;
+        }
+    </style>
+
 </body>
 
 </html>

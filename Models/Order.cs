@@ -20,6 +20,8 @@ namespace start.Models
         public string? OrderCode { get; set; }
 
         public string? Status { get; set; } = "Chờ xác nhận";
+        public DateTime? CancelledAt { get; set; }
+        public string? CancelReason { get; set; }
         public string? Address { get; set; }
         public string? DetailAddress { get; set; }
         public string? NoteOrder { get; set; }

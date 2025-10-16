@@ -177,6 +177,8 @@ namespace start.Controllers
             var user = _profileService.GetUserById(userId.Value);
             if (user == null) return RedirectToAction("Login");
 
+            // Expose whether the account was created via Google (no local password set)
+            ViewBag.IsGoogleLogin = string.IsNullOrEmpty(user.Password);
             return View(user);
         }
 
@@ -196,8 +198,6 @@ namespace start.Controllers
                 Address = user.Address,
                 BirthDate = user.BirthDate
             };
-
-            ViewBag.IsGoogleLogin = string.IsNullOrEmpty(user.Password);
             ViewBag.Message = TempData["SuccessMessage"];
 
             return View(vm);
@@ -271,7 +271,7 @@ namespace start.Controllers
             if (_authService.SetPassword(userId.Value, model.NewPassword!, out string error))
             {
                 TempData["SuccessMessage"] = "Đặt mật khẩu thành công!";
-                return RedirectToAction("EditProfile");
+                return RedirectToAction("Profile");
             }
 
             ModelState.AddModelError("", error);

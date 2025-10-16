@@ -50,19 +50,19 @@ public class HomeController : Controller
             return View(new ContactFormModel());
         }
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Contact(ContactFormModel model)
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Contact(ContactFormModel model)
+    {
+        if (!ModelState.IsValid)
         {
-            if (!ModelState.IsValid)
-            {
-                return View(model);
-            }
+            return View(model);
+        }
 
-            try
-            {
-                string adminSubject = $"[Liên hệ mới] {model.Name}";
-                string adminBody = $@"
+        try
+        {
+            string adminSubject = $"[Liên hệ mới] {model.Name}";
+            string adminBody = $@"
                     <p><b>Người gửi:</b> {model.Name}</p>
                     <p><b>Email:</b> {model.Email}</p>
                     <p><b>Điện thoại:</b> {model.Phone}</p>
@@ -71,29 +71,27 @@ public class HomeController : Controller
                     <p><b>Vấn đề:</b> {model.IssueType}</p>
                     <p><b>Nội dung:</b><br/>{model.Message}</p>";
 
-                await _emailService.SendEmailAsync("tant91468@gmail.com", adminSubject, adminBody);
-                string userSubject = "Cảm ơn bạn đã liên hệ với Buble Tea";
-                string userBody = $@"
+            await _emailService.SendEmailAsync("tant91468@gmail.com", adminSubject, adminBody);
+            string userSubject = "Cảm ơn bạn đã liên hệ với Buble Tea";
+            string userBody = $@"
                     <p>Xin chào {model.Name},</p>
                     <p>Cảm ơn bạn đã gửi góp ý đến <b>Buble Tea</b>. Dưới đây là nội dung bạn đã gửi:</p>
                     <blockquote>{model.Message}</blockquote>
                     <p>Chúng tôi sẽ phản hồi cho bạn trong thời gian sớm nhất.</p>
                     <p>Trân trọng,<br/>Đội ngũ Buble Tea</p>";
 
-                await _emailService.SendEmailAsync(model.Email, userSubject, userBody);
+            await _emailService.SendEmailAsync(model.Email, userSubject, userBody);
 
-                TempData["ContactSuccess"] = "Cảm ơn bạn đã liên hệ! Chúng tôi sẽ phản hồi sớm.";
-                return RedirectToAction("Contact");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Lỗi khi xử lý form contact");
-                ModelState.AddModelError(string.Empty, "Đã xảy ra lỗi khi gửi email. Vui lòng thử lại sau.");
-                return View(model);
-            }
+            TempData["ContactSuccess"] = "Cảm ơn bạn đã liên hệ! Chúng tôi sẽ phản hồi sớm.";
+            return RedirectToAction("Contact");
         }
-
-
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Lỗi khi xử lý form contact");
+            ModelState.AddModelError(string.Empty, "Đã xảy ra lỗi khi gửi email. Vui lòng thử lại sau.");
+            return View(model);
+        }
+    }
 
 
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]

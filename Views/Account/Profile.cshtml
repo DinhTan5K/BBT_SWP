@@ -1,57 +1,167 @@
 @model Customer
 @{
-    ViewData["Title"] = "Profile";
+    // Thiết lập tiêu đề
+    ViewData["Title"] = "Thông tin cá nhân";
 
+    // Lấy URL Avatar từ Model (hoặc dùng avatar mặc định)
     var avatarUrl = string.IsNullOrEmpty(Model.ProfileImagePath)
     ? Url.Content("~/img/logo1.png")
     : Url.Content(Model.ProfileImagePath);
-}
 
+    // Giả lập cấp độ Loyalty (Có thể thay bằng dữ liệu thực tế)
+    var loyaltyLevel = "Thành viên Bạc";
+}
 
 <link rel="stylesheet" href="/css/profile.css" />
 
-
 <div class="profile-container">
-    <h2>@ViewData["Title"]</h2>
-    @if (TempData["SuccessMessage"] != null)
-{
-    <div id="successToast" class="alert alert-success text-center" role="alert"
-         style="position: fixed; top: 70px; right: 10px; z-index: 1050; max-width: 400px;">
-        @TempData["SuccessMessage"]
+    <div class="profile-header">
+        <h2>@ViewData["Title"]</h2>
     </div>
 
-    <style>
-        #successToast {
-            animation: slideIn 0.5s ease-out;
-        }
+    @* --- 1. TOAST MESSAGE (Giữ nguyên logic của bạn) --- *@
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div id="successToast" class="alert alert-success text-center" role="alert"
+            style="position: fixed; top: 70px; right: 10px; z-index: 1050; max-width: 400px;">
+            <i class="fa-solid fa-check-circle"></i>
+            @TempData["SuccessMessage"]
+        </div>
 
-        #successToast.hide {
-            animation: fadeOut 0.5s ease forwards;
-        }
+        <style>
+            #successToast {
+                animation: slideIn 0.5s ease-out;
+            }
 
-        @@keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
+            #successToast.hide {
+                animation: fadeOut 0.5s ease forwards;
             }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
 
-        @@keyframes fadeOut {
-            from {
-                opacity: 1;
-            }
-            to {
-                opacity: 0;
-                transform: translateX(100%);
-            }
-        }
-    </style>
+            @@keyframes slideIn {
+                from {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
 
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+            }
+
+            @@keyframes fadeOut {
+                from {
+                    opacity: 1;
+                }
+
+                to {
+                    opacity: 0;
+                    transform: translateX(100%);
+                }
+            }
+        </style>
+    }
+
+    <div class="profile-content-grid">
+
+        <div class="profile-sidebar-card">
+
+            <div class="avatar-wrapper">
+                <img src="@avatarUrl" alt="Avatar" class="profile-avatar-img" />
+                <div class="avatar-overlay" title="Thay đổi ảnh đại diện">
+                    <i class="fa fa-pen"></i>
+                </div>
+                <form asp-action="UploadAvatar" asp-controller="Account" method="post" enctype="multipart/form-data"
+                    id="avatarForm">
+                    <input type="file" name="avatar" id="avatarInput" accept="image/*" style="display:none;" />
+                </form>
+            </div>
+
+            <h3 class="customer-name">@(Model.Name ?? "Khách hàng")</h3>
+            <div class="loyalty-level-badge">
+                <i class="fa fa-star"></i> @loyaltyLevel
+            </div>
+
+            <hr class="divider" />
+
+            <div class="quick-contact">
+                <p><i class="fa fa-envelope"></i> @(Model.Email ?? "-")</p>
+                <p><i class="fa fa-phone"></i> @(Model.Phone ?? "-")</p>
+            </div>
+
+            <a asp-controller="Account" asp-action="EditProfile" class="btn-edit-main">
+                <i class="fa fa-edit"></i> Chỉnh sửa thông tin
+            </a>
+
+        </div>
+
+        <div class="profile-main-area">
+
+            <div class="detail-block">
+                <h4><i class="fa fa-user-circle"></i> Chi tiết cá nhân</h4>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <strong>Tên đầy đủ:</strong>
+                        <span>@(Model.Name ?? "-")</span>
+                    </div>
+
+                    <div class="info-item">
+                        <strong>Số điện thoại:</strong>
+                        <span>@(Model.Phone ?? "-")</span>
+                    </div>
+
+                    <div class="info-item">
+                        <strong>Email:</strong>
+                        <span>@(Model.Email ?? "-")</span>
+                    </div>
+                    <div class="info-item">
+                        <strong>Ngày sinh:</strong>
+                        <span>@(Model.BirthDate?.ToString("dd/MM/yyyy") ?? "-")</span>
+                    </div>
+                    <div class="info-item full-width">
+                        <strong>Địa chỉ:</strong>
+                        <span>@(Model.Address ?? "Vui lòng cập nhật địa chỉ để đặt hàng!")</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="action-block">
+                <h4><i class="fa fa-history"></i> Quản lý & Lịch sử</h4>
+                <div class="action-card-grid">
+                    <a asp-controller="Order" asp-action="OrderHistory" class="action-card">
+                        <h5>Lịch sử Đơn hàng</h5>
+                        <p>Xem lại tất cả đơn hàng đã đặt.</p>
+                        <i class="fa fa-shopping-bag"></i>
+                    </a>
+                    @if (ViewBag.IsGoogleLogin == true)
+                    {
+                        <a asp-controller="Account" asp-action="SetPassword" class="action-card">
+                            <h5>Đặt mật khẩu</h5>
+                            <p>Thiết lập mật khẩu để đăng nhập trực tiếp.</p>
+                            <i class="fa fa-key"></i>
+                        </a>
+                    }
+                    else
+                    {
+                        <a asp-controller="Account" asp-action="ChangePassword" class="action-card">
+                            <h5>Đổi mật khẩu</h5>
+                            <p>Bảo mật tài khoản của bạn.</p>
+                            <i class="fa fa-lock"></i>
+                        </a>
+                    }
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+@section Scripts {
     <script>
+        // Logic chung cho Toast Message và Avatar Upload
+
+        // 1. Logic cho Toast Message (Tự động ẩn)
         setTimeout(function () {
             var toast = document.getElementById('successToast');
             if (toast) {
@@ -59,66 +169,34 @@
                 setTimeout(() => toast.remove(), 500);
             }
         }, 3000);
-    </script>
-}
 
-
-
-    <div class="profile-card">
-
-        <div class="avatar-wrapper">
-            <img src="@avatarUrl" alt="Avatar" />
-            <div class="avatar-overlay">
-                <i class="fa fa-pen"></i>
-                <span>Edit</span>
-            </div>
-            <form asp-action="UploadAvatar" asp-controller="Account" method="post" enctype="multipart/form-data"
-                id="avatarForm">
-                <input type="file" name="avatar" id="avatarInput" accept="image/*" style="display:none;" />
-            </form>
-        </div>
-
-
-        <div class="profile-info">
-            <h4>@(Model.Name ?? "Người dùng")</h4>
-
-            <div class="info-item"><i class="fa fa-envelope"></i> <strong>Email:</strong> @(Model.Email ?? "-")</div>
-            <div class="info-item"><i class="fa fa-phone"></i> <strong>Số điện thoại:</strong> @(Model.Phone ?? "-")
-            </div>
-            <div class="info-item"><i class="fa fa-birthday-cake"></i> <strong>Ngày sinh:</strong>
-                @(Model.BirthDate?.ToString("dd/MM/yyyy") ?? "-")</div>
-            <div class="info-item"><i class="fa fa-home"></i> <strong>Địa chỉ:</strong> @(Model.Address ?? "-")</div>
-
-
-            <div class="profile-actions">
-                <a asp-controller="Account" asp-action="EditProfile" class="btn btn-danger">Chỉnh sửa</a>
-            </div>
-        </div>
-    </div>
-</div>
-
-
-
-@section Scripts {
-    <script>
-
+        // 2. Logic Upload Avatar
         document.querySelectorAll('.avatar-wrapper').forEach(wrapper => {
             const overlay = wrapper.querySelector('.avatar-overlay');
-            wrapper.addEventListener('mouseenter', () => overlay.style.opacity = 1);
-            wrapper.addEventListener('mouseleave', () => overlay.style.opacity = 0);
+            const avatarInput = wrapper.querySelector('#avatarInput');
+            const avatarForm = wrapper.querySelector('#avatarForm');
 
-
-            overlay.addEventListener('click', () => {
-                wrapper.querySelector('#avatarInput').click();
+            // Hiệu ứng hover
+            wrapper.addEventListener('mouseenter', () => {
+                // Kiểm tra xem đã có style opacity chưa trước khi đặt
+                const currentOpacity = window.getComputedStyle(overlay).opacity;
+                if (currentOpacity === '0' || currentOpacity === '') {
+                    overlay.style.opacity = 1;
+                }
+            });
+            wrapper.addEventListener('mouseleave', () => {
+                overlay.style.opacity = 0;
             });
 
+            // Click vào overlay để mở chọn file
+            overlay.addEventListener('click', () => {
+                avatarInput.click();
+            });
 
-            wrapper.querySelector('#avatarInput').addEventListener('change', () => {
-                wrapper.querySelector('#avatarForm').submit();
+            // Khi file được chọn, tự động submit form
+            avatarInput.addEventListener('change', () => {
+                avatarForm.submit();
             });
         });
-
     </script>
-
-
 }

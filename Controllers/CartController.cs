@@ -73,5 +73,19 @@ public class CartController : Controller
     }
     #endregion
 
+    #region Reorder
+    [HttpPost]
+    public IActionResult Reorder([FromForm] int orderId)
+    {
+        int? customerId = HttpContext.Session.GetInt32("CustomerID");
+        if (customerId == null)
+            return Json(new { success = false, message = "Bạn chưa đăng nhập" });
+
+        if (_cartService.Reorder(customerId.Value, orderId, out string message))
+            return Json(new { success = true, redirectUrl = Url.Action("Order", "Order") });
+
+        return Json(new { success = false, message });
+    }
+    #endregion
 
 }

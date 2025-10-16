@@ -504,4 +504,29 @@ public class OrderService : IOrderService
             })
             .FirstOrDefaultAsync();
     }
+
+    public async Task<(bool success, string message)> CancelByCustomerAsync(int orderId, int customerId, string? reason)
+    {
+        var order = await _context.Orders.FirstOrDefaultAsync(o => o.OrderID == orderId);
+        if (order == null)
+            return (false, "Đơn hàng không tồn tại");
+
+        if (order.CustomerID != customerId)
+            return (false, "Bạn không có quyền hủy đơn này");
+
+        if (!string.Equals(order.Status, "Chờ xác nhận", StringComparison.OrdinalIgnoreCase))
+            return (false, "Chỉ có thể hủy khi đơn đang ở trạng thái 'Chờ xác nhận'.");
+
+        // Nếu cần kiểm tra thanh toán online, có thể bổ sung trường transaction/status sau
+        order.Status = "Đã hủy";
+        order.CancelledAt = DateTime.Now;
+        if (!string.IsNullOrWhiteSpace(reason))
+        {
+            order.CancelReason = reason.Trim();
+        }
+
+        // Optional: nếu có các trường audit, thêm cập nhật ở đây
+        await _context.SaveChangesAsync();
+        return (true, "Đã hủy đơn thành công");
+    }
 }
