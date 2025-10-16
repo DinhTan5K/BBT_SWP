@@ -87,7 +87,7 @@ document.addEventListener('DOMContentLoaded', function () {
             try {
                 const formData = new FormData();
                 formData.append('orderId', orderId);
-                const res = await fetch('/Cart/Reorder', {
+                const res = await fetch('/Order/Reorder', {
                     method: 'POST',
                     body: formData,
                     credentials: 'same-origin'
