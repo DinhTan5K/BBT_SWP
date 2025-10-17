@@ -1,0 +1,201 @@
+@model ContactFormModel
+@{
+    ViewData["Title"] = "Contact";
+}
+
+<link rel="stylesheet" href="/css/contact.css" />
+
+<div class="page-background">
+    <div class="contact-banner" role="banner">
+        <div class="wrap">
+            <h1>CONTACT US</h1>
+            <p class="subtitle">Please fill the form to submit your feedback to Buble Tea.</p>
+        </div>
+    </div>
+
+    <div class="contact-container">
+        @if (TempData["ContactSuccess"] != null)
+        {
+            <div class="alert alert-success">@TempData["ContactSuccess"]</div>
+        }
+        @if (TempData["ContactWarning"] != null)
+        {
+            <div class="alert alert-warning">@TempData["ContactWarning"]</div>
+        }
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div class="alert alert-danger">
+                @foreach (var e in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                {
+                    <div>@e.ErrorMessage</div>
+                }
+            </div>
+        }
+
+        <form asp-action="Contact" asp-controller="Contact" method="post" novalidate>
+            @Html.AntiForgeryToken()
+
+            <div class="intro-text">
+                Buble Tea luôn mong muốn nhận được những phản hồi quý giá của quý khách hàng để có cơ hội hoàn thiện sản phẩm, dịch vụ hơn nữa.
+            </div>
+
+            <div class="form-row">
+                <div class="col-left">
+                    <div class="form-group">
+                        <label>Họ và tên</label>
+                        <input asp-for="Name" class="form-control" />
+                        <span asp-validation-for="Name" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Số điện thoại</label>
+                        <input asp-for="Phone" class="form-control" />
+                    </div>
+
+                    <div class="form-group">
+                        <label>Tỉnh/Thành</label>
+                        <select id="CitySelectLeft" name="City" asp-for="City" class="form-control" disabled>
+                            <option value="">-- Chọn tỉnh/TP --</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="col-right">
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input asp-for="Email" class="form-control" />
+                        <span asp-validation-for="Email" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Vùng/Miền</label>
+                        <select id="RegionSelect" name="RegionId" asp-for="RegionId" class="form-control">
+                            <option value="">-- Chọn vùng --</option>
+                            @if (ViewBag.Regions != null)
+                            {
+                                foreach (var r in (IEnumerable<dynamic>)ViewBag.Regions)
+                                {
+                                    <option value="@r.RegionID">@r.RegionName</option>
+                                }
+                            }
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Cửa hàng phản hồi</label>
+                        <select id="BranchSelect" name="StoreId" asp-for="StoreId" class="form-control" disabled>
+                            <option value="">-- Chọn cửa hàng --</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Vấn đề phản hồi</label>
+                <div class="radio-list">
+                    <input type="radio" id="issue-complaint" name="IssueType" value="Than phiền" @(Model.IssueType == "Than phiền" ? "checked" : "") />
+                    <label for="issue-complaint">Than phiền</label>
+                    <input type="radio" id="issue-praise" name="IssueType" value="Khen ngợi" @(Model.IssueType == "Khen ngợi" ? "checked" : "") />
+                    <label for="issue-praise">Khen ngợi</label>
+                    <input type="radio" id="issue-suggestion" name="IssueType" value="Đề xuất" @(Model.IssueType == "Đề xuất" ? "checked" : "") />
+                    <label for="issue-suggestion">Đề xuất</label>
+                    <input type="radio" id="issue-membership" name="IssueType" value="Thẻ thành viên" @(Model.IssueType == "Thẻ thành viên" ? "checked" : "") />
+                    <label for="issue-membership">Thẻ thành viên</label>
+                    <input type="radio" id="issue-other" name="IssueType" value="Vấn đề khác" @(Model.IssueType == "Vấn đề khác" ? "checked" : "") />
+                    <label for="issue-other">Vấn đề khác</label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Nội dung phản hồi</label>
+                <textarea asp-for="Message" class="form-control"></textarea>
+                <span asp-validation-for="Message" class="text-danger"></span>
+            </div>
+
+            <div class="agreement">
+                <strong>THỎA THUẬN BẢO MẬT THÔNG TIN</strong>
+                <ol>
+                    <li>Chúng tôi sẽ giữ bí mật các thông tin của khách hàng và tuân thủ các quy định pháp luật về bảo mật.</li>
+                    <li>Thông tin có thể được chia sẻ nội bộ để giải quyết khiếu nại, phản hồi của khách hàng.</li>
+                    <li>Quý khách vui lòng cung cấp thông tin chính xác (số điện thoại và Email) để chúng tôi có thể liên hệ kịp thời.</li>
+                    <li>Trường hợp quý khách nhập sai thông tin, Buble Tea vẫn sẽ nhập được lời góp ý của quý khách nhưng sẽ không thể phản hồi lại.</li>
+                </ol>
+            </div>
+
+            <div class="form-submit">
+                <button type="submit" class="btn-submit">GỬI Ý KIẾN</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        document.getElementById('RegionSelect')?.addEventListener('change', function () {
+            const regionId = this.value;
+            const cityLeft = document.getElementById('CitySelectLeft');
+            const branchSelect = document.getElementById('BranchSelect');
+
+            cityLeft.innerHTML = '<option value="">(chọn tỉnh)</option>';
+            branchSelect.innerHTML = '<option value="">(chọn tỉnh trước)</option>';
+            branchSelect.disabled = true;
+
+            if (!regionId) {
+                cityLeft.disabled = true;
+                return;
+            }
+
+            cityLeft.disabled = false;
+
+            fetch(`/Contact/GetCities?regionId=${regionId}`)
+                .then(r => r.json())
+                .then(data => {
+                    cityLeft.innerHTML = '<option value="">-- Chọn tỉnh/thành --</option>';
+                    data.forEach(c => {
+                        const opt = document.createElement('option');
+                        opt.value = c;
+                        opt.textContent = c;
+                        cityLeft.appendChild(opt);
+                    });
+                })
+                .catch(err => {
+                    console.error('GetCities error', err);
+                });
+        });
+
+        document.getElementById('CitySelectLeft')?.addEventListener('change', function () {
+            const city = this.value;
+            const branchSelect = document.getElementById('BranchSelect');
+
+            branchSelect.innerHTML = '<option value="">(đang tải...)</option>';
+            branchSelect.disabled = true;
+
+            if (!city) {
+                branchSelect.innerHTML = '<option value=\"\">(chọn tỉnh trước)</option>';
+                return;
+            }
+
+            fetch(`/Contact/GetBranches?city=${encodeURIComponent(city)}`)
+                .then(r => r.json())
+                .then(data => {
+                    branchSelect.innerHTML = '<option value="">-- Chọn cửa hàng --</option>';
+                    data.forEach(b => {
+                        const opt = document.createElement('option');
+                        opt.value = b.id;
+                        opt.textContent = b.name;
+                        branchSelect.appendChild(opt);
+                    });
+                    branchSelect.disabled = false;
+                })
+                .catch(err => {
+                    console.error('GetBranches error', err);
+                    branchSelect.innerHTML = '<option value="">(lỗi tải cửa hàng)</option>';
+                });
+        });
+    </script>
+}
+
+
+

@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using start.Models;
+using Microsoft.Identity.Client;
+using System.Globalization;
 
 namespace start.Data
 {
@@ -14,7 +16,7 @@ namespace start.Data
         public DbSet<Product> Products { get; set; }
 
         public DbSet<Branch> Branches { get; set; }
-
+        public DbSet<Region> Regions { get; set; }
         public DbSet<Cart> Carts { get; set; }
         public DbSet<CartDetail> CartDetails { get; set; }
 

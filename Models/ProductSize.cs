@@ -1,7 +1,5 @@
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace start.Models
-{
     [Table("ProductSize")]
     public class ProductSize
     {
@@ -15,4 +13,3 @@ namespace start.Models
 
         public Product? Product { get; set; }
     }
-}
