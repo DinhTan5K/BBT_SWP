@@ -1,0 +1,138 @@
+@model start.Models.ViewModels.DayOffOneDayVm
+@{
+    Layout = "_EmployeeLayout";
+    ViewData["Title"] = "Ngày nghỉ";
+    var emp  = ViewBag.Employee as start.Models.Employee;
+    var list = ViewBag.Requests as List<start.Models.ViewModels.DayOffListItemVm> ?? new();
+}
+
+@section Styles { <link rel="stylesheet" href="~/css/employee/dayoff.css" /> }
+
+
+
+
+<div class="card shadow-sm mb-4 dayoff-card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="card-title m-0">
+
+      <span class="ui-tag ui-tag--title">Đăng ký nghỉ 1 ngày</span>
+    </h5>
+    <span class="ui-tag ui-tag--note">Phải sau hôm nay ≥ 3 ngày</span>
+  </div>
+  <div class="card-body">
+    @if (TempData["ok"]  != null) { <div class="alert alert-success mb-3"><i class="bi bi-check2-circle me-1"></i>@TempData["ok"]</div> }
+    @if (TempData["err"] != null) { <div class="alert alert-danger  mb-3"><i class="bi bi-exclamation-triangle me-1"></i>@TempData["err"]</div> }
+
+    <!-- Căn giữa form -->
+    <div class="dayoff-wrap">
+      <form asp-action="DayOffSubmit" asp-controller="Employee" method="post" class="kv-grid">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="EmployeeID" />
+        <input type="hidden" asp-for="BranchID" />
+
+        <!-- Ngày nghỉ -->
+        <div class="kv-row">
+          <div class="kv-label">Ngày nghỉ</div>
+          <div class="kv-value">
+            <input asp-for="OffDate" type="date" class="form-control date-input-lg"
+                   min="@DateTime.Today.AddDays(3).ToString("yyyy-MM-dd")" />
+            <span asp-validation-for="OffDate" class="text-danger small"></span>
+          </div>
+        </div>
+
+        <!-- Lý do -->
+        <div class="kv-row">
+          <div class="kv-label">Lý do</div>
+          <div class="kv-value">
+            <textarea asp-for="Reason" class="form-control reason-lg" maxlength="300"
+                      ></textarea>
+            <div class="form-text d-flex justify-content-between">
+
+              <span id="reasonCounter" class="text-muted"></span>
+            </div>
+            <span asp-validation-for="Reason" class="text-danger small"></span>
+          </div>
+        </div>
+
+        <!-- Nút -->
+        <div class="kv-row kv-actions">
+          <div class="kv-label d-none d-md-block"></div>
+
+        </div>
+        <div class="kv-value">
+            <button class="btn btn-theme" type="submit">
+              <i class="bi bi-send me-1"></i>Gửi đơn
+            </button>
+          </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-header fw-semibold">
+    <span class="ui-tag ui-tag--sent">Đơn đã gửi</span>
+  </div>
+  <div class="card-body p-0">
+    <!-- Căn giữa bảng -->
+    <div class="history-wrap">
+      <div class="table-responsive">
+        <table class="table table-hover table-sm align-middle mb-0 dayoff-table">
+          <thead class="table-light">
+            <tr>
+              <th class="text-center" style="width:160px">Ngày nghỉ</th>
+              <th class="text-center" style="width:140px">Trạng thái</th>
+              <th class="text-start">Lý do</th>
+            </tr>
+          </thead>
+          <tbody>
+          @if (!list.Any())
+          {
+            <tr>
+              <td colspan="3" class="text-center text-muted p-4">
+                Chưa có đơn nghỉ nào.
+              </td>
+            </tr>
+          }
+          else
+          {
+            foreach (var r in list)
+            {
+              <tr>
+                <td class="text-center">@r.OffDate.ToString("dd/MM/yyyy")</td>
+                <td class="text-center">
+                  @{
+                      var badge = "badge-soft-secondary";
+                      var text  = "Chờ duyệt";
+                      if (string.Equals(r.Status, "Approved", StringComparison.OrdinalIgnoreCase)) { badge = "badge-soft-success"; text = "Đã duyệt"; }
+                      else if (string.Equals(r.Status, "Rejected", StringComparison.OrdinalIgnoreCase)) { badge = "badge-soft-danger";  text = "Từ chối"; }
+                  }
+                  <span class="badge @badge">@text</span>
+                </td>
+                <td class="reason truncate" title="@r.Reason">@r.Reason</td>
+              </tr>
+            }
+          }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+@section Scripts {
+  <partial name="_ValidationScriptsPartial" />
+  <script>
+    // Counter ký tự lý do
+    (function () {
+      const ta = document.getElementById('@Html.IdFor(m => m.Reason)');
+      const c  = document.getElementById('reasonCounter');
+      if (ta && c) {
+        const max = parseInt(ta.getAttribute('maxlength') || '300');
+        const update = () => c.textContent = `${ta.value.length}/${max}`;
+        ta.addEventListener('input', update);
+        update();
+      }
+    })();
+  </script>
+}

@@ -1,0 +1,33 @@
+@model WorkSchedule
+
+<form id="createScheduleForm" asp-action="CreateSchedule" method="post" novalidate="novalidate">
+    @Html.AntiForgeryToken()
+
+    @* Dùng để hiển thị lỗi chung từ server, ví dụ "lịch đã tồn tại" *@
+    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+    <div class="mb-3">
+        <label asp-for="EmployeeID" class="form-label">Employee</label>
+        <select asp-for="EmployeeID" class="form-select" asp-items="@(new SelectList(ViewBag.Employees, "EmployeeID", "FullName"))">
+            <option value="">-- Select Employee --</option>
+        </select>
+        <span asp-validation-for="EmployeeID" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="WorkDate" class="form-label">Date</label>
+        <input asp-for="WorkDate" class="form-control" type="date" min="@DateTime.Now.ToString("yyyy-MM-dd")" />
+        <span asp-validation-for="WorkDate" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Shift" class="form-label">Shift</label>
+        <select asp-for="Shift" class="form-select">
+            <option value="">-- Select Shift --</option>
+            <option value="Morning">Morning</option>
+            <option value="Afternoon">Afternoon</option>
+            <option value="Night">Night</option>
+        </select>
+        <span asp-validation-for="Shift" class="text-danger"></span>
+    </div>
+</form>

@@ -1,0 +1,185 @@
+@model start.Models.ViewModels.MonthlySalaryVm?
+@{
+    Layout = "_EmployeeLayout";
+    ViewData["Title"] = "Bảng lương";
+    var employeeId = (string)ViewData["EmployeeID"];
+    var month = (int)ViewData["Month"];
+    var year = (int)ViewData["Year"];
+    var emp = ViewBag.Employee as start.Models.Employee;
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/employee/salary.css" />
+}
+
+@if (emp != null)
+{
+    @await Html.PartialAsync("~/Views/Employee/_Header.cshtml", emp)
+    @await Html.PartialAsync("~/Views/Employee/_Tabs.cshtml", emp)
+}
+
+<div class="card shadow-sm mb-3">
+    <div class="pay-header">
+        <div class="title">
+            <div class="title-top">Bảng lương @month/@year</div>
+            <div class="title-sub">
+                Mã NV: <b>@employeeId</b>
+                @(Model?.EmployeeName != null ? $" — {Model.EmployeeName}" : "")
+            </div>
+        </div>
+
+        <form method="get" asp-action="Salary" asp-controller="Employee" class="pay-filter">
+            <input type="hidden" name="id" value="@employeeId" />
+            <select name="month" class="select-sm">
+                @for (int m = 1; m <= 12; m++)
+                {
+                    <option value="@m" selected="@(m == month)">Tháng @m</option>
+                }
+            </select>
+            <select name="year" class="select-sm">
+                @for (int y = DateTime.Now.Year - 2; y <= DateTime.Now.Year + 2; y++)
+                {
+                    <option value="@y" selected="@(y == year)">@y</option>
+                }
+            </select>
+            <button class="btn-ghost" type="submit">Xem</button>
+            <button class="btn-primary print-hidden" type="button" onclick="window.print()">In</button>
+        </form>
+    </div>
+
+    <div class="card-body">
+        @if (Model is null)
+        {
+            <div class="alert-soft">Chưa có phiếu lương cho tháng này.</div>
+        }
+        else
+        {
+            <div class="kpi-grid">
+                <div class="kpi"><div class="k">Tổng ca (đã làm)</div><div class="v">@Model.TotalShifts</div></div>
+                <div class="kpi"><div class="k">Tổng giờ (đã làm)</div><div class="v">@Model.TotalHoursWorked</div></div>
+                <div class="kpi"><div class="k">Lương giờ</div><div class="v">@Model.HourlyRate.ToString("n0") đ</div></div>
+                <div class="kpi"><div class="k">Lương cơ bản</div><div class="v">@Model.BaseSalary.ToString("n0") đ</div></div>
+                <div class="kpi good"><div class="k">Thưởng</div><div class="v">+@Model.Bonus.ToString("n0") đ</div></div>
+                <div class="kpi bad"><div class="k">Phạt</div><div class="v">-@Model.Penalty.ToString("n0") đ</div></div>
+                <div class="kpi highlight"><div class="k">Thực lĩnh</div><div class="v big">@Model.TotalSalary.ToString("n0") đ</div></div>
+                <div class="kpi"><div class="k">Trạng thái</div><div class="pill">@Model.Status</div></div>
+            </div>
+
+            <div class="chart-grid">
+                <div class="chart-card">
+                    <div class="chart-title">Cơ cấu thu nhập</div>
+                    <canvas id="chartIncome"></canvas>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-title">Ca làm (Kế hoạch vs Đã làm)</div>
+                    <canvas id="chartShifts"></canvas>
+                </div>
+            </div>
+
+            <div class="section-title">Chi tiết thưởng/phạt</div>
+            <table class="pay-table">
+                <thead>
+                    <tr><th>Ngày</th><th>Lý do</th><th class="text-end">Số tiền</th></tr>
+                </thead>
+                <tbody>
+                    @if (Model.Adjustments.Count == 0)
+                    {
+                        <tr><td colspan="3" class="muted">Không có điều chỉnh.</td></tr>
+                    }
+                    else
+                    {
+                        @foreach (var a in Model.Adjustments)
+                        {
+                            var cls = a.Amount >= 0 ? "pos" : "neg";
+                            <tr>
+                                <td>@a.Date.ToString("dd/MM/yyyy")</td>
+                                <td>@a.Reason</td>
+                                <td class="text-end @cls">@a.Amount.ToString("n0")</td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+
+            <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+            <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+
+            <script>
+                (() => {
+                    Chart.register(ChartDataLabels);
+
+                    const inv = (n) => n.toString().replace(',', '.');
+
+                    // Dữ liệu Chart được giữ nguyên cách truyền từ C#
+                    const base = Number(inv(@Model.BaseSalary.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+                    const bonus = Number(inv(@Model.Bonus.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+                    const pen = Number(inv(@Model.Penalty.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+
+                    const scheduledShifts = @Model.ScheduledShifts;
+                    const doneShifts = @Model.TotalShifts;
+
+                    // Plugin: chữ giữa vòng tròn = Thực lĩnh
+                    const actualEarn = Number(inv(@Model.TotalSalary.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+                    const centerText = {
+                        id: 'centerText',
+                        afterDraw(chart) {
+                            const { ctx, chartArea: { width, height } } = chart;
+                            ctx.save();
+                            ctx.font = '700 18px system-ui,-apple-system,Segoe UI,Roboto';
+                            ctx.fillStyle = '#1f2328';
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'middle';
+                            ctx.fillText(actualEarn.toLocaleString('vi-VN') + ' đ', width / 2, height / 2);
+                            ctx.restore();
+                        }
+                    };
+
+                    // 1) Doughnut: Cơ cấu thu nhập
+                    new Chart(document.getElementById('chartIncome'), {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Cơ bản', 'Thưởng', 'Phạt'],
+                            datasets: [{ data: [base, bonus, pen], borderWidth: 0 }]
+                        },
+                        options: {
+                            cutout: '60%',
+                            plugins: {
+                                legend: { position: 'bottom' },
+                                datalabels: {
+                                    formatter: (v) => v.toLocaleString('vi-VN') + ' đ',
+                                    font: { weight: '700' }
+                                }
+                            }
+                        },
+                        plugins: [centerText]
+                    });
+
+                    // 2) Bar: Ca làm (Kế hoạch vs Đã làm)
+                    new Chart(document.getElementById('chartShifts'), {
+                        type: 'bar',
+                        data: {
+                            labels: ['Kế hoạch', 'Đã làm'],
+                            datasets: [{
+                                data: [scheduledShifts, doneShifts],
+                                borderWidth: 0,
+                                borderRadius: 12
+                            }]
+                        },
+                        options: {
+                            scales: { y: { beginAtZero: true } },
+                            plugins: {
+                                legend: { display: false },
+                                datalabels: {
+                                    anchor: 'end',
+                                    align: 'top',
+                                    formatter: (v) => v.toLocaleString('vi-VN'),
+                                    font: { weight: '700' }
+                                }
+                            }
+                        }
+                    });
+                })();
+            </script>
+        }
+    </div>
+</div>

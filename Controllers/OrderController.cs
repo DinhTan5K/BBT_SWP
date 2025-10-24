@@ -63,6 +63,26 @@ public class OrderController : Controller
             // Nếu chưa login, cho về trang đăng nhập
             return RedirectToAction("Login", "Account");
         }
+        var customer = await _context.Customers.FindAsync(customerId.Value);
+
+        ViewData["CustomerName"] = customer?.Name;
+        ViewData["CustomerPhone"] = customer?.Phone;
+        ViewData["CustomerAddress"] = customer?.Address;
+
+        // 🔹 Lấy danh sách chi nhánh từ DB (đặt tên property trùng với JS)
+        var branches = await _context.Branches
+            .Select(b => new
+            {
+                branchID = b.BranchID,   // viết thường để JS đọc đúng
+                name = b.Name,
+                city = b.City,
+                latitude = b.Latitude,
+                longitude = b.Longitude
+            })
+            .ToListAsync();
+
+        // 🔹 Truyền sang View qua ViewBag
+        ViewBag.Branches = branches;
 
         var cart = await _orderReadService.GetCartForCheckoutAsync(customerId.Value);
         return View(cart);

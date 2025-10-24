@@ -7,57 +7,66 @@
 
 <link rel="stylesheet" href="/css/product.css" />
 
+
 <div class="container">
     <aside class="filter-sidebar">
         <div class="search-bar">
             <i class="fa fa-search"></i>
-            <input type="text" placeholder="Tìm trà sữa..." />
+            <input type="text" id="searchInput" placeholder="Tìm trà sữa..." />
         </div>
         <button class="filter-btn active" data-category="all">Tất cả</button>
         <button class="filter-btn" data-category="1">Truyền Thống</button>
         <button class="filter-btn" data-category="2">Trái Cây</button>
         <button class="filter-btn" data-category="3">Bộ Sưu Tập</button>
-        <button class="filter-btn" data-category="4">Con Cá</button>
+        <button class="filter-btn" data-category="4">Topping</button>
         <button class="filter-btn" data-category="5">Con Chim</button>
     </aside>
 
-    <div class="products-grid">
-        @if (Model != null && Model.Any())
-        {
-            foreach (var item in Model)
+    <div class="products-grid-container">
+        <div class="products-grid">
+            @if (Model != null && Model.Any())
             {
-                <div class="product-item" data-category="@item.CategoryID" data-product-id="@item.ProductID">
-                    <img src="@item.Image_Url" alt="@item.ProductName" />
-                    <h3>@item.ProductName</h3>
+                foreach (var item in Model)
+                {
+                    <div class="product-item" data-category="@item.CategoryID" data-product-id="@item.ProductID"
+                             data-name="@item.ProductName.ToLower()">
+                            <img src="@item.Image_Url" alt="@item.ProductName" />
 
-                    <div class="size-options" data-product-id="@item.ProductID">
-                        @foreach (var size in item.ProductSizes)
-                        {
-                            <div class="size-option" data-size-id="@size.ProductSizeID" data-price="@size.Price">
-                                @size.Size
+                            <div class="product-info-wrapper">
+                                <h3>@item.ProductName</h3>
+                                <p class="price">
+                                    Giá: <span class="selected-price">
+                                        @($"{item.ProductSizes.FirstOrDefault()?.Price:#,0} đ")
+                                    </span>
+                                </p>
+
+                                <div class="product-actions">
+                                    <div class="size-options" data-product-id="@item.ProductID">
+                                        @foreach (var size in item.ProductSizes)
+                                        {
+                                            <div class="size-option" data-size-id="@size.ProductSizeID" data-price="@size.Price">
+                                                @size.Size
+                                            </div>
+                                        }
+                                    </div>
+                                    <button class="btn-add">Add to Cart</button>
+                                </div>
                             </div>
-                        }
-                    </div>
-
-                    <p class="price">
-                        Giá: <span class="selected-price">
-                            @($"{item.ProductSizes.FirstOrDefault()?.Price:#,0} đ")
-                        </span>
-                    </p>
-
-                    <button class="btn-add">Add to Cart</button>
-                </div>
+                        </div>
+                }
             }
-        }
-        else
-        {
-            <p>Không có sản phẩm nào!</p>
-        }
+            else
+            {
+                <p>Không có sản phẩm nào!</p>
+            }
+        </div>
 
         <div class="no-result">
             <i class="fa fa-search"></i>
             <p>Không tìm thấy sản phẩm nào</p>
         </div>
+
+        <div id="pagination-container"></div>
     </div>
 
     <div class="cart">
@@ -73,4 +82,97 @@
 </div>
 
 <script src="/js/product.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const ITEMS_PER_PAGE = 6;
+        let currentPage = 1;
+        let currentCategory = 'all';
+        let currentSearchTerm = '';
 
+        const allProducts = document.querySelectorAll(".product-item");
+        const productsGrid = document.querySelector(".products-grid");
+        const noResultMessage = document.querySelector(".no-result");
+        const paginationContainer = document.getElementById("pagination-container");
+        const searchInput = document.getElementById("searchInput");
+        const filterButtons = document.querySelectorAll(".filter-btn");
+
+        function updateProductDisplay() {
+            const visibleProducts = getVisibleProducts();
+
+            if (visibleProducts.length === 0) {
+                productsGrid.style.display = 'none';
+                noResultMessage.style.display = 'flex';
+            } else {
+                productsGrid.style.display = 'grid';
+                noResultMessage.style.display = 'none';
+            }
+
+            renderPagination(visibleProducts);
+            showPage(1, visibleProducts);
+        }
+
+        function getVisibleProducts() {
+            const searchTerm = currentSearchTerm.toLowerCase().trim();
+            return Array.from(allProducts).filter(product => {
+                const categoryMatch = currentCategory === 'all' || product.dataset.category === currentCategory;
+                // ✅ Sửa lỗi tìm kiếm bằng cách kiểm tra data-name
+                const nameMatch = product.dataset.name.includes(searchTerm);
+                return categoryMatch && nameMatch;
+            });
+        }
+
+        function showPage(page, productsToShow) {
+            currentPage = page;
+            allProducts.forEach(p => p.style.display = "none");
+            const start = (page - 1) * ITEMS_PER_PAGE;
+            const end = start + ITEMS_PER_PAGE;
+            const pageProducts = productsToShow.slice(start, end);
+            pageProducts.forEach(p => p.style.display = "block");
+
+            document.querySelectorAll("#pagination-container button").forEach(btn => {
+                btn.classList.toggle('active', parseInt(btn.innerText) === currentPage);
+            });
+        }
+
+        function renderPagination(productsToShow) {
+            const totalPages = Math.ceil(productsToShow.length / ITEMS_PER_PAGE);
+            paginationContainer.innerHTML = "";
+
+            if (totalPages <= 1) {
+                paginationContainer.style.display = "none";
+                return;
+            }
+
+            paginationContainer.style.display = "flex";
+
+            for (let i = 1; i <= totalPages; i++) {
+                const btn = document.createElement("button");
+                btn.innerText = i;
+                btn.addEventListener('click', () => {
+                    showPage(i, productsToShow);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                });
+                paginationContainer.appendChild(btn);
+            }
+        }
+
+        // Gắn sự kiện cho các nút Lọc
+        filterButtons.forEach(button => {
+            button.addEventListener('click', function () {
+                filterButtons.forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+                currentCategory = this.dataset.category;
+                updateProductDisplay();
+            });
+        });
+
+        // Gắn sự kiện cho ô Tìm kiếm
+        searchInput.addEventListener('input', function () {
+            currentSearchTerm = this.value;
+            updateProductDisplay();
+        });
+
+        // Khởi động
+        updateProductDisplay();
+    });
+</script>

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using start.Data;
@@ -83,7 +84,7 @@ public class OrderService : IOrderService
             var itemsTotal = orderDetails.Sum(d => d.Total);
 
             // Gọi hàm tính toán giảm giá đã được tái sử dụng
-            var calculationResult = await CalculateDiscountAsync(form.PromoCode, itemsTotal, form.ShippingFee);
+            var calculationResult = await CalculateDiscountAsync(form.PromoCode, itemsTotal, form.ShippingFee, form.BranchID);
             _logger.LogInformation("[OrderService] CalculateDiscount: PromoInput='{Promo}', ItemsTotal={ItemsTotal}, ShippingFeeInput={ShipInput}, FinalTotal={FinalTotal}, FinalShippingFee={FinalShip}, AppliedCodes={Applied}",
                 form.PromoCode,
                 itemsTotal,
@@ -164,7 +165,7 @@ public class OrderService : IOrderService
         }
     }
 
-    public async Task<PromoCodeResponse> CalculateDiscountAsync(string promoCodes, decimal itemsTotal, decimal shippingFee)
+    public async Task<PromoCodeResponse> CalculateDiscountAsync(string promoCodes, decimal itemsTotal, decimal shippingFee, int branchID)
     {
         var response = new PromoCodeResponse
         {

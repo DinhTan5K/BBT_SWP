@@ -32,29 +32,54 @@ public class AuthService : IAuthService
         return hashOfInput == hashedPassword;
     }
 
-    public Customer? Login(string loginId, string password)
+    public Customer? LoginCustomer(string loginId, string password)
     {
         if (string.IsNullOrWhiteSpace(loginId) || string.IsNullOrWhiteSpace(password))
             return null;
 
+        var input = loginId.Trim().ToLowerInvariant();
         var hashedPassword = HashPassword(password);
 
         var user = _context.Customers
-     .FirstOrDefault(c =>
-         ((c.Email != null && c.Email.ToLower() == loginId.ToLower()) ||
-          c.Username == loginId)
-         && c.Password == hashedPassword);
 
-
+            .FirstOrDefault(c =>
+                (
+                    (c.Email != null && c.Email.ToLower() == input) ||
+                    (c.Username != null && c.Username == loginId) // giữ nguyên so sánh username như hiện tại
+                )
+                && c.Password == hashedPassword
+            );
 
         if (user == null) return null;
 
         if (!user.IsEmailConfirmed)
-        {
             throw new Exception("Email chưa xác thực");
-        }
 
         return user;
+    }
+
+    public Employee? LoginEmployee(string loginId, string password)
+    {
+        if (string.IsNullOrWhiteSpace(loginId) || string.IsNullOrWhiteSpace(password))
+            return null;
+
+        var input = loginId.Trim().ToLowerInvariant();
+
+        var emp = _context.Employees
+
+            .FirstOrDefault(e =>
+                (e.Email != null && e.Email.ToLower() == input) ||
+                (e.EmployeeID != null && e.EmployeeID.ToLower() == input)
+            );
+
+        if (emp == null) return null;
+
+        // So khớp mật khẩu (giữ nguyên cơ chế hiện tại)
+        bool ok = emp.IsHashed
+            ? emp.Password == HashPassword(password)
+            : emp.Password == password;
+
+        return ok ? emp : null;
     }
 
     public Customer HandleGoogleLogin(string email, string name)

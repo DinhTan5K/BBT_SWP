@@ -1,0 +1,225 @@
+@{
+    Layout = "_BManagerLayout";
+}
+@model IEnumerable<WorkSchedule>
+@{
+    ViewData["Title"] = "Work Schedule Management";
+}
+<form id="antiForgeryForm" class="d-none">
+    @Html.AntiForgeryToken()
+</form>
+<div style="margin-top: 80px;">
+    <h2 class="text-center mb-4">Work Schedule Management</h2>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Filter by Date</h5>
+            <form asp-action="WorkSchedule" method="get" class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label for="startDate" class="form-label">Start Date</label>
+                    <input type="date" id="startDate" name="startDate" class="form-control" value="@ViewBag.StartDate" />
+                </div>
+                <div class="col-md-4">
+                    <label for="endDate" class="form-label">End Date</label>
+                    <input type="date" id="endDate" name="endDate" class="form-control" value="@ViewBag.EndDate" />
+                </div>
+                <div class="col-md-4 d-flex">
+                    <button type="submit" class="btn btn-primary me-2">Filter</button>
+                    <a asp-action="WorkSchedule" class="btn btn-secondary">Clear</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+
+<table class="table table-hover align-middle text-center">
+    <thead class="table-dark">
+        <tr>
+            <th>Employee</th>
+            <th>Date</th>
+            <th>Shift</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var item in Model)
+    {
+        <tr class="@(item.IsActive ? "" : "inactive-row")" data-id="@item.WorkScheduleID">
+            <td>@item.Employee?.FullName</td>
+            <td>@item.WorkDate.ToString("dd/MM/yyyy")</td>
+            <td>@item.Shift</td>
+            <td>
+                @if (item.IsActive)
+                {
+                    <span class="badge bg-success">Active</span>
+                }
+                else
+                {
+                    <span class="badge bg-secondary">Hidden</span>
+                }
+            </td>
+            <td>
+            <a asp-action="EditSchedule" asp-route-id="@item.WorkScheduleID" class="btn btn-warning btn-sm">Edit</a>
+                @if (item.IsActive)
+                {
+                    <button class="btn btn-warning btn-sm hide-btn" data-id="@item.WorkScheduleID">Hide</button>
+                }
+                else
+                {
+                    <button class="btn btn-info btn-sm restore-btn" data-id="@item.WorkScheduleID">Restore</button>
+                }
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
+</div>
+
+<div class="modal fade" id="scheduleModal" tabindex="-1" aria-labelledby="scheduleModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="scheduleModalLabel">Create New Schedule</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary" id="saveScheduleBtn">Create Schedule</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<button id="addScheduleBtn" class="fab" title="Create New Schedule">+</button>
+
+@section Styles {
+    <style>
+       tr.inactive-row td:not(:last-child) {
+            opacity: 0.5;
+            transition: opacity 0.3s ease-in-out;
+        }
+        /* 2. Làm mờ và vô hiệu hóa nút "Edit" trên dòng đã ẩn */
+        tr.inactive-row .btn-warning { /* Nút Edit */
+            opacity: 0.5;
+            pointer-events: none; /* Vô hiệu hóa click */
+        }
+        /* Dán code CSS ở trên vào đây */
+        .fab {
+            position: fixed;
+            width: 60px;
+            height: 60px;
+            bottom: 40px;
+            right: 40px;
+            background-color: #0d6efd;
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            font-size: 30px;
+            font-weight: bold;
+            line-height: 58px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            z-index: 1050;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+        }
+        .fab:hover {
+            background-color: #0b5ed7;
+            transform: scale(1.05);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4);
+        }
+        /* Thêm các style khác của bạn nếu có */
+        .blurred {
+            opacity: 0.5;
+        }
+    </style>
+}
+
+
+@section Scripts {
+<script>
+    $(document).ready(function(){
+       
+        var scheduleModalEl = document.getElementById('scheduleModal');
+        var scheduleModal = new bootstrap.Modal(scheduleModalEl);
+        const token = $('#antiForgeryForm input[name="__RequestVerificationToken"]').val();
+        
+        
+        // 1. Khi người dùng nhấn nút dấu cộng (+) để mở pop-up
+        $('#addScheduleBtn').click(function () {
+            // Gửi request GET để lấy form từ server
+            $.get('@Url.Action("CreateSchedulePartial")', function (data) {
+                // Đặt HTML của form vào trong thân modal
+                $('#scheduleModal .modal-body').html(data);
+                // Kích hoạt client-side validation cho form vừa được tải
+                var form = $('#createScheduleForm');
+                $.validator.unobtrusive.parse(form);
+                // Hiển thị modal
+                scheduleModal.show();
+            });
+        });
+        // 2. Khi người dùng nhấn nút "Create Schedule" trong modal
+        $('#saveScheduleBtn').click(function () {
+            var form = $('#createScheduleForm');
+            // Chỉ gửi request nếu form hợp lệ phía client
+            if (form.valid()) {
+                $.ajax({
+                    url: form.attr('action'),
+                    method: form.attr('method'),
+                    data: form.serialize(),
+                    success: function (response) {
+                        if (response.success) {
+                            scheduleModal.hide();
+                            location.reload(); // Tải lại trang để xem lịch mới
+                        } else {
+                            // Nếu có lỗi, server sẽ trả về form với thông báo lỗi
+                            $('#scheduleModal .modal-body').html(response);
+                            // Kích hoạt lại validation cho form mới có lỗi
+                            var updatedForm = $('#createScheduleForm');
+                            $.validator.unobtrusive.parse(updatedForm);
+                        }
+                    },
+                    error: function() { alert("An error occurred while connecting to the server."); }
+                });
+            }
+        });
+        // 3. Cải thiện Accessibility: Trả focus về nút (+) sau khi modal đóng
+        scheduleModalEl.addEventListener('hidden.bs.modal', function (event) {
+            document.getElementById('addScheduleBtn').focus();
+        });
+       
+        
+        $(document).on("click", ".hide-btn", function () {
+            const id = $(this).data("id");
+            $.post("/BManager/HideSchedule/" + id, { __RequestVerificationToken: token })
+                .done(() => {
+                    const row = $(`tr[data-id='${id}']`);
+                    row.addClass("inactive-row");
+                    row.find(".badge").removeClass("bg-success").addClass("bg-secondary").text("Hidden");
+                    row.find(".hide-btn").replaceWith(`<button class="btn btn-info btn-sm restore-btn" data-id="${id}">Restore</button>`);
+                })
+                .fail(function() {
+                    alert("An error occurred while trying to hide the schedule.");
+                });
+        });
+        $(document).on("click", ".restore-btn", function () {
+            const id = $(this).data("id");
+            $.post("/BManager/RestoreSchedule/" + id, { __RequestVerificationToken: token })
+                .done(() => {
+                    const row = $(`tr[data-id='${id}']`);
+                    row.removeClass("inactive-row");
+                    row.find(".badge").removeClass("bg-secondary").addClass("bg-success").text("Active");
+                    row.find(".restore-btn").replaceWith(`<button class="btn btn-warning btn-sm hide-btn" data-id="${id}">Hide</button>`);
+                })
+                .fail(function() {
+                    alert("An error occurred while trying to restore the schedule.");
+                });
+        });
+    });
+</script>
+}

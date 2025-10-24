@@ -29,29 +29,21 @@
                 <a asp-controller="Product" asp-action="Product" class="about-cta">Explore Menu</a>
             </div>
 
-            @{
-                var traSuaList = (ViewBag.TraSuaList as List<string>)?.Take(8).ToList();
-            }
-            <div class="about-media">
-                @if (traSuaList != null && traSuaList.Any())
+           <div class="about-media">
+                @if (ViewBag.FeaturedProducts != null)
                 {
-                    foreach (var item in traSuaList)
+                    foreach (var product in ViewBag.FeaturedProducts)
                     {
                         <div class="product-item">
-                            <img src="@item" alt="Milk Tea" />
+                            <img src="@product.Image_Url" alt="Milk Tea" />
                         </div>
                     }
                 }
                 else
                 {
-                    <p>No milk tea images available.</p>
+                    <p>No products available.</p>
                 }
             </div>
-
-
         </div>
     </section>
-
-
-
 </div>

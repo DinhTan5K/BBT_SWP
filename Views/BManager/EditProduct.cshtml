@@ -1,0 +1,171 @@
+@model start.Models.Product
+
+@{
+    ViewData["Title"] = "Edit Product";
+}
+
+<div style="margin-top: 80px;">
+    <div class="container mt-5">
+        <h2 class="mb-4 text-center">Edit Product</h2>
+
+        <form asp-action="EditProduct" method="post" id="edit-product-form" class="shadow p-4 rounded bg-light">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="ProductID" />
+
+            <div class="form-group mb-3">
+                <label asp-for="ProductName" class="form-label"></label>
+                <input asp-for="ProductName" class="form-control" />
+                <span asp-validation-for="ProductName" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="Description" class="form-label"></label>
+                <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+                <span asp-validation-for="Description" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="Image_Url" class="form-label"></label>
+                <input asp-for="Image_Url" class="form-control" />
+                <span asp-validation-for="Image_Url" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="CategoryID" class="form-label">Category</label>
+                <select asp-for="CategoryID" class="form-select" asp-items="ViewBag.Categories"></select>
+                <span asp-validation-for="CategoryID" class="text-danger"></span>
+            </div>
+
+            <div class="form-check form-switch mb-4">
+                <input asp-for="IsActive" class="form-check-input" type="checkbox" role="switch" />
+                <label asp-for="IsActive" class="form-check-label"></label>
+            </div>
+
+            <hr />
+
+            <h5 class="mb-3">Sizes & Prices</h5>
+            <div id="sizes-container">
+                @for (int i = 0; i < Model.ProductSizes.Count; i++)
+                {
+                    var ps = Model.ProductSizes.ToList()[i];
+                    <div class="row g-2 mb-2 align-items-center size-entry">
+                        <div class="col-5">
+                            <label class="form-label visually-hidden">Size</label>
+                            <select name="ProductSizes[@i].Size" class="form-select size-select" required>
+                                <option value="">-- Size --</option>
+                                @foreach (var s in new string[] { "S", "M", "L" })
+                                {
+                                    <option value="@s" selected="@(ps.Size == s)">@s</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-5">
+                            <label class="form-label visually-hidden">Price</label>
+                            <input type="text" 
+                                   name="ProductSizes[@i].Price" 
+                                   value="@ps.Price.ToString("N0")" 
+                                   class="form-control price-input" 
+                                   placeholder="Price (VND)"
+                                   required />
+                        </div>
+                        <div class="col-2 text-end">
+                            <input type="hidden" name="ProductSizes[@i].ProductSizeID" value="@ps.ProductSizeID" />
+                            <button type="button" class="btn btn-danger btn-sm" onclick="this.closest('.size-entry').remove(); updateEditDropdowns();">×</button>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <button type="button" class="btn btn-outline-primary mb-3 mt-2" onclick="addEditSize()">
+                <i class="fa fa-plus"></i> Add Size
+            </button>
+            <div class="text-danger mb-3" id="edit-size-error"></div>
+
+            <div class="d-flex justify-content-between mt-4">
+                <a asp-action="ViewProduct" class="btn btn-secondary px-4">Back</a>
+                <button type="submit" class="btn btn-primary px-4">Update Product</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+
+let editIndex = @Model.ProductSizes.Count;
+const allSizes = ["S","M","L"];
+
+function addEditSize() {
+    const container = document.getElementById("sizes-container");
+    const errorSpan = document.getElementById("edit-size-error");
+    errorSpan.textContent = "";
+
+    const existingSizes = Array.from(container.querySelectorAll("select.size-select"))
+                               .map(s => s.value);
+
+    const availableSizes = allSizes.filter(s => !existingSizes.includes(s));
+
+    if (availableSizes.length === 0) {
+        errorSpan.textContent = "Bạn đã thêm tất cả các size (S, M, L)!";
+        return;
+    }
+
+    const div = document.createElement("div");
+    div.className = "row mb-2 align-items-center";
+
+    const options = availableSizes.map(s => `<option value="${s}">${s}</option>`).join("");
+
+    div.innerHTML = `
+        <div class="col-md-5">
+            <select name="ProductSizes[${editIndex}].Size" class="form-control size-select" required>
+                <option value="">-- Select Size --</option>
+                ${options}
+            </select>
+        </div>
+        <div class="col-md-5">
+            <input type="number" name="ProductSizes[${editIndex}].Price" class="form-control price-input" step="0.01" required />
+        </div>
+        <div class="col-md-2 text-end">
+            <button type="button" class="btn btn-danger" onclick="this.parentElement.parentElement.remove(); updateEditDropdowns();">×</button>
+        </div>
+    `;
+    container.appendChild(div);
+    editIndex++;
+    updateEditDropdowns();
+}
+
+function updateEditDropdowns() {
+    const container = document.getElementById("sizes-container");
+    const selects = Array.from(container.querySelectorAll("select.size-select"));
+    const selectedValues = selects.map(s => s.value);
+
+    selects.forEach(select => {
+        const currentValue = select.value;
+        select.innerHTML = `<option value="">-- Select Size --</option>` +
+            allSizes.filter(s => s === currentValue || !selectedValues.includes(s))
+                    .map(s => `<option value="${s}" ${s===currentValue?"selected":""}>${s}</option>`).join("");
+    });
+}
+
+// Kiểm tra trùng size khi submit
+document.getElementById("edit-product-form").addEventListener("submit", function(e) {
+    const errorSpan = document.getElementById("edit-size-error");
+    errorSpan.textContent = "";
+
+    const selects = Array.from(document.querySelectorAll("select.size-select"));
+    const selectedSizes = selects.map(s => s.value).filter(v=>v!=="");
+
+    const duplicates = selectedSizes.filter((item, idx) => selectedSizes.indexOf(item) !== idx);
+    if(duplicates.length>0){
+        e.preventDefault();
+        errorSpan.textContent = "Không được chọn trùng size: " + [...new Set(duplicates)].join(", ");
+        return false;
+    }
+
+    // Chuyển dấu phẩy sang dấu chấm cho price
+    const priceInputs = document.querySelectorAll('.price-input');
+    priceInputs.forEach(inp => inp.value = inp.value.replace(',', '.'));
+});
+</script>
+}

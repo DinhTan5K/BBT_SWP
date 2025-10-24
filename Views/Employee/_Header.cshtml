@@ -1,0 +1,31 @@
+@model start.Models.Employee
+@{
+    var avatar = string.IsNullOrWhiteSpace(Model.AvatarUrl) ? Url.Content("~/img/logo1.png")
+                                                            : Url.Content(Model.AvatarUrl);
+    string roleText = Model.RoleID switch {
+        "AD" => "Quản trị", "SL" => "Trưởng ca", "BM" => "Quản lý chi nhánh",
+        "RM" => "Quản lý vùng", _ => "Nhân viên"
+    };
+}
+   <div class="profile-head">
+          <div class="avatar"><img src="@avatar" alt="avatar"></div>
+          <div>
+            <h3 class="name">@Model.FullName</h3>
+            <div class="position">@((Model.RoleID=="AD")?"Quản trị":(Model.RoleID=="EM"?"Nhân viên":Model.RoleID))</div>
+
+            <div class="grid-mini">
+              <div class="kv"><div class="k">Mã nhân viên</div><div>@Model.EmployeeID</div></div>
+              @* <div class="kv"><div class="k">Điện thoại di động</div><div>@Model.PhoneNumber</div></div>
+              <div class="kv"><div class="k">Email công việc</div><div>@Model.Email</div></div> *@
+              <div class="kv"><div class="k">Cấp bậc</div><div>@roleText</div></div>
+              <div class="kv">
+  <div class="k">Chi nhánh</div>
+  <div>@(Model.Branch?.Name ?? ("#" + (Model.BranchID?.ToString() ?? "N/A")))</div>
+</div>
+              <div class="kv"><div class="k">Địa chỉ chi nhánh</div><div>@Model.Branch?.Address</div></div>
+              <div class="kv"><div class="k">Ngày vào làm</div><div>@Model.HireDate.ToString("yyyy-MM-dd")</div></div>
+
+
+            </div>
+          </div>
+        </div>

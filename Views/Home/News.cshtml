@@ -1,0 +1,35 @@
+@model IEnumerable<News>
+
+@{
+    ViewData["Title"] = "News";
+
+    // Danh sách tin viết trực tiếp trong View
+    }
+
+<head>
+    <link rel="stylesheet" href="/css/News.css">
+</head>
+
+
+<div class="news-banner"></div>
+
+<div class="container py-5">
+    <h2 class="mb-5 text-center">Tin tức & Sự kiện</h2>
+    <div id="news-container" class="row">
+        @foreach (var item in Model)
+        {
+            <div class="col-md-6 col-lg-4 news-item d-flex">
+                <div class="news-card h-100 d-flex flex-column">
+                    <img src="@item.ImageUrl" alt="@item.Title" />
+                    <div class="card-body d-flex flex-column">
+                        <h5 class="card-title">@item.Title</h5>
+                        <small class="text-muted">@item.CreatedAt.ToString("dd/MM/yyyy")</small>
+                        <a asp-action="NewsDetail" asp-route-id="@item.Id" class="btn-detail mt-auto">Xem chi tiết</a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+</div>
+</div>

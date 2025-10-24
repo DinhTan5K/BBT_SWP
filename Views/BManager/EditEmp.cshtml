@@ -1,0 +1,92 @@
+@{
+    Layout = "_BManagerLayout";
+}
+@model Employee
+
+@{
+    ViewData["Title"] = "Edit Employee";
+}
+
+
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show mt-3" role="alert">
+        @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+<div style="margin-top: 80px">
+<div class="container mt-5">
+    <h2 class="mb-4 text-center">Edit Employee</h2>
+
+    <form asp-action="EditEmp" method="post" class="shadow p-4 rounded bg-light">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="EmployeeID" />
+
+        <!-- Full Name -->
+        <div class="form-group mb-3">
+            <label asp-for="FullName" class="form-label"></label>
+            <input asp-for="FullName" class="form-control" />
+            <span asp-validation-for="FullName" class="text-danger"></span>
+        </div>
+
+        <!-- Password -->
+        <div class="form-group mb-3">
+            <label class="form-label">Password</label>
+            <input type="password" class="form-control" value="******" readonly />
+            <input type="hidden" name="Password" value="@Model.Password" />
+        </div>
+
+        <!-- RoleID -->
+        <div class="form-group mb-3">
+        <label asp-for="RoleID" class="form-label">Role</label>
+        <select asp-for="RoleID" class="form-select" asp-items="@ViewBag.SelectableRoles"></select>
+        <span asp-validation-for="RoleID" class="text-danger"></span>
+    </div>
+        <!-- Hire Date -->
+        <div class="form-group mb-3">
+            <label asp-for="HireDate" class="form-label"></label>
+            <input asp-for="HireDate" class="form-control" type="date" />
+            <span asp-validation-for="HireDate" class="text-danger"></span>
+        </div>
+
+        <!-- Phone -->
+        <div class="form-group mb-3">
+            <label asp-for="PhoneNumber" class="form-label"></label>
+            <input asp-for="PhoneNumber" class="form-control @(ViewData.ModelState["Phone"]?.Errors.Count > 0 ? "is-invalid" : "")" />
+            <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+        </div>
+
+        <!-- Email -->
+        <div class="form-group mb-3">
+            <label asp-for="Email" class="form-label"></label>
+            <input asp-for="Email" class="form-control @(ViewData.ModelState["Email"]?.Errors.Count > 0 ? "is-invalid" : "")" />
+            <span asp-validation-for="Email" class="text-danger"></span>
+        </div>
+
+        <!-- City -->
+        <div class="form-group mb-3">
+            <label asp-for="City" class="form-label"></label>
+            <input asp-for="City" class="form-control" />
+            <span asp-validation-for="City" class="text-danger"></span>
+        </div>
+
+        <!-- Date of Birth -->
+        <div class="form-group mb-3">
+            <label asp-for="DateOfBirth" class="form-label"></label>
+            <input asp-for="DateOfBirth" class="form-control" type="date" />
+            <span asp-validation-for="DateOfBirth" class="text-danger"></span>
+        </div>
+
+        <!-- Buttons -->
+        <div class="d-flex justify-content-between mt-4">
+            
+            <button type="submit" class="btn btn-primary px-4">Update</button>
+        </div>
+    </form>
+</div>
+</div>
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

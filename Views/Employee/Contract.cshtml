@@ -1,0 +1,97 @@
+@model start.Models.Contract
+
+@using System.Globalization
+<link rel="stylesheet" href="~/css/employee/contract.css" />
+
+@{
+    Layout = "_EmployeeLayout";
+    ViewBag.ActiveMenu = "Profile";
+    ViewBag.ActiveTab  = "contract";
+
+    string FDate(DateTime d)   => d.ToString("yyyy-MM-dd");
+    string FDateN(DateTime? d) => d.HasValue ? d.Value.ToString("yyyy-MM-dd") : "Không xác định";
+    string money = string.Format(CultureInfo.GetCultureInfo("vi-VN"), "{0:N0}", Model.BaseRate);
+
+    bool isHourly = string.Equals(Model.PaymentType, "Giờ", StringComparison.OrdinalIgnoreCase);
+    bool isActive = string.Equals(Model.Status,      "Hiệu lực", StringComparison.OrdinalIgnoreCase);
+
+    string payLabel     = isHourly ? "Giờ" : "Tháng";
+    string rateWithUnit = isHourly ? $"{money} / giờ" : $"{money} / tháng";
+    string statusText   = isActive ? "Hiệu lực" : "Hết hạn";
+    string statusClass  = isActive ? "bg-success" : "bg-secondary";
+}
+
+@if (Model.Employee != null)
+{
+    @await Html.PartialAsync("~/Views/Employee/_Header.cshtml", Model.Employee)
+    @await Html.PartialAsync("~/Views/Employee/_Tabs.cshtml",   Model.Employee)
+}
+
+<div class="card shadow-sm mb-3">
+
+
+  <div class="card-body">
+    <!-- Đổi từ .row/.col sang .form-grid + .pair .lbl .val -->
+    <div class="form-grid">
+    <div class="pair">
+        <div class="lbl">Tệp nhân viên</div>
+        <div class="val">@Model.Employee.FullName</div> 
+      </div>
+      <div class="pair">
+        <div class="lbl">Trạng thái</div>
+        <div class="val">@Model.Status</div> 
+      </div>
+    <div class="pair">
+        <div class="lbl">Ngày bắt đầu</div>
+        <div class="val">@FDate(Model.StartDate)</div>
+      </div>
+        <div class="pair">
+        <div class="lbl">Ngày kết thúc</div>
+        <div class="val">@FDateN(Model.EndDate)</div>
+      </div>
+      <div class="pair">
+        <div class="lbl">Cách thức tính lương</div>
+        <div class="val">@Model.PaymentType</div>
+      </div>
+      <div class="pair">
+        <div class="lbl">Lương cơ bản</div>
+        <div class="val">@Model.BaseRate</div>
+      </div>
+
+      <div class="pair">
+        <div class="lbl">Loại hợp đồng</div>
+        <div class="val">@Model.ContractType</div>
+      </div>
+      <div class="pair">
+        <div class="lbl">Ngày tạo</div>
+        <div class="val">@Model.Created_At</div>
+      </div>
+
+
+
+
+
+
+      <div class="pair">
+        <div class="lbl">Cơ chế thanh toán</div>
+        <div class="val">@payLabel</div>
+      </div>
+
+      <div class="pair">
+        <div class="lbl">Mức lương cơ sở</div>
+        <div class="val">@rateWithUnit</div>
+      </div>
+
+
+
+    </div>
+  </div>
+
+  <div class="card-footer text-muted small">
+    Tạo: @Model.Created_At.ToString("yyyy-MM-dd HH:mm")
+    @if (Model.UpdatedAt.HasValue)
+    {
+        <span class="ms-3">Cập nhật: @Model.UpdatedAt.Value.ToString("yyyy-MM-dd HH:mm")</span>
+    }
+  </div>
+</div>

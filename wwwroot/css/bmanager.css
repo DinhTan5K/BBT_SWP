@@ -1,0 +1,101 @@
+body {
+    background-color: #f8f9fa; /* Màu nền sáng hơn cho nội dung chính */
+}
+
+.sidebar {
+    width: 250px;
+    height: 100vh; /* Cao hết màn hình */
+    position: fixed;
+    top: 0;
+    left: 0;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between; /* Đẩy phần tử cuối cùng (đăng xuất) xuống dưới */
+
+    background-color: #212529; /* Màu nền tối cho thanh điều hướng */
+    color: #adb5bd;
+    padding: 20px;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15); /* Thêm bóng đổ cho sidebar */
+}
+
+.sidebar h4, .sidebar h5 {
+    color: white;
+}
+
+.sidebar .nav-link {
+    color: #adb5bd;
+    display: flex; /* Bật flex để căn chỉnh icon và chữ */
+    align-items: center; /* Căn giữa theo chiều dọc */
+    padding: 10px 15px;
+    border-radius: 0.3rem;
+    transition: background-color 0.2s, color 0.2s; /* Hiệu ứng chuyển động mượt */
+}
+
+.sidebar .nav-link i {
+    width: 20px; /* Đảm bảo các icon chiếm không gian bằng nhau */
+    margin-right: 12px; /* Khoảng cách giữa icon và chữ */
+    text-align: center;
+}
+
+.sidebar .nav-link:hover {
+    background-color: #343a40;
+    color: white;
+}
+
+/* Style cho liên kết đang được active */
+.sidebar .nav-link.active {
+    background-color: #0d6efd;
+    color: white;
+    font-weight: 500;
+}
+
+.main-content {
+    margin-left: 250px; /* Bằng với chiều rộng của sidebar */
+    padding: 30px;
+    width: calc(100% - 250px);
+}
+/* === PHẦN RESPONSIVE CHO THIẾT BỊ DI ĐỘNG === */
+
+/* Nút bật/tắt sidebar (mặc định ẩn trên desktop) */
+.sidebar-toggle {
+    display: none;
+}
+
+/* Áp dụng các style này khi chiều rộng màn hình từ 768px trở xuống */
+@media (max-width: 768px) {
+    .sidebar {
+        /* Ẩn sidebar ra khỏi màn hình theo mặc định */
+        transform: translateX(-100%);
+        transition: transform 0.3s ease-in-out;
+        z-index: 1050; /* Đảm bảo sidebar nằm trên nội dung chính */
+    }
+
+    .sidebar.is-visible {
+        /* Hiện sidebar khi có class 'is-visible' */
+        transform: translateX(0);
+    }
+
+    .main-content {
+        /* Cho phép nội dung chính chiếm toàn bộ chiều rộng */
+        margin-left: 0;
+        width: 100%;
+    }
+
+    /* Hiển thị và định dạng nút hamburger trên di động */
+    .sidebar-toggle {
+        display: block;
+        position: fixed;
+        top: 15px;
+        left: 15px;
+        z-index: 1051; /* Nằm trên cả sidebar */
+        background: #343a40;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        padding: 5px 12px;
+        font-size: 20px;
+    }
+
+
+}

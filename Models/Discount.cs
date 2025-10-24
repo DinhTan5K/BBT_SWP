@@ -2,12 +2,17 @@ using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-    public enum DiscountType
+        public enum DiscountType
     {
+        [Display(Name = "Percentage")]
         Percentage = 0,
+        [Display(Name = "Fixed Amount")]
         FixedAmount = 1,
+        [Display(Name = "Free Shipping")]
         FreeShipping = 2,
+        [Display(Name = "Fixed Shipping Discount")]
         FixedShippingDiscount = 3,
+        [Display(Name = "Percent Shipping Discount")]
         PercentShippingDiscount = 4
     }
 

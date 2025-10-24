@@ -59,10 +59,9 @@
                 <ul>
                     <li><a asp-controller="Home" asp-action="Introduce">GIỚI THIỆU</a></li>
                     <li><a asp-controller="Product" asp-action="Product">THỰC ĐƠN</a></li>
-                    <li><a href="#">TIN TỨC</a></li>
+                    <li><a asp-controller="Home" asp-action="News">TIN TỨC</a></li>
                     <li><a asp-controller="Home" asp-action="Contact">LIÊN HỆ</a></li>
-                    <li><a href="#">CỬA HÀNG</a></li>
-                    <li><a href="#">PRIVACY</a></li>
+                    <li><a asp-controller="Home" asp-action="Store">CỬA HÀNG</a></li>
                 </ul>
             </nav>
 
@@ -71,38 +70,42 @@
                 <div class="auth">
                     @if (customerId != null || (User?.Identity?.IsAuthenticated ?? false))
                     {
-                        <div class="dropdown">
+                        <div class="auth-logged">
 
-                            <div class="d-flex justify-content-center align-items-center" style="height:80px;">
-                                <a class="avatar-btn" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    <img src="@avatarUrl" alt="Avatar" />
-                                </a>
+                            <a asp-controller="Home" asp-action="Privacy" class="nav-privacy" title="Privacy">
+                                <span class="bell-wrap" aria-hidden="true">
+                                    <i class="fa-regular fa-bell bell-icon" aria-hidden="true"></i>
+                                </span>
+                                <span class="nav-privacy-text">Privacy</span>
+                            </a>
 
+                            @* separator dọc nhỏ *@
+                            <span class="nav-sep" aria-hidden="true"></span>
 
-                                <ul class="dropdown-menu dropdown-menu-end">
-                                    <li>
-                                        <span class="dropdown-item-text customer-name" title="@customerName">
-                                            Xin chào, <b>@customerName</b>
-                                        </span>
+                            @* avatar dropdown (giữ nguyên) *@
+                            <div class="dropdown">
+                                <div class="d-flex justify-content-center align-items-center" style="height:80px;">
+                                    <a class="avatar-btn" href="#" role="button" data-bs-toggle="dropdown"
+                                        aria-expanded="false">
+                                        <img src="@avatarUrl" alt="Avatar" />
+                                    </a>
 
-                                    </li>
-                                    <li>
-                                        <a class="dropdown-item" asp-controller="Account" asp-action="Profile">Thông tin cá
-                                            nhân</a>
-                                    </li>
-                                    <li>
-                                        <a class="dropdown-item" asp-controller="Order" asp-action="Track">Track</a>
-                                    </li>
-
-                                    <li>
-                                        <a class="dropdown-item" asp-controller="Order" asp-action="OrderHistory">History</a>
-                                    </li>
-
-                                    <li>
-                                        <a asp-controller="Account" asp-action="Logout" class="dropdown-item text-danger">Đăng
-                                            Xuất</a>
-                                    </li>
-                                </ul>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li>
+                                            <span class="dropdown-item-text customer-name" title="@customerName">
+                                                Xin chào, <b>@customerName</b>
+                                            </span>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item" asp-controller="Account" asp-action="Profile">Thông tin cá
+                                                nhân</a>
+                                        </li>
+                                        <li>
+                                            <a asp-controller="Account" asp-action="Logout"
+                                                class="dropdown-item text-danger">Đăng Xuất</a>
+                                        </li>
+                                    </ul>
+                                </div>
                             </div>
                         </div>
                     }
@@ -124,7 +127,8 @@
     <footer class="fnb-footer" style="position: relative; z-index: 10;">
         <div class="footer-container">
             <div class="footer-left">
-                <p class="footer-text">&copy; 2025 - Milk & Tea Shop | <a href="#">Privacy</a></p>
+                <p class="footer-text">&copy; 2025 - Milk & Tea Shop | <a asp-controller="Home"
+                        asp-action="Privacy">Privacy</a></p>
             </div>
             <div class="footer-right">
                 <a href="#" class="social-icon"><i class="fab fa-facebook-f"></i></a>

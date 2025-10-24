@@ -1,46 +1,43 @@
 document.addEventListener("DOMContentLoaded", () => {
-    // --- STATE & CONFIG ---
-    let appliedCodes = [];
     let branches = [];
+    let appliedCodes = [];
     let userPosition = null;
     let currentShippingFee = 0;
     let isDeliveryMode = true;
     const SHIPPING_RATE = 5000;
-    let hasPromoError = false; // block submit when promo validation has error
+    let hasPromoError = false;
 
     // --- TOAST HELPER ---
     function showToast(message, type = 'danger') {
-        // type: 'success' | 'danger' | 'warning' | 'info'
         const bg = type === 'success' ? '#d1e7dd' : type === 'warning' ? '#fff3cd' : type === 'info' ? '#cff4fc' : '#f8d7da';
         const color = '#000';
         const border = type === 'success' ? '#badbcc' : type === 'warning' ? '#ffecb5' : type === 'info' ? '#b6effb' : '#f5c2c7';
-
         const toast = document.createElement('div');
         toast.setAttribute('role', 'alert');
-        toast.style.position = 'fixed';
-        toast.style.top = '70px';
-        toast.style.right = '10px';
-        toast.style.zIndex = '1050';
-        toast.style.maxWidth = '420px';
-        toast.style.background = bg;
-        toast.style.color = color;
-        toast.style.border = `1px solid ${border}`;
-        toast.style.borderRadius = '6px';
-        toast.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
-        toast.style.padding = '12px 16px';
-        toast.style.fontSize = '14px';
-        toast.style.lineHeight = '1.4';
-        toast.style.transition = 'transform .4s ease, opacity .4s ease';
-        toast.style.transform = 'translateX(120%)';
-        toast.style.opacity = '0';
+        Object.assign(toast.style, {
+            position: 'fixed',
+            top: '70px',
+            right: '10px',
+            zIndex: '1050',
+            maxWidth: '420px',
+            background: bg,
+            color: color,
+            border: `1px solid ${border}`,
+            borderRadius: '6px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            padding: '12px 16px',
+            fontSize: '14px',
+            lineHeight: '1.4',
+            transition: 'transform .4s ease, opacity .4s ease',
+            transform: 'translateX(120%)',
+            opacity: '0'
+        });
         toast.innerHTML = message;
-
         document.body.appendChild(toast);
         requestAnimationFrame(() => {
             toast.style.transform = 'translateX(0)';
             toast.style.opacity = '1';
         });
-
         setTimeout(() => {
             toast.style.opacity = '0';
             toast.style.transform = 'translateX(120%)';
@@ -73,6 +70,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const nearestBranchInput = document.getElementById("nearestBranchInput");
     const branchWarning = document.getElementById("branchWarning");
     const branchIdInput = document.getElementById("branchIdInput");
+    const suggestionBox = document.getElementById("addressSuggestions");
     // Pickup Form
     const branchSelect = document.getElementById("branchSelect");
     const pickupNameInput = document.getElementById("pickupNameInput");
@@ -81,9 +79,20 @@ document.addEventListener("DOMContentLoaded", () => {
     const btnSubmitOrder = document.getElementById("btnSubmitOrder");
     const orderNoteDeliveryInput = document.getElementById("orderNoteDelivery");
     const orderNotePickupInput = document.getElementById("orderNotePickup");
-    const orderNoteInput = document.getElementById("orderNote");
     const submitSpinner = btnSubmitOrder.querySelector('.spinner-border');
-    // --- STEP UI FUNCTIONS ---
+
+    // --- UTILITY ---
+    // FIX: Chỉ định nghĩa hàm calcDistance MỘT LẦN.
+    const calcDistance = (lat1, lon1, lat2, lon2) => {
+        const R = 6371; // bán kính Trái Đất (km)
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat / 2) ** 2 +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon / 2) ** 2;
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    };
+
     // --- STEP UI FUNCTIONS ---
     function setStep(stepIndex) {
         steps.forEach((step, index) => {
@@ -109,23 +118,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 branchSelect.value;
         }
 
-        // Nếu đã nhập đủ info và có chọn payment → sang bước 2
-        if (isInfoComplete && selectedPayment) {
-            setStep(1); // step 2 (Payment)
-        } else {
-            setStep(0); // step 1 (Information)
-        }
+        setStep(isInfoComplete && selectedPayment ? 1 : 0);
     }
-
-    // Gắn event listener cho input thanh toán
-    document.querySelectorAll('input[name="Payment"]').forEach(radio => {
-        radio.addEventListener("change", updateCheckoutStepUI);
-    });
-
-    // Gọi lại hàm khi user nhập dữ liệu
-    [nameInput, phoneInput, addressInput, pickupNameInput, pickupPhoneInput, branchSelect]
-        .forEach(input => input?.addEventListener("input", updateCheckoutStepUI));
-
 
     // --- VALIDATION HELPER ---
     const errorFields = ['nameError', 'phoneError', 'addressError', 'detailError', 'branchWarning', 'pickupBranchError', 'pickupNameError', 'pickupPhoneError'];
@@ -162,10 +156,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (result.errorMessage) {
                 hasPromoError = true;
-                // Show popup toast for error as well
                 showToast(`❌ ${result.errorMessage}`, 'danger');
-                // BUG FIX: On a conflict error, do NOT automatically remove the code.
-                // Let the user decide which one to remove via the UI.
             } else {
                 hasPromoError = false;
                 const totalDiscount = result.totalDiscount || 0;
@@ -173,11 +164,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 discountAmountEl.textContent = `- ${totalDiscount.toLocaleString('vi-VN')} đ`;
                 grandTotalEl.textContent = `${result.finalTotal.toLocaleString('vi-VN')} đ`;
                 shippingFeeEl.textContent = `${result.finalShippingFee.toLocaleString('vi-VN')} đ`;
-                // Replace appliedMessages UI with toast notifications
+
                 if (Array.isArray(result.appliedMessages)) {
                     result.appliedMessages.forEach(m => { if (m) showToast(m, 'success'); });
                 }
-                // Clear inline message area
                 promoMsg.textContent = "";
                 promoMsg.className = "mt-2 small";
             }
@@ -193,16 +183,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function renderAppliedCodeTags() {
         codesContainer.innerHTML = appliedCodes.map(code => `
-                                    <span class="promo-tag" data-code="${code}">
-                                        ${code} <button type="button" class="btn-close btn-close-white" onclick="window.removePromoCode('${code}')"></button>
-                                    </span>`).join("");
+            <span class="promo-tag" data-code="${code}">
+                ${code} <button type="button" class="btn-close btn-close-white" onclick="window.removePromoCode('${code}')"></button>
+            </span>`).join("");
     }
 
     async function handleApplyCode() {
         const code = promoInput.value.trim().toUpperCase();
         if (!code) return;
         if (appliedCodes.includes(code)) {
-            promoMsg.className = "mt-2 small text-warning";
             showToast(`⚠️ Mã "${code}" đã được áp dụng rồi.`, 'warning');
             return;
         }
@@ -219,48 +208,70 @@ document.addEventListener("DOMContentLoaded", () => {
     async function loadBranches() {
         try {
             const res = await fetch('/Branch/GetAll');
-            branches = await res.json();
+            branches = await res.json(); // Gán dữ liệu vào biến `branches` đã khai báo ở trên
             branchSelect.innerHTML = '<option value="">-- Chọn chi nhánh --</option>';
             branches.forEach(b => branchSelect.innerHTML += `<option value="${b.branchID}">${b.name} - ${b.address}</option>`);
         } catch (e) { console.error("Lỗi tải chi nhánh:", e); }
     }
 
     function updateShippingFee() {
-        if (!userPosition || branches.length === 0) { currentShippingFee = 0; return; }
-        branches.forEach(b => b.distance = calcDistance(userPosition.lat, userPosition.lon, b.latitude, b.longitude));
-        branches.sort((a, b) => a.distance - b.distance);
-        const nearest = branches[0];
-        branchIdInput.value = nearest.branchID;
-        nearestBranchInput.value = `${nearest.name} - ${nearest.distance.toFixed(2)} km`;
+        // --- BẮT ĐẦU KIỂM TRA ---
+        console.log("Running updateShippingFee...");
+        console.log("Current userPosition:", userPosition);
+        console.log("Number of branches loaded:", branches.length);
+        console.log("%cLOG 4: Entering updateShippingFee", "color: blue; font-weight: bold;");
+        console.log("-> userPosition:", userPosition);
+        console.log("-> branches.length:", branches.length);
+        if (!userPosition || branches.length === 0) {
+            currentShippingFee = 0;
+            updateDiscountsAndRender(); // Cần gọi lại để cập nhật tổng tiền
+            return;
+        }
 
-        if (nearest.distance > 15) {
+        let nearest = null;
+        let minDist = Infinity;
+
+        branches.forEach(b => {
+            const dist = calcDistance(userPosition.lat, userPosition.lon, b.latitude, b.longitude);
+            if (dist < minDist) {
+                minDist = dist;
+                nearest = b;
+            }
+        });
+
+        console.log("%cLOG 5: Nearest branch found", "color: blue; font-weight: bold;");
+        console.log("-> Nearest:", nearest);
+        console.log("-> Min Distance:", minDist);
+
+        if (!nearest) {
+            nearestBranchInput.value = 'Không tìm thấy chi nhánh phù hợp.';
+            return;
+        };
+        branchIdInput.value = nearest.branchID;
+        nearestBranchInput.value = `${nearest.name} - ${minDist.toFixed(2)} km`;
+
+        if (minDist > 15) {
             branchWarning.textContent = `Khoảng cách quá xa (>15km). Vui lòng chọn "Nhận tại cửa hàng".`;
             branchWarning.classList.remove('d-none');
             currentShippingFee = 0;
         } else {
             branchWarning.classList.add('d-none');
-            currentShippingFee = Math.round(nearest.distance * SHIPPING_RATE);
+            currentShippingFee = Math.round(minDist * SHIPPING_RATE);
         }
         shippingFeeEl.setAttribute('data-value', currentShippingFee);
         updateDiscountsAndRender();
     }
 
+    // FIX: Hợp nhất logic tìm chi nhánh gần nhất và cập nhật phí ship vào một hàm
+    function findNearestBranchAndUpdate(lat, lon) {
+        userPosition = { lat, lon };
+        updateShippingFee();
+    }
+
     // --- EVENT LISTENERS ---
+    // FIX: Gom tất cả event listeners vào một khu vực và đảm bảo chỉ gán 1 lần.
     applyBtn.addEventListener("click", handleApplyCode);
     promoInput.addEventListener("keydown", e => e.key === "Enter" && (e.preventDefault(), handleApplyCode()));
-    btnLocation.addEventListener("click", () => {
-        if (!navigator.geolocation) return alert("Trình duyệt không hỗ trợ định vị.");
-        navigator.geolocation.getCurrentPosition(async pos => {
-            userPosition = { lat: pos.coords.latitude, lon: pos.coords.longitude };
-            addressInput.value = 'Đang lấy địa chỉ...';
-            updateShippingFee();
-            try {
-                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${userPosition.lat}&lon=${userPosition.lon}`);
-                const data = await res.json();
-                addressInput.value = data?.display_name || 'Không tìm thấy địa chỉ';
-            } catch (e) { console.error("Lỗi lấy địa chỉ:", e); }
-        }, err => alert(`❌ Không thể lấy vị trí: ${err.message}`));
-    });
 
     document.querySelectorAll('a[data-bs-toggle="tab"]').forEach(tab => {
         tab.addEventListener('shown.bs.tab', e => {
@@ -270,11 +281,80 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    const inputsToWatch = [nameInput, phoneInput, addressInput, pickupNameInput, pickupPhoneInput, branchSelect];
-    inputsToWatch.forEach(input => {
-        input.addEventListener('input', updateCheckoutStepUI);
+    [nameInput, phoneInput, addressInput, pickupNameInput, pickupPhoneInput, branchSelect, detailAddressInput].forEach(input => {
+        input?.addEventListener("input", updateCheckoutStepUI);
     });
 
+    document.querySelectorAll('input[name="Payment"]').forEach(radio => {
+        radio.addEventListener("change", updateCheckoutStepUI);
+    });
+
+    // Address Autocomplete
+    let debounceTimer;
+    addressInput.addEventListener("input", () => {
+        const query = addressInput.value.trim();
+        clearTimeout(debounceTimer);
+        if (query.length < 3) {
+            suggestionBox.style.display = "none";
+            return;
+        }
+        debounceTimer = setTimeout(async () => {
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=vn&limit=5`);
+                const data = await res.json();
+                suggestionBox.innerHTML = "";
+                if (data.length === 0) {
+                    suggestionBox.style.display = "none";
+                    return;
+                }
+                data.forEach(addr => {
+                    const li = document.createElement("li");
+                    li.className = "list-group-item list-group-item-action";
+                    li.textContent = addr.display_name;
+                    li.addEventListener("click", () => {
+                        addressInput.value = addr.display_name;
+                        suggestionBox.style.display = "none";
+                        findNearestBranchAndUpdate(parseFloat(addr.lat), parseFloat(addr.lon));
+                    });
+                    suggestionBox.appendChild(li);
+                });
+                suggestionBox.style.display = "block";
+            } catch (e) {
+                console.error("Lỗi gợi ý địa chỉ:", e);
+                suggestionBox.style.display = "none";
+            }
+        }, 150);
+    });
+
+    // "My Location" Button
+    btnLocation.addEventListener("click", () => {
+        if (!navigator.geolocation) return alert("Trình duyệt không hỗ trợ định vị.");
+        addressInput.value = "Đang lấy vị trí...";
+        navigator.geolocation.getCurrentPosition(async pos => {
+            const { latitude: lat, longitude: lon } = pos.coords;
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+                const data = await res.json();
+                addressInput.value = data?.display_name || "Không tìm thấy địa chỉ";
+                findNearestBranchAndUpdate(lat, lon);
+            } catch (err) {
+                console.error(err);
+                addressInput.value = "Lỗi khi lấy địa chỉ";
+            }
+        }, err => {
+            alert(`❌ Không thể lấy vị trí: ${err.message}`);
+            addressInput.value = ""; // Xoá chữ "Đang lấy vị trí..." nếu lỗi
+        });
+    });
+
+    // Hide suggestions when clicking outside
+    document.addEventListener("click", (e) => {
+        if (!addressInput.contains(e.target) && !suggestionBox.contains(e.target)) {
+            suggestionBox.style.display = "none";
+        }
+    });
+
+    // Submit Order Button
     btnSubmitOrder.addEventListener("click", async () => {
         hideAllErrors();
         let isValid = true;
@@ -297,42 +377,35 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (!isValid) return;
 
+        if (hasPromoError) {
+            showToast("⚠️ Vui lòng xử lý lỗi mã khuyến mãi trước khi đặt hàng.", 'warning');
+            return;
+        }
+
         btnSubmitOrder.disabled = true;
         submitSpinner.classList.remove('d-none');
 
         const formData = new FormData(checkoutForm);
         formData.set("BranchID", branchIdValue);
+        formData.append("PromoCode", appliedCodes.join(','));
 
-        // Prevent submit if promo validation currently has an error
-        if (hasPromoError) {
-            promoMsg.className = "mt-2 small text-danger";
-            const extraNotice = "⚠️ Vui lòng xử lý lỗi mã khuyến mãi trước khi đặt hàng.";
-            showToast(extraNotice, 'warning');
-            btnSubmitOrder.disabled = false;
-            submitSpinner.classList.add('d-none');
-            return;
-        }
-        // Ensure only one Note value is sent
-        formData.delete('Note');
         if (isDeliveryMode) {
             formData.set('Name', nameInput.value.trim());
             formData.set('Phone', phoneInput.value.trim());
             formData.set('Address', addressInput.value.trim());
-            formData.set('BranchID', branchIdInput.value);
+            formData.set('DetailAddress', detailAddressInput.value.trim());
             formData.set('Note', (orderNoteDeliveryInput?.value || '').trim());
             formData.set('ShippingFee', String(currentShippingFee));
         } else {
             formData.set('Name', pickupNameInput.value.trim());
             formData.set('Phone', pickupPhoneInput.value.trim());
-            formData.set('BranchID', branchSelect.value);
             const selectedBranchText = branchSelect.options[branchSelect.selectedIndex].text;
             formData.set('Address', `Nhận tại: ${selectedBranchText}`);
             formData.set('DetailAddress', '');
             formData.set('Note', (orderNotePickupInput?.value || '').trim());
-            // Pickup has no shipping fee
             formData.set('ShippingFee', '0');
         }
-        formData.append("PromoCode", appliedCodes.join(','));
+
         const paymentMethod = document.querySelector('input[name="Payment"]:checked')?.value || 'COD';
         try {
             const response = await fetch('/Order/CreateOrder', {
@@ -343,33 +416,66 @@ document.addEventListener("DOMContentLoaded", () => {
             const result = await response.json();
             if (result.success) {
                 if (paymentMethod === 'Momo') {
-                    // Với MoMo: backend trả requireMomo, dùng trang GET để chuyển tiếp tới MoMo
                     window.location.href = `/Order/PayWithMomo`;
                 } else {
-                    // COD → hiển thị trang xác nhận đơn hàng
                     window.location.href = `/Order/Confirmed/${result.orderId}`;
                 }
             } else {
-                alert(`❌ Đặt hàng thất bại: ${result.message || 'Lỗi không xác định.'}`);
+                showToast(`❌ Đặt hàng thất bại: ${result.message || 'Lỗi không xác định.'}`, 'danger');
             }
         } catch (error) {
-            alert('❌ Đã xảy ra lỗi kết nối. Vui lòng thử lại.');
+            showToast('❌ Đã xảy ra lỗi kết nối. Vui lòng thử lại.', 'danger');
         } finally {
             btnSubmitOrder.disabled = false;
             submitSpinner.classList.add('d-none');
         }
     });
 
-    // --- UTILITY ---
-    const calcDistance = (lat1, lon1, lat2, lon2) => {
-        const R = 6371;
-        const dLat = (lat2 - lat1) * Math.PI / 180; const dLon = (lon2 - lon1) * Math.PI / 180;
-        const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
-        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    };
-
     // --- INITIALIZATION ---
-    loadBranches();
-    updateDiscountsAndRender();
-    updateCheckoutStepUI();
+    async function initializeCheckout() {
+        console.log("%cLOG 1: Starting initializeCheckout", "color: green; font-weight: bold;");
+        // Luôn chờ tải xong danh sách chi nhánh trước
+        await loadBranches();
+
+        const initialAddress = addressInput.value.trim();
+        console.log("%cLOG 2: Checking for initial address", "color: green; font-weight: bold;");
+        console.log("-> Address from input:", initialAddress);
+        // KIỂM TRA: Nếu có địa chỉ được điền sẵn từ server
+        if (initialAddress) {
+            try {
+                // Bước 1: "Dịch" địa chỉ chữ thành tọa độ số
+                const encodedQuery = encodeURIComponent(initialAddress);
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodedQuery}&countrycodes=vn&limit=1`);
+                const data = await res.json();
+                console.log("%cLOG 3: API response received", "color: green; font-weight: bold;");
+                console.log("-> API Data:", data);
+
+                // Bước 2: Nếu dịch thành công, dùng tọa độ để tính toán
+                if (data.length > 0) {
+                    const addr = data[0];
+                    // Hàm này sẽ tự động tính toán và cập nhật toàn bộ UI
+                    findNearestBranchAndUpdate(parseFloat(addr.lat), parseFloat(addr.lon));
+                } else {
+                    // Nếu API không tìm thấy địa chỉ, vẫn phải cập nhật giá (với phí ship = 0)
+                    console.warn("-> API found no matching address. Calling default updateDiscounts.");
+                    updateDiscountsAndRender();
+                }
+            } catch (e) {
+                console.error("-> ERROR during initial address fetch:", e);
+                console.error("Lỗi tự động tìm địa chỉ ban đầu:", e);
+                // Nếu có lỗi mạng, cũng phải cập nhật giá
+                updateDiscountsAndRender();
+            }
+        } else {
+            console.log("-> No initial address found. Calling default updateDiscounts.");
+            // Nếu không có địa chỉ nào được điền sẵn, chỉ cần cập nhật giá mặc định
+            updateDiscountsAndRender();
+        }
+
+        // Luôn cập nhật giao diện các bước ở cuối cùng
+        updateCheckoutStepUI();
+    }
+
+    // Gọi hàm khởi tạo
+    initializeCheckout();
 });

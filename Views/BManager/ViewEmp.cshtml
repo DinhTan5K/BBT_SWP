@@ -1,0 +1,360 @@
+@{
+    Layout = "_BManagerLayout";
+}
+@model IEnumerable<Employee>
+
+@Html.AntiForgeryToken()
+
+@{
+    ViewData["Title"] = "Employee Management";
+}
+
+<div style="margin-top: 80px;">
+
+    <h2 class="text-center mb-4">Employee Management</h2>
+
+
+
+
+    <table class="table table-hover align-middle text-center">
+        <thead class="table-dark">
+            <tr>
+                <th>Name</th>
+                <th>Phone</th>
+                <th>Email</th>
+                <th>City</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var emp in Model)
+            {
+                <tr data-id="@emp.EmployeeID" class="@(emp.IsActive ? "" : "employee-inactive")">
+                    <td>@emp.FullName</td>
+                    <td>@emp.PhoneNumber</td>
+                    <td>@emp.Email</td>
+                    <td>@emp.City</td>
+                    <td>@emp.RoleID</td>
+                    <td>
+                        @if (emp.IsActive)
+                        {
+                            <span class="badge bg-success">Active</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">Inactive</span>
+                        }
+                    </td>
+                    <td>
+                        <a asp-action="EditEmp" asp-route-id="@emp.EmployeeID" class="btn btn-warning btn-sm">Edit</a>
+                        @if (emp.IsActive)
+                        {
+                            <button class="btn btn-danger btn-sm hide-btn">Hide</button>
+                        }
+                        else
+                        {
+                            <button class="btn btn-info btn-sm restore-btn">Restore</button>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<div class="modal fade" id="employeeModal" tabindex="-1" aria-labelledby="employeeModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="employeeModalLabel">Create New Employee</h5>
+
+      </div>
+      <div class="modal-body">
+        <div class="text-center">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+
+        <button type="button" class="btn btn-primary" id="saveEmployeeBtn">Create Employee</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="contractModal" tabindex="-1" aria-labelledby="contractModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="contractModalLabel">Contract Details</h5>
+
+      </div>
+      <div class="modal-body">
+         <div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>
+      </div>
+      <div class="modal-footer">
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+    <button type="button" class="btn btn-primary" id="addContractBtn">Add New Contract</button>
+</div>
+
+    </div>
+  </div>
+</div>
+
+<button id="addEmployeeBtn" class="fab" title="Create New Employee" data-bs-focus="false">+</button>
+
+
+@section Styles {
+    <style>
+        /* Style cho bảng và các dòng */
+        .table-hover tbody tr:hover {
+            background-color: #f1f1f1;
+        }
+    
+        tr.employee-inactive td:not(:last-child) {
+            opacity: 0.5;
+            transition: opacity 0.3s ease-in-out;
+        }
+        
+        tr.employee-inactive .btn-warning { 
+            opacity: 0.5;
+            pointer-events: none;
+        }
+      
+        .fab {
+            position: fixed;
+            width: 60px;
+            height: 60px;
+            bottom: 40px;
+            right: 40px;
+            background-color: #0d6efd;
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            font-size: 30px;
+            line-height: 55px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            z-index: 1050;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+        }
+        .fab:hover {
+            background-color: #0b5ed7;
+            transform: scale(1.05);
+        }
+    </style>
+}
+
+
+@section Scripts {
+    <script>
+        $(function () { // Document Ready Start
+    
+            // --- Khởi tạo các đối tượng Modal ---
+            var employeeModalEl = document.getElementById('employeeModal');
+            var employeeModal = new bootstrap.Modal(employeeModalEl);
+            var contractModalEl = document.getElementById('contractModal');
+            var contractModal = new bootstrap.Modal(contractModalEl);
+            var currentEmployeeIdForContract = null; // Lưu ID nhân viên khi mở modal hợp đồng
+            // --- Hàm Helper để tải danh sách hợp đồng ---
+            function loadContracts() {
+                // Thoát nếu chưa có ID nhân viên
+                if (!currentEmployeeIdForContract) {
+                    console.error("loadContracts called without currentEmployeeIdForContract set.");
+                    return; 
+                }
+                var contractModalBody = $('#contractModal .modal-body');
+                var contractModalLabel = $('#contractModalLabel');
+                // Hiển thị spinner và tiêu đề tạm thời
+                contractModalBody.html('<div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>');
+                contractModalLabel.text('Loading Contracts for ' + currentEmployeeIdForContract + '...'); 
+                // Gửi AJAX request để lấy Partial View danh sách hợp đồng
+                $.get('@Url.Action("GetEmployeeContractsPartial")', { employeeId: currentEmployeeIdForContract }) 
+                    .done(function(data) {
+                        contractModalBody.html(data);
+                        // Lấy tên nhân viên từ data attribute (nếu có trong partial view)
+                        var employeeName = contractModalBody.find('[data-employee-name]').data('employee-name') || currentEmployeeIdForContract;
+                        contractModalLabel.text('Contracts for ' + employeeName);
+                    })
+                    .fail(function(jqXHR, textStatus, errorThrown) {
+                        console.error("Failed to load contracts:", textStatus, errorThrown, jqXHR.responseText);
+                        contractModalBody.html('<p class="text-danger">Error loading contract details. Please try again.</p>');
+                        contractModalLabel.text('Error');
+                    });
+            }
+             // --- Hàm Helper để gắn sự kiện cho nút "Add New Contract" ---
+            function attachAddContractHandler() {
+                // Xóa handler cũ trước khi gắn mới để tránh trùng lặp
+                $(contractModalEl).off('click', '#addContractBtn').on('click', '#addContractBtn', function() { 
+                    console.log('[AddContractBtn Click] ID:', currentEmployeeIdForContract); 
+                    if (!currentEmployeeIdForContract) {
+                        console.error('No employee selected. Cannot load contract form.');
+                        return; 
+                    }
+                    var contractModalBody = $('#contractModal .modal-body');
+                    var contractModalLabel = $('#contractModalLabel');
+                    
+                    // Log trước khi gọi AJAX
+                    console.log("Fetching create contract form for:", currentEmployeeIdForContract);
+                    
+                    // Tải form tạo hợp đồng
+                    $.get('@Url.Action("CreateContractPartial")', { employeeId: currentEmployeeIdForContract })
+                        .done(function(data) {
+                            console.log("Successfully loaded contract form.");
+                            contractModalBody.html(data);
+                            // Lấy tên NV từ data attribute (nếu có trong partial)
+                            var employeeName = contractModalBody.find('[data-employee-name-modal]').data('employee-name-modal') || currentEmployeeIdForContract; 
+                            contractModalLabel.text('Add New Contract for ' + employeeName);
+                            var form = $('#createContractForm');
+                            if (form.length === 0){
+                                 console.error("Form #createContractForm not found in loaded data!");
+                            } else {
+                                 $.validator.unobtrusive.parse(form); // Kích hoạt validation
+                            }
+                            // Đổi nút footer thành Save/Cancel
+                            $('#contractModal .modal-footer').html(`
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="button" class="btn btn-success" id="saveNewContractBtn">Save Contract</button>
+                            `);
+                            attachSaveContractHandler(); // Gắn sự kiện cho nút Save mới
+                        })
+                        .fail(function(jqXHR, textStatus, errorThrown) {
+                             console.error("Failed to load create contract form:", textStatus, errorThrown, jqXHR.responseText); 
+                             contractModalBody.html('<p class="text-danger">Error loading form. Check console for details.</p>');
+                             contractModalLabel.text('Error');
+                        });
+                }); // Kết thúc Add Contract Button Click handler
+            }
+            // --- Hàm Helper để gắn sự kiện cho nút "Save Contract" ---
+             function attachSaveContractHandler() {
+                 // Xóa handler cũ trước khi gắn mới
+                 $(contractModalEl).off('click', '#saveNewContractBtn').on('click', '#saveNewContractBtn', function() {
+                     console.log("Save contract button clicked.");
+                     var form = $('#createContractForm');
+                     if (form.valid()) {
+                         console.log("Contract form valid, sending AJAX...");
+                         $.ajax({
+                            url: form.attr('action'), 
+                            method: form.attr('method'), 
+                            data: form.serialize(),
+                            success: function (response) {
+                                if (response.success) {
+                                    console.log("Save contract success.");
+                                    // Reset footer về trạng thái xem danh sách
+                                    $('#contractModal .modal-footer').html(`
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                        <button type="button" class="btn btn-primary" id="addContractBtn">Add New Contract</button>
+                                    `);
+                                    attachAddContractHandler(); // Gắn lại sự kiện cho nút Add mới
+                                    loadContracts(); // Tải lại danh sách hợp đồng
+                                } else {
+                                    console.log("Save contract failed, server returned validation errors.");
+                                    // Hiển thị lại form với lỗi validation từ server
+                                    $('#contractModal .modal-body').html(response);
+                                    var updatedForm = $('#createContractForm');
+                                    $.validator.unobtrusive.parse(updatedForm); // Kích hoạt lại validation
+                                    // Giữ nguyên nút Save/Cancel ở footer
+                                }
+                            },
+                            error: function (jqXHR, textStatus, errorThrown) { 
+                                console.error("AJAX error on save contract:", textStatus, errorThrown, jqXHR.responseText); 
+                                alert("An error occurred while saving the contract. Please try again."); 
+                            }
+                         });
+                     } else {
+                         console.log("Contract form is invalid.");
+                     }
+                }); // Kết thúc Save Contract Button Click handler
+             }
+            // --- LOGIC TẠO NHÂN VIÊN MỚI ---
+            $('#addEmployeeBtn').click(function () {
+                $.get('@Url.Action("CreateEmpPartial")', function (data) { 
+                    $('#employeeModal .modal-body').html(data);
+                    var form = $('#createEmployeeForm');
+                    $.validator.unobtrusive.parse(form);
+                    employeeModal.show();
+                });
+            });
+            $('#saveEmployeeBtn').click(function () {
+                var form = $('#createEmployeeForm');
+                if (form.valid()) { 
+                    $.ajax({
+                        url: form.attr('action'),
+                        method: form.attr('method'),
+                        data: form.serialize(),
+                        success: function (response) {
+                            if (response.success) {
+                                employeeModal.hide();
+                                location.reload(); 
+                            } else {
+                                $('#employeeModal .modal-body').html(response); 
+                                var updatedForm = $('#createEmployeeForm');
+                                $.validator.unobtrusive.parse(updatedForm);
+                            }
+                        },
+                        error: function () { alert("An error occurred."); }
+                    });
+                }
+            }); 
+            
+            employeeModalEl.addEventListener('hidden.bs.modal', function (event) {
+                 $('#addEmployeeBtn').focus(); 
+            });
+            // --- LOGIC ẨN/HIỆN NHÂN VIÊN ---
+            $('tbody').on('click', '.hide-btn, .restore-btn', function () {
+                 var btn = $(this);
+                 var tr = btn.closest('tr');
+                 var empId = tr.data('id');
+                 var isHide = btn.hasClass('hide-btn');
+                 var url = isHide ? '@Url.Action("HideEmp")' : '@Url.Action("RestoreEmp")'; 
+                 var token = $('input[name="__RequestVerificationToken"]').val();
+                 $.post(url, { id: empId, __RequestVerificationToken: token })
+                     .done(function (response) {
+                          if (response && response.success) {
+                              if (isHide) {
+                                 tr.addClass('inactive-row'); 
+                                 tr.find('.badge').removeClass('bg-success').addClass('bg-secondary').text('Inactive');
+                                 btn.removeClass('hide-btn btn-danger').addClass('restore-btn btn-info').text('Restore');
+                             } else {
+                                 tr.removeClass('inactive-row'); 
+                                 tr.find('.badge').removeClass('bg-secondary').addClass('bg-success').text('Active');
+                                 btn.removeClass('restore-btn btn-info').addClass('hide-btn btn-danger').text('Hide');
+                             }
+                          } else { alert(response?.message || 'An error occurred.'); } 
+                     })
+                     .fail(function (xhr) { alert(xhr.responseText || 'Failed to connect.'); });
+            }); // End Hide/Restore
+            // --- LOGIC HIỂN THỊ MODAL HỢP ĐỒNG ---
+            $('tbody').on('click', 'tr', function(event) {
+                // Ngăn modal hiện ra nếu click vào nút Actions
+                if ($(event.target).is('button, a')) return;
+                currentEmployeeIdForContract = $(this).data('id'); 
+                loadContracts(); // Gọi hàm tải danh sách hợp đồng
+                // attachAddContractHandler(); // KHÔNG gọi ở đây
+                contractModal.show(); // Hiển thị modal
+            }); // End Show Contract
+            // --- RESET MODAL HỢP ĐỒNG KHI ĐÓNG ---
+             contractModalEl.addEventListener('hidden.bs.modal', function (event) {
+                 console.log("Contract modal hidden. Resetting.");
+                 // Luôn reset footer về trạng thái ban đầu
+                 $('#contractModal .modal-footer').html(`
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="addContractBtn">Add New Contract</button>
+                `);
+                 // Gắn lại sự kiện Add cho nút mới
+                 attachAddContractHandler(); 
+                 // Reset body và title
+                 $('#contractModal .modal-body').html('<div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>');
+                 $('#contractModalLabel').text('Contract Details');
+                 currentEmployeeIdForContract = null; // Xóa ID đã chọn
+             });
+             // Gắn sự kiện ban đầu cho nút Add trong footer (khi modal chưa bị thay đổi)
+             attachAddContractHandler(); 
+        }); // Document Ready End
+    </script>
+}

@@ -1,0 +1,136 @@
+@model start.Models.MonthScheduleDto
+@using System.Globalization
+<link rel="stylesheet" href="~/css/employee/schedule.css" />
+
+@{
+    Layout = "_EmployeeLayout";
+    var vi = CultureInfo.GetCultureInfo("vi-VN");
+    ViewBag.ActiveMenu = "Schedule";
+    ViewBag.ActiveTab  = "schedule";
+
+    // Chuẩn bị dữ liệu cho lịch
+    var year = Model.Year;
+    var month = Model.Month;
+    var firstOfMonth = new DateTime(year, month, 1);
+    var daysInMonth  = DateTime.DaysInMonth(year, month);
+
+    // Lấy thứ bắt đầu theo chuẩn Thứ 2 → CN (ISO)
+    // DayOfWeek: Sunday=0 ... Saturday=6
+    int ToIsoDow(DayOfWeek d) => d == DayOfWeek.Sunday ? 7 : (int)d;
+    var startIsoDow = ToIsoDow(firstOfMonth.DayOfWeek); // 1..7 (Mon..Sun)
+    // Map nhanh các ngày có ca làm
+    var workByDate = Model.Items
+        .GroupBy(x => x.WorkDate.Date)
+        .ToDictionary(g => g.Key, g => g.ToList());
+
+    string[] dowHeaders = new[] { "T2", "T3", "T4", "T5", "T6", "T7", "CN" };
+}
+
+
+
+<div class="card shadow-sm mb-3">
+  <div class="card-header calendar-header">
+    <div>
+      <div class="fw-semibold">Lịch làm việc tháng @month/@year</div>
+      <div class="text-muted small">Nhân viên: @Model.Employee.FullName</div>
+    </div>
+
+    <form method="get" asp-controller="Employee" asp-action="Schedule" asp-route-id="@Model.Employee.EmployeeID" class="calendar-filter">
+      <select name="month" class="form-control">
+        @for (int m = 1; m <= 12; m++)
+        {
+            <option value="@m" selected="@(m==Model.Month)">Tháng @m</option>
+        }
+      </select>
+      <select name="year" class="form-control">
+        @for (int y = DateTime.Now.Year-2; y <= DateTime.Now.Year+2; y++)
+        {
+            <option value="@y" selected="@(y==Model.Year)">@y</option>
+        }
+      </select>
+      <button class="btn btn-outline-primary">Xem</button>
+      <button type="button" class="btn btn-primary d-none d-print-inline-block print-hidden" onclick="window.print()">In lịch</button>
+    </form>
+  </div>
+
+  <div class="card-body">
+    <div class="calendar">
+      <div class="calendar-grid">
+        @* Header thứ *@
+        @foreach (var h in dowHeaders)
+        {
+            <div class="cal-cell cal-head">@h</div>
+        }
+
+        @* Ô trống trước ngày 1 (nếu tháng không bắt đầu từ Thứ 2) *@
+        @{
+            for (int i = 1; i < startIsoDow; i++)
+            {
+                <div class="cal-cell cal-empty"></div>
+            }
+        }
+
+        @* Các ngày trong tháng *@
+        @{
+            for (int day = 1; day <= daysInMonth; day++)
+            {
+                var d = new DateTime(year, month, day);
+                bool isToday = d.Date == DateTime.Today;
+                bool hasWork = workByDate.ContainsKey(d.Date);
+
+                var cellClass = "cal-cell cal-day";
+                if (isToday)  cellClass += " today";
+                if (hasWork)  cellClass += " workday";
+
+                <div class="@cellClass">
+                  <div class="cal-date">
+                    <span class="date-number">@day</span>
+                  </div>
+
+                  @if (hasWork)
+                  {
+                      var entries = workByDate[d.Date];
+                      foreach (var w in entries)
+                      {
+                          var badgeClass = w.IsActive ? "badge-done" : "badge-plan";
+                          var statusText = w.IsActive ? "Đã làm" : "Dự kiến";
+                          var shiftText  = string.IsNullOrWhiteSpace(w.Shift) ? "—" : w.Shift;
+
+                          <div class="cal-note @badgeClass">
+                            <div class="note-row">
+                              <span class="note-shift">@shiftText</span>
+                              <span class="note-status">@statusText</span>
+                            </div>
+                          </div>
+                      }
+                  }
+                </div>
+            }
+        }
+
+        @* Bổ sung ô trống để đủ hàng (6 hàng x 7 cột = 42 ô) *@
+        @{
+            // Chỉ đệm để đủ cột của hàng cuối (0..6 ô)
+int totalCells = (startIsoDow - 1) + daysInMonth;
+int pad = (7 - (totalCells % 7)) % 7; // nếu đã tròn hàng thì pad = 0
+for (int i = 0; i < pad; i++)
+{
+    <div class="cal-cell cal-empty"></div>
+}
+
+        }
+      </div>
+    </div>
+
+    <div class="calendar-legend print-visible">
+      <span class="legend-box badge-done"></span> Đã làm
+      <span class="legend-box badge-plan"></span> Dự kiến
+      <span class="legend-box legend-today"></span> Hôm nay
+    </div>
+  </div>
+
+  <div class="card-footer text-muted small">
+    Tổng số ca: @Model.Items.Count
+    <button type="button" class="btn btn-primary btn-print print-hidden" </button>
+  </div>
+</div>

@@ -1,0 +1,15 @@
+@model start.Models.Employee
+@{ Layout = "_EmployeeLayout"; ViewBag.ActiveMenu="Profile"; ViewBag.ActiveTab="chat"; }
+
+@await Html.PartialAsync("~/Views/Employee/_Header.cshtml", Model)
+@await Html.PartialAsync("~/Views/Employee/_Tabs.cshtml", Model)
+
+<h3 class="section-title">ĐOẠN CHAT CHUNG</h3>
+<div class="chat-gallery">
+  <figure class="chat-photo">
+    <img src="~/img/employee/QR.png" alt="Ảnh chat 1"><figcaption>Tham gia Nhóm Chi Nhánh</figcaption>
+  </figure>
+  <figure class="chat-photo">
+    <img src="~/img/employee/QR.png" alt="Ảnh chat 2"><figcaption>Tham gia Buble Tea</figcaption>
+  </figure>
+</div>

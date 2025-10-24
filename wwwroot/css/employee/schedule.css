@@ -1,0 +1,196 @@
+/* --------- Khung chung --------- */
+.calendar-header {
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+  }
+
+  .calendar-filter {
+    display:flex; gap:8px;
+  }
+
+  .calendar { width:100%; }
+
+  .calendar-grid {
+    display:grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap:10px;
+  }
+
+  /* --------- Ô lịch --------- */
+  .cal-cell {
+    background:#fff;
+    border:1px solid var(--border, #e9ecef);
+    border-radius:12px;
+    min-height:110px;
+    padding:10px;
+    box-shadow:0 6px 18px rgba(0,0,0,.05);
+    position:relative;
+  }
+
+  .cal-head {
+    background:#f8f9fa;
+    font-weight:600;
+    text-align:center;
+    min-height:auto;
+  }
+
+  .cal-empty {
+    background:transparent;
+    border:1px dashed #eee;
+    box-shadow:none;
+  }
+
+  /* --------- Ngày --------- */
+  .cal-day .cal-date {
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:6px;
+  }
+
+  .date-number {
+    font-weight:600;
+    font-size:1.1rem;
+  }
+
+  /* Hôm nay */
+  .cal-day.today {
+    outline:2px solid #0d6efd22;
+    box-shadow:0 0 0 3px #0d6efd11;
+  }
+
+  /* Ngày có ca làm -> chữ ngày đậm */
+  .cal-day.workday .date-number {
+    font-weight:800;
+  }
+
+  /* --------- Ghi chú ca làm --------- */
+  .cal-note {
+    font-size:.9rem;
+    border-radius:10px;
+    padding:8px 10px;
+    margin-top:6px;
+  }
+
+  .cal-note .note-row {
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+  }
+
+  .note-shift { font-weight:600; }
+  .note-status { font-size:.8rem; opacity:.9; }
+
+  /* Trạng thái */
+  .badge-done  { background:#e7f8ee; border:1px solid #b8e7cf; }
+  .badge-plan  { background:#f3f4f7; border:1px solid #e1e3e8; }
+
+  .legend-box {
+    display:inline-block; width:18px; height:12px; border-radius:4px; margin:0 6px 0 14px; vertical-align:middle;
+  }
+  .legend-today { background:#0d6efd22; border:1px solid #0d6efd55; }
+
+  /* --------- In ấn --------- */
+  .print-hidden { display:inline-flex; }
+  .print-visible { display:inline-block; margin-left:10px; color:#6c757d; }
+
+  @media print {
+    .calendar-header .calendar-filter .btn,
+    .btn-print,
+    .print-hidden { display:none !important; }
+
+    .card, .cal-cell { box-shadow:none !important; }
+
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+    .calendar-grid { gap:6px; }
+    .cal-cell { min-height:95px; }
+  }
+  /* ===== Tone & token (có thể tùy chỉnh theo web) ===== */
+:root{
+    --primary:#e18914;          /* màu chủ đạo */
+    --text:#222;
+    --muted:#6c757d;
+    --bg:#fff;
+    --bg-soft:#f7f8fa;
+    --border:#e6e9ee;
+    --shadow:0 6px 18px rgba(0,0,0,.05);
+  }
+
+  /* ===== Header lịch ===== */
+  .calendar-header{
+    display:flex; align-items:center; justify-content:space-between; gap:16px;
+    padding:14px 16px;
+    background:var(--bg);
+    border-bottom:1px solid var(--border);
+    border-radius:12px 12px 0 0;
+  }
+
+  .calendar-header .cal-title{
+    display:flex; flex-direction:column; gap:4px;
+  }
+  .calendar-header .cal-title h5,
+  .cal-h5{
+    margin:0; color:var(--text); font-weight:700; font-size:1.05rem;
+  }
+  .calendar-header .cal-title .cal-sub{
+    color:var(--muted); font-size:.875rem;
+  }
+
+  /* ===== Toolbar (Tháng/Năm/Xem/In) ===== */
+  .calendar-filter{             /* đổi tên class nếu bạn đang dùng .calendar-toolbar */
+    display:flex; align-items:end; gap:10px; flex-wrap:wrap;
+  }
+
+  /* Nhóm field có label trên */
+  .calendar-filter .field{
+    display:flex; flex-direction:column; gap:4px;
+  }
+  .calendar-filter .field label{
+    font-size:.75rem; color:var(--muted); font-weight:600; letter-spacing:.2px;
+  }
+
+  /* Select nhỏ gọn, đồng bộ bo tròn */
+  .calendar-filter .form-control,
+  .calendar-filter .select-sm,
+  .calendar-filter select{
+    height:36px; min-width:120px;
+    padding:0 12px;
+    border:1px solid var(--border);
+    border-radius:10px;
+    background:var(--bg);
+    color:var(--text);
+    outline:none;
+    appearance:auto;             /* giữ native arrow */
+  }
+  .calendar-filter select:focus{
+    border-color:color-mix(in srgb, var(--primary) 35%, #dfe3e6);
+    box-shadow:0 0 0 3px color-mix(in srgb, var(--primary) 15%, transparent);
+  }
+
+  /* Nút */
+  .calendar-filter .btn,
+  .calendar-filter .btn-primary,
+  .calendar-filter .btn-ghost{
+    height:36px; padding:0 14px;
+    border-radius:10px; font-weight:600; border:1px solid transparent;
+    display:inline-flex; align-items:center; gap:6px;
+  }
+
+  /* Nút viền nhẹ (Xem) */
+  .calendar-filter .btn-ghost{
+    background:var(--bg); color:var(--primary);
+    border-color:var(--border);
+  }
+  .calendar-filter .btn-ghost:hover{
+    background:var(--bg-soft);
+  }
+
+  /* Nút chính (In lịch) */
+  .calendar-filter .btn-primary{
+    background:var(--primary); color:#fff; border-color:var(--primary);
+  }
+  .calendar-filter .btn-primary:hover{ filter:brightness(.98); }
+
+  /* Trên màn nhỏ, canh gọn */
+  @media (max-width: 768px){
+    .calendar-header{ align-items:flex-start; }
+    .calendar-filter{ width:100%; }
+    .calendar-filter .form-control,
+    .calendar-filter .select-sm{ min-width:105px; }
+  }

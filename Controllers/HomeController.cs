@@ -1,21 +1,30 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using start.Models;
-
+using start.Services;
 
 public class HomeController : Controller
 {
     private readonly ILogger<HomeController> _logger;
     private readonly IEmailService _emailService;
+    private readonly IStoreService _storeService;
+    private readonly INewsService _newsService;
+    private readonly IProductService _productService;
 
-      public HomeController(IEmailService emailService, ILogger<HomeController> logger)
-        {
-            _emailService = emailService;
-            _logger = logger;
-        }
-
+    public HomeController(IEmailService emailService, ILogger<HomeController> logger, IStoreService storeService, INewsService newsService, IProductService productService)
+    {
+        _emailService = emailService;
+        _logger = logger;
+        _storeService = storeService;
+        _newsService = newsService;
+        _productService = productService;
+    }
 
     public IActionResult Login()
+    {
+        return View();
+    }
+    public IActionResult Profile()
     {
         return View();
     }
@@ -29,26 +38,24 @@ public class HomeController : Controller
         return View();
     }
 
-    public IActionResult Index()
+     public IActionResult Index()
     {
-        string folderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "img", "milktea");
-
-        var files = Directory.GetFiles(folderPath);
-
-        var list = files.Select(file =>
-            "/img/milktea/" + Path.GetFileName(file)
-        ).ToList();
-
-        ViewBag.TraSuaList = list;
-
+        var featuredProducts = _productService.GetFeaturedProducts();
+        ViewBag.FeaturedProducts = featuredProducts;
         return View();
     }
 
-        [HttpGet]
-        public IActionResult Contact()
-        {
-            return View(new ContactFormModel());
-        }
+    public IActionResult Privacy()
+    {
+        return View();
+    }
+
+
+    [HttpGet]
+    public IActionResult Contact()
+    {
+        return View(new ContactFormModel());
+    }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
@@ -91,6 +98,50 @@ public class HomeController : Controller
             ModelState.AddModelError(string.Empty, "Đã xảy ra lỗi khi gửi email. Vui lòng thử lại sau.");
             return View(model);
         }
+    }
+
+    public async Task<IActionResult> News()
+    {
+        var newsList = await _newsService.GetAllAsync();
+        return View(newsList);
+    }
+
+
+    public async Task<IActionResult> NewsDetail(int id)
+    {
+        if (id <= 0)
+        {
+            return NotFound();
+        }
+
+        var news = await _newsService.GetByIdAsync(id);
+        if (news == null)
+        {
+            return NotFound();
+        }
+
+        return View(news);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Store()
+    {
+        var stores = await _storeService.GetAllBranchesAsync();
+        return View(stores);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> StoreFilter(string search, string region)
+    {
+        var stores = await _storeService.FilterBranchesAsync(search, region);
+        return PartialView("_StoreListPartial", stores);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> StoreSuggest(string term)
+    {
+        var suggestions = await _storeService.SuggestBranchNamesAsync(term);
+        return Json(suggestions);
     }
 
 

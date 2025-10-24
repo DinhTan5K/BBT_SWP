@@ -1,0 +1,158 @@
+@using start.Models
+@model EditEmployeeProfile
+@{
+    Layout = "~/Views/Shared/_EmployeeLayout.cshtml";
+    ViewBag.ActiveMenu = "EditProfile";
+    ViewData["Title"] = "Chỉnh sửa thông tin cá nhân";
+
+    var emp = ViewData["Employee"] as Employee;
+    var avatarUrl = !string.IsNullOrWhiteSpace(emp?.AvatarUrl)
+        ? emp!.AvatarUrl
+        : Url.Content("~/img/logo1.png");
+}
+
+@section Styles { <link rel="stylesheet" href="~/css/employee/editprofile.css" /> }
+
+@if (TempData["ok"] != null){ <div class="ep-alert ep-success">@TempData["ok"]</div> }
+@if (TempData["err"] != null){ <div class="ep-alert ep-error">@TempData["err"]</div> }
+
+<nav class="tabs tabs--with-action">
+
+
+  <!-- Khối avatar: click ảnh để chọn file -->
+  <form asp-controller="Employee" asp-action="UploadAvatar" method="post" enctype="multipart/form-data" class="ep-ava-wrap">
+      @Html.AntiForgeryToken()
+      <div class="ep-ava" id="avaClick">
+        <img src="@avatarUrl" id="avatarPreview" alt="avatar">
+        <div class="ep-ava-hint">Đổi ảnh</div>
+      </div>
+      <input type="file" name="avatar" id="avatarFile" accept="image/*" hidden />
+      <button type="submit" class="btn btn-primary" id="btnUploadAvatar" style="display:none">Tải lên</button>
+
+  </form>
+   <div class="tabs-left">
+    <a class="tab active" href="#">Chỉnh sửa</a>
+  </div>
+</nav>
+
+<div class="section">
+  <form asp-controller="Employee" asp-action="Edit" method="post" class="ep-form">
+    @Html.AntiForgeryToken()
+
+    <h3 class="section-title">THÔNG TIN CƠ BẢN</h3>
+    <div class="grid">
+      <div class="field">
+        <label>Ngày sinh</label>
+        <input asp-for="DateOfBirth" type="date" />
+        <span asp-validation-for="DateOfBirth" class="vld"></span>
+      </div>
+      <div class="field">
+        <label>Giới tính</label>
+        <input asp-for="Gender" />
+        <span asp-validation-for="Gender" class="vld"></span>
+      </div>
+      <div class="field">
+        <label>Quốc tịch</label>
+        <input asp-for="Nationality" />
+        <span asp-validation-for="Nationality" class="vld"></span>
+      </div>
+      <div class="field">
+        <label>Dân tộc</label>
+        <input asp-for="Ethnicity" />
+        <span asp-validation-for="Ethnicity" class="vld"></span>
+      </div>
+    </div>
+
+    <h3 class="section-title">THÔNG TIN LIÊN HỆ</h3>
+    <div class="grid">
+      <div class="field">
+        <label>Điện thoại di động</label>
+        <input asp-for="PhoneNumber" />
+        <span asp-validation-for="PhoneNumber" class="vld"></span>
+      </div>
+      <div class="field">
+        <label>Email cá nhân</label>
+        <input asp-for="Email" type="email" />
+        <span asp-validation-for="Email" class="vld"></span>
+      </div>
+      <div class="field">
+        <label>SĐT khẩn cấp 1</label>
+        <input asp-for="EmergencyPhone1" />
+        <span asp-validation-for="EmergencyPhone1" class="vld"></span>
+      </div>
+      <div class="field">
+        <label>SĐT khẩn cấp 2</label>
+        <input asp-for="EmergencyPhone2" />
+        <span asp-validation-for="EmergencyPhone2" class="vld"></span>
+      </div>
+    </div>
+
+    <h3 class="section-title">ĐỔI MẬT KHẨU</h3>
+<button type="button" class="btn btn-ghost btn-sm" id="btnTogglePwd">+ Tôi muốn đổi mật khẩu</button>
+
+<div id="pwdBlock" style="display:none;margin-top:10px">
+  <div class="grid">
+    <div class="field">
+      <label>Mật khẩu hiện tại</label>
+      <input asp-for="CurrentPassword" type="password" autocomplete="current-password" />
+      <span asp-validation-for="CurrentPassword" class="vld"></span>
+    </div>
+
+    <div class="field">
+      <label>Mật khẩu mới</label>
+      <input asp-for="NewPassword" type="password" autocomplete="new-password" />
+      <span asp-validation-for="NewPassword" class="vld"></span>
+    </div>
+
+    <div class="field">
+      <label>Xác nhận mật khẩu</label>
+      <input asp-for="ConfirmNewPassword" type="password" autocomplete="new-password" />
+      <span asp-validation-for="ConfirmNewPassword" class="vld"></span>
+    </div>
+  </div>
+
+</div>
+<div asp-validation-summary="All" class="vld vld-sum"></div>
+
+<div class="actions">
+  <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
+  <a asp-controller="Employee" asp-action="Profile" class="btn btn-ghost">Huỷ</a>
+</div>
+</form>  <!-- 🔥 Đóng form ở đây, sau actions -->
+
+
+
+@section Scripts {
+  <partial name="_ValidationScriptsPartial" />
+  <script>
+    // Toggle block đổi mật khẩu
+    (function(){
+      const btn = document.getElementById('btnTogglePwd');
+      const blk = document.getElementById('pwdBlock');
+      let open = false;
+      btn?.addEventListener('click', function(){
+        open = !open;
+        blk.style.display = open ? 'block' : 'none';
+        btn.textContent = open ? '- Ẩn phần đổi mật khẩu' : '+ Tôi muốn đổi mật khẩu';
+      });
+    })();
+    // Avatar: click ảnh hoặc nút để chọn file, xem trước và hiện nút tải lên
+    (function(){
+      const pickBtn = document.getElementById('btnPickAvatar');
+      const imgWrap = document.getElementById('avaClick');
+      const input = document.getElementById('avatarFile');
+      const preview = document.getElementById('avatarPreview');
+      const uploadBtn = document.getElementById('btnUploadAvatar');
+      function choose(){ input?.click(); }
+      pickBtn?.addEventListener('click', choose);
+      imgWrap?.addEventListener('click', choose);
+      input?.addEventListener('change', function(){
+        if (this.files && this.files[0]) {
+          const url = URL.createObjectURL(this.files[0]);
+          preview.src = url;
+          uploadBtn.style.display = 'inline-flex';
+        }
+      });
+    })();
+  </script>
+}

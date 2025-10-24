@@ -1,0 +1,342 @@
+@model IEnumerable<Branch>
+
+@{
+    ViewData["Title"] = "Store";
+}
+
+<link rel="stylesheet" href="/css/Store.css">
+
+
+<!-- Leaflet & Routing -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
+<script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
+
+<!-- Geocoder cho Leaflet Routing -->
+<script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+
+
+<div class="news-banner"></div>
+
+<div class="container mt-4" style=" max-width: 1600px; font-size: 1.1rem; padding:20px;">
+
+    <h2 class="centered-title">Danh Sách Cửa Hàng</h2>
+
+    <!-- Form lọc -->
+    <form id="filterForm" class="mb-3 d-flex align-items-center gap-2">
+        <div class="row w-100 align-items-center">
+            <div class="col-md-4">
+                <input type="text" name="search" class="form-control" placeholder="Tìm kiếm cửa hàng..." />
+            </div>
+            <div class="col-md-3">
+                <select name="region" class="form-control">
+                    <option value="">Tất cả</option>
+                    <option value="1">Miền Bắc</option>
+                    <option value="2">Miền Trung</option>
+                    <option value="3">Miền Nam</option>
+                </select>
+            </div>
+            <div class="col-md-5 d-flex justify-content-end">
+                <button type="button" id="toggleMapType" class="btn btn-primary" onclick="toggleMap()">Bản đồ</button>
+                <button type="button" id="routeBtn" class="btn btn-success" onclick="openRouteSection()">Tìm
+                    đường</button>
+            </div>
+        </div>
+    </form>
+
+    <div class="main-content-container" style="display:flex; gap:10px; height:600px;">
+        <!-- Danh sách cửa hàng -->
+        <div id="route-section"
+            style="display:none; width:35%; background:#f8f9fa; padding:10px; border-radius:8px; overflow-y:auto; border:1px solid #ddd;">
+            <h4 class="mb-3 text-center">Tìm đường đến chi nhánh</h4>
+
+
+
+            <div class="d-flex gap-2 mb-3">
+                <button onclick="getUserLocation()" class="btn btn-info w-50">📍 Lấy vị trí</button>
+                <button onclick="clearRoute()" class="btn btn-warning w-50">🧹 Xóa đường</button>
+            </div>
+
+            <div>
+                <h5>Chi nhánh gần nhất</h5>
+                <ul id="branchList" style="list-style:none; padding-left:0; margin-top:5px; color:#333;"></ul>
+            </div>
+
+            <hr />
+
+            <div id="directionsPanel"
+                style="display:none; background:#fff; padding:10px; border-radius:6px; border:1px solid #e0e0e0; margin-top:10px;">
+                <h5>Hướng dẫn chi tiết</h5>
+                <ol id="directionsList" style="padding-left:18px; color:#333;"></ol>
+            </div>
+        </div>
+
+        <!-- Store list (ẩn khi tìm đường) -->
+        <div id="store-list-section"
+            style="width:35%; overflow-y:auto; border:1px solid #ddd; border-radius:8px; padding:10px;">
+            <div id="storeList">
+                @foreach (var store in Model)
+                {
+                    <div class="store-item" style="cursor:pointer; border-bottom:1px solid #eee; padding:8px;"
+                        onclick="selectStore(@store.Latitude.ToString().Replace(',', '.'), @store.Longitude.ToString().Replace(',', '.'), '@store.Name', '@store.Phone', '@store.Address')">
+                        <h5>@store.Name</h5>
+                        <p>@store.Address</p>
+                        <small>@store.Phone</small>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Map bên phải -->
+        <div class="map-section" style="flex:1;">
+            <div id="map" style="height:100%; width:100%; border-radius:10px;"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    var stores = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model));
+    let map, userMarker, markers = [], routingControl;
+    let userLocation = null;
+    let branches = [];
+    function initMap() {
+        map = L.map('map').setView([16.0544, 108.2022], 13);
+        // Bản đồ mặc định (OSM)
+        const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+        // Bản đồ vệ tinh (Esri)
+        const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/' +
+            'World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: '© Esri & OpenStreetMap'
+        });
+        map.mapTypes = { osm, satellite };
+        map.currentType = "osm";
+        stores.forEach(store => createStoreMarker(store));
+    }
+    // Tạo marker cửa hàng
+    function createStoreMarker(store) {
+        const marker = L.marker([store.Latitude, store.Longitude]).addTo(map);
+        const popupContent = `
+        <strong>${store.Name}</strong><br>
+        📍 ${store.Address}<br>
+        📞 ${store.Phone}<br>
+        ⏰ 7:00 - 23:00
+    `;
+        marker.bindPopup(popupContent);
+        markers.push(marker);
+    }
+    // Khi chọn cửa hàng trong danh sách
+    function selectStore(lat, lon, name, phone, address) {
+        const pos = [lat, lon];
+        map.setView(pos, 16);
+        const marker = markers.find(m =>
+            m.getLatLng().lat === parseFloat(lat) &&
+            m.getLatLng().lng === parseFloat(lon)
+        );
+        if (marker) marker.openPopup();
+    }
+    // Lấy vị trí người dùng
+    function getUserLocation() {
+        if (!navigator.geolocation) { alert("Trình duyệt không hỗ trợ GPS"); return; }
+        navigator.geolocation.getCurrentPosition(pos => {
+            const latitude = pos.coords.latitude;
+            const longitude = pos.coords.longitude;
+            userLocation = [latitude, longitude];
+            if (userMarker) map.removeLayer(userMarker);
+            userMarker = L.marker(userLocation, { icon: L.icon({ iconUrl: "https://maps.google.com/mapfiles/ms/icons/blue-dot.png", iconSize: [32, 32] }) })
+                .addTo(map).bindPopup("📍 Vị trí của bạn").openPopup();
+            map.setView(userLocation, 13);
+            updateBranches();
+        }, err => { console.error(err); alert("Không thể lấy vị trí của bạn"); });
+    }
+    // Hiển thị route + directions
+    function showRouteTo(lat, lon) {
+        if (!userLocation) { alert("Vui lòng nhấn 'Lấy vị trí của tôi' trước."); return; }
+        clearRoute();
+        routingControl = L.Routing.control({
+            waypoints: [L.latLng(userLocation[0], userLocation[1]), L.latLng(lat, lon)],
+            routeWhileDragging: false, show: false, addWaypoints: false,
+            createMarker: function (i, wp) {
+                return L.marker(wp.latLng, { icon: i === 0 ? L.icon({ iconUrl: "https://maps.google.com/mapfiles/ms/icons/blue-dot.png", iconSize: [32, 32] }) : L.icon({ iconUrl: "https://maps.google.com/mapfiles/ms/icons/red-dot.png", iconSize: [32, 32] }) });
+            }
+        }).addTo(map);
+        routingControl.on('routesfound', function (e) {
+            const panel = document.getElementById("directionsPanel");
+            const list = document.getElementById("directionsList");
+            list.innerHTML = "";
+            panel.style.display = "block";
+            const summary = e.routes[0].summary;
+            const header = document.createElement("p");
+            header.innerHTML = `<strong>Khoảng cách:</strong> ${(summary.totalDistance / 1000).toFixed(2)} km &nbsp; <strong>Thời gian:</strong> ${Math.round(summary.totalTime / 60)} phút`;
+            list.appendChild(header);
+            e.routes[0].instructions.forEach(step => {
+                const li = document.createElement("li");
+                li.textContent = step.text;
+                list.appendChild(li);
+            });
+            panel.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+    }
+    // Tính khoảng cách (Haversine)
+    function calculateDistance(lat1, lng1, lat2, lng2) {
+        const R = 6371;
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLng = (lng2 - lng1) * Math.PI / 180;
+        const a = Math.sin(dLat / 2) ** 2 +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLng / 2) ** 2;
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+    // Đổi loại bản đồ
+    function toggleMap() {
+        const btn = document.getElementById("toggleMapType");
+        if (map.currentType === "osm") {
+            map.removeLayer(map.mapTypes.osm);
+            map.mapTypes.satellite.addTo(map);
+            map.currentType = "satellite";
+            btn.innerText = "Vệ tinh";
+        } else {
+            map.removeLayer(map.mapTypes.satellite);
+            map.mapTypes.osm.addTo(map);
+            map.currentType = "osm";
+            btn.innerText = "Bản đồ";
+        }
+    }
+    // Đóng khu vực route
+    function openRouteSection() {
+        const routeSection = document.getElementById("route-section");
+        const storeSection = document.getElementById("store-list-section");
+        const btn = document.getElementById("routeBtn");
+        if (routeSection.style.display === "none" || routeSection.style.display === "") {
+            routeSection.style.display = "block";
+            storeSection.style.display = "none";
+            btn.textContent = "Danh sách";
+        } else {
+            routeSection.style.display = "none";
+            storeSection.style.display = "block";
+            btn.textContent = "Tìm đường";
+            clearRoute();
+        }
+    }
+    function clearRoute() {
+        if (routingControl) {
+            map.removeControl(routingControl);
+            routingControl = null;
+        }
+        const panel = document.getElementById("directionsPanel");
+        const list = document.getElementById("directionsList");
+        panel.style.display = "none";
+        document.getElementById("directionsList").innerHTML = "";
+    }
+    function updateBranches() {
+        if (!userLocation) return;
+        const searchInput = document.querySelector("input[name='search']").value.toLowerCase();
+        const regionSelect = document.querySelector("select[name='region']").value;
+        const region = parseInt(regionSelect);
+        branches = stores.filter(s => {
+            const matchKeyword = s.Name.toLowerCase().includes(searchInput) || s.Address.toLowerCase().includes(searchInput);
+            const matchRegion = isNaN(region) || s.Region === region;
+            return matchKeyword && matchRegion;
+        }).map(s => ({
+            ...s,
+            distance: calculateDistance(userLocation[0], userLocation[1], s.Latitude, s.Longitude)
+        })).sort((a, b) => a.distance - b.distance);
+        renderBranchList();
+    }
+    function renderBranchList() {
+        const ul = document.getElementById("branchList");
+        if (!branches || branches.length === 0) { ul.innerHTML = "<li>Không tìm thấy chi nhánh nào.</li>"; return; }
+        ul.innerHTML = branches.map((b, idx) => `
+        <li style="margin-bottom:8px;">
+            <strong>${idx + 1}. ${escapeHtml(b.Name)}</strong><br/>
+            <small>${escapeHtml(b.Address)}</small><br/>
+            <button class="btn btn-outline-primary btn-sm mt-1" onclick="showRouteTo(${b.Latitude},${b.Longitude})">
+                ${b.distance.toFixed(2)} km
+            </button>
+        </li>
+    `).join("");
+    }
+    function escapeHtml(text) {
+        return text.replace(/[&<>"']/g, m => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+        }[m]));
+    }
+    // Khi trang tải xong
+    document.addEventListener("DOMContentLoaded", () => {
+        initMap();
+        
+        document.querySelector("select[name='region']").addEventListener("change", updateBranches);
+    });
+<!-- AJAX lọc -->
+    document.getElementById("filterForm").addEventListener("submit", function (e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        const params = new URLSearchParams(formData);
+        fetch(`/Home/StoreFilter?${params.toString()}`, { method: "GET" })
+            .then(res => res.text())
+            .then(html => {
+                document.getElementById("storeList").innerHTML = html;
+            });
+    });
+<!-- Autocomplete -->
+@* <script>
+    $(function () {
+        $("input[name='search']").autocomplete({
+            source: function (request, response) {
+                $.ajax({
+                    url: '/Home/StoreSuggest',
+                    data: { term: request.term },
+                    dataType: 'json',
+                    success: function (data) {
+                        response(data);
+                    }
+                });
+            },
+            minLength: 1,
+            delay: 10,
+            select: function (event, ui) {
+                $("input[name='search']").val(ui.item.value);
+                const formData = new FormData(document.getElementById("filterForm"));
+                const params = new URLSearchParams(formData);
+                fetch(`/Home/StoreFilter?${params.toString()}`, { method: "GET" })
+                    .then(res => res.text())
+                    .then(html => {
+                        document.getElementById("storeList").innerHTML = html;
+                    });
+            }
+        });
+    });
+</script> *@
+
+
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const searchInput = document.querySelector("input[name='search']");
+        const regionSelect = document.querySelector("select[name='region']");
+
+        function doFilter() {
+            const params = new URLSearchParams({
+                search: searchInput.value,
+                region: regionSelect.value
+            });
+            fetch(`/Home/StoreFilter?${params.toString()}`, { method: "GET" })
+
+                .then(res => res.text())
+                .then(html => {
+                    document.getElementById("storeList").innerHTML = html;
+                });
+        }
+
+        let typingTimer;
+        searchInput.addEventListener("keyup", function () {
+            clearTimeout(typingTimer);
+            typingTimer = setTimeout(doFilter, 300);
+        });
+
+        regionSelect.addEventListener("change", doFilter);
+    });
+</script>

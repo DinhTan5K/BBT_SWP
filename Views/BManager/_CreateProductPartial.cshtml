@@ -1,0 +1,75 @@
+@model start.Models.Product
+
+@* Form này sẽ được tải vào pop-up *@
+<form id="createProductForm" asp-action="CreateProduct" method="post" novalidate="novalidate">
+    @Html.AntiForgeryToken()
+
+    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+    <div class="mb-3">
+        <label asp-for="ProductName" class="form-label"></label>
+        <input asp-for="ProductName" class="form-control" />
+        <span asp-validation-for="ProductName" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Description" class="form-label"></label>
+        <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+        <span asp-validation-for="Description" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Image_Url" class="form-label"></label>
+        <input asp-for="Image_Url" class="form-control" />
+        <span asp-validation-for="Image_Url" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="CategoryID" class="form-label"></label>
+        <select asp-for="CategoryID" class="form-select" asp-items="@ViewBag.Categories">
+            <option value="">-- Select Category --</option>
+        </select>
+        <span asp-validation-for="CategoryID" class="text-danger"></span>
+    </div>
+
+    <hr />
+    <h6>Product Sizes & Prices</h6>
+    <div id="sizes-container">
+        </div>
+    <button type="button" id="add-size-btn" class="btn btn-outline-primary btn-sm mt-2">Add Size</button>
+
+</form>
+
+<script>
+    // Thêm script nhỏ để quản lý việc thêm/xóa size ngay trong partial view
+    $(document).ready(function() {
+        let sizeIndex = 0;
+        function addSizeField() {
+            var sizeHtml = `
+                <div class="row g-2 mb-2 align-items-center size-entry">
+                    <div class="col-5">
+                        <select name="ProductSizes[${sizeIndex}].Size" class="form-select">
+                            <option value="S">S</option>
+                            <option value="M">M</option>
+                            <option value="L">L</option>
+                        </select>
+                    </div>
+                    <div class="col-5">
+                        <input type="number" name="ProductSizes[${sizeIndex}].Price" class="form-control" placeholder="Price" />
+                    </div>
+                    <div class="col-2">
+                        <button type="button" class="btn btn-danger btn-sm remove-size-btn">X</button>
+                    </div>
+                </div>`;
+            $('#sizes-container').append(sizeHtml);
+            sizeIndex++;
+        }
+        $('#add-size-btn').click(addSizeField);
+        $('#sizes-container').on('click', '.remove-size-btn', function() {
+            $(this).closest('.size-entry').remove();
+        });
+        
+        // Tự động thêm 1 trường size khi form tải
+        addSizeField();
+    });
+</script>
