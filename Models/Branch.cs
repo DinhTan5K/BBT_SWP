@@ -31,6 +31,7 @@ public class Branch
 
     [Precision(18, 15)]
     public decimal Longitude { get; set; }
+    
     public ICollection<Order>? Orders { get; set; }
 }
 
