@@ -1,8 +1,7 @@
 using System.ComponentModel.DataAnnotations.Schema;
+using start.Models;
 
-namespace start.Models
-{
-    [Table("ProductSize")]
+[Table("ProductSize")]
     public class ProductSize
     {
         public int ProductSizeID { get; set; }
@@ -15,4 +14,3 @@ namespace start.Models
 
         public Product? Product { get; set; }
     }
-}

@@ -22,4 +22,3 @@ namespace start.Models
         public ICollection<ProductSize> ProductSizes { get; set; } = new List<ProductSize>();
     }
 }
-	
