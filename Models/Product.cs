@@ -1,9 +1,9 @@
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
-namespace start.Models
-{
-    [Table("Product")]
+using System.ComponentModel.DataAnnotations.Schema;
+using start.Models;
+
+[Table("Product")]
     public class Product
     {
         [Key]
@@ -21,4 +21,4 @@ namespace start.Models
 
         public ICollection<ProductSize> ProductSizes { get; set; } = new List<ProductSize>();
     }
-}
+

@@ -137,18 +137,14 @@
             const regionId = this.value;
             const cityLeft = document.getElementById('CitySelectLeft');
             const branchSelect = document.getElementById('BranchSelect');
-
             cityLeft.innerHTML = '<option value="">(chọn tỉnh)</option>';
             branchSelect.innerHTML = '<option value="">(chọn tỉnh trước)</option>';
             branchSelect.disabled = true;
-
             if (!regionId) {
                 cityLeft.disabled = true;
                 return;
             }
-
             cityLeft.disabled = false;
-
             fetch(`/Contact/GetCities?regionId=${regionId}`)
                 .then(r => r.json())
                 .then(data => {
@@ -164,19 +160,15 @@
                     console.error('GetCities error', err);
                 });
         });
-
         document.getElementById('CitySelectLeft')?.addEventListener('change', function () {
             const city = this.value;
             const branchSelect = document.getElementById('BranchSelect');
-
             branchSelect.innerHTML = '<option value="">(đang tải...)</option>';
             branchSelect.disabled = true;
-
             if (!city) {
                 branchSelect.innerHTML = '<option value=\"\">(chọn tỉnh trước)</option>';
                 return;
             }
-
             fetch(`/Contact/GetBranches?city=${encodeURIComponent(city)}`)
                 .then(r => r.json())
                 .then(data => {
@@ -196,6 +188,3 @@
         });
     </script>
 }
-
-
-

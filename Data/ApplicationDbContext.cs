@@ -1,7 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using start.Models;
-using Microsoft.Identity.Client;
-using System.Globalization;
 
 namespace start.Data
 {

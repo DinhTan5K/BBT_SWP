@@ -2,9 +2,9 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-
-namespace start.Models
+   namespace start.Models
 {
+    [Table("Region")]
     public class Region
     {
         [Key]
