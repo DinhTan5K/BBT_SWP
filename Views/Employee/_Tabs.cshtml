@@ -1,0 +1,18 @@
+@model start.Models.Employee
+@{
+    // "info" | "contract" | "chat" | "income"
+    var active = (string)(ViewBag.ActiveTab ?? "info");
+}
+<nav class="tabs">
+  <a class="tab @(active=="info"?"active":"")"
+     href='@Url.Action("Profile","Employee")'>Thông tin cá nhân</a>
+
+  <a class="tab @(active=="contract"?"active":"")"
+     href='@Url.Action("Contract","Employee", new { id = Model.EmployeeID })'>Thông tin lao động</a>
+
+  <a class="tab @(active=="chat"?"active":"")"
+     href='@Url.Action("Chat","Employee", new { id = Model.EmployeeID })'>Đoạn chat chung</a>
+
+  <a class="tab @(active=="salary"?"active":"")"
+     href='@Url.Action("Salary","Employee", new { id = Model.EmployeeID })'>Thu nhập</a>
+</nav>

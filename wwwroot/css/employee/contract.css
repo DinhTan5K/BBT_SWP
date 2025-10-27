@@ -1,0 +1,105 @@
+:root{
+    --bg:#fffaf5;
+    --card-bg:#fff;
+    --label-bg:#fdecd2;      /* vàng nhạt */
+    --label-text:#3a2f19;
+    --value-bg:#fff;
+    --value-text:#222;
+    --border:#f1e2ce;
+    --muted:#8b8b8b;
+    --success:#22c55e;
+    --secondary:#9aa0a6;
+    --radius:16px;
+    --radius-sm:12px;
+    --shadow:0 8px 24px rgba(0,0,0,.06);
+  }
+
+  body{ background:var(--bg); font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; color:#1a1a1a; }
+
+  /* Card */
+  .card{
+    background:var(--card-bg);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    overflow:hidden;
+    max-width:1200px;
+    margin:auto;
+  }
+  .card-header{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 20px;
+    background:linear-gradient(180deg,#fff 0%,#fff8f0 100%);
+    border-bottom:1px solid var(--border);
+  }
+  .card-body{ padding:20px; }
+  .card-footer{
+    padding:12px 20px; border-top:1px solid var(--border); color:var(--muted); background:#fffefc;
+  }
+
+  /* ======= layout giống ảnh: 2 cột cân xứng ======= */
+  .form-grid{
+    display:grid;
+    grid-template-columns: 1fr 1fr;   /* 2 cột */
+    gap:16px 18px;
+  }
+
+  /* Mỗi mục là 2 “viên” rời: label + value */
+  .pair{
+    display:grid;
+    grid-template-columns: 240px 1fr; /* label cố định, value giãn */
+    gap:16px;
+    background:transparent;           /* KHÔNG khung chung */
+  }
+
+  /* “Viên” label */
+  .pair .lbl{
+    background:var(--label-bg);
+    color:var(--label-text);
+    border:1px solid var(--border);
+    border-radius:var(--radius-sm);
+    padding:14px 16px;
+    font-weight:600;
+    display:flex; align-items:center;
+    min-height:52px;
+  }
+
+  /* “Viên” value */
+  .pair .val{
+    background:var(--value-bg);
+    color:var(--value-text);
+    border:1px solid var(--border);
+    border-radius:var(--radius-sm);
+    padding:14px 16px;
+    display:flex; align-items:center;
+    min-height:52px;
+    box-shadow: inset 0 1px 0 rgba(0,0,0,.02);
+  }
+
+  /* Hàng full width (nếu cần) */
+  .pair.span-2{ grid-column: 1 / -1; }
+
+  /* Badge trạng thái */
+  .badge{
+    display:inline-block; padding:6px 12px; border-radius:999px;
+    color:#fff; font-size:12px; font-weight:700;
+  }
+  .bg-success{ background:var(--success); }
+  .bg-secondary{ background:var(--secondary); }
+
+  /* text utils */
+  .text-muted{ color:var(--muted)!important; }
+  .small{ font-size:12px; }
+  .fw-semibold{ font-weight:600; }
+
+  /* Responsive */
+  @media (max-width: 1200px){
+    .pair{ grid-template-columns: 220px 1fr; }
+  }
+  @media (max-width: 992px){
+    .form-grid{ grid-template-columns: 1fr; }
+    .pair{ grid-template-columns: 200px 1fr; }
+  }
+  @media (max-width: 576px){
+    .pair{ grid-template-columns: 1fr; }   /* label & value xuống 2 dòng trên mobile nhỏ */
+  }

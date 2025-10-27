@@ -1,0 +1,67 @@
+/* Kế thừa palette từ profile.css để đồng bộ */
+:root{
+    --bg:#fffaf5; --card:#fff; --ink:#222; --muted:#6b7280; --line:#eadfd2;
+    --amber:#fff2da; --accent:#f59e0b; --accent2:#f97316;
+    --radius:12px; --shadow:0 8px 22px rgba(0,0,0,.08); --focus:0 0 0 3px #f59e0b33;
+  }
+
+  /* Alert */
+  .ep-alert{margin:10px 20px 0;padding:10px 12px;border-radius:12px;font-weight:600}
+  .ep-success{background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46}
+  .ep-error{background:#fef2f2;border:1px solid #fecaca;color:#991b1b}
+
+  /* Tabs có action bên phải */
+  .tabs.tabs--with-action{display:flex;align-items:center;justify-content:space-between}
+  .tabs-left{display:flex;gap:10px}
+
+  /* Avatar block */
+.ep-ava-wrap{display:flex;align-items:center;gap:10px; margin-top: 12px;}
+.ep-ava{
+  position:relative;width:100px;height:100px;border-radius:999px;overflow:hidden;
+  border:3px solid #fff; box-shadow:0 6px 16px rgba(0,0,0,.12); cursor:pointer;
+}
+.ep-ava img{width:100%;height:100%;object-fit:cover}
+.ep-ava-hint{
+  position:absolute;inset:auto 0 0 0; text-align:center;font-size:11px;
+  background:rgba(0,0,0,.45); color:#fff; padding:3px 0; opacity:0; transition:.15s;
+}
+.ep-ava:hover .ep-ava-hint{opacity:1}
+.btn-sm{padding:8px 10px;border-radius:10px;font-size:14px}
+
+
+  /* Form */
+  .section{padding:14px 20px 20px}
+  .section-title{margin:8px 0 12px;font-size:17px;font-weight:700;letter-spacing:.2px}
+
+  .ep-form{padding-top:4px}
+  .grid{display:grid;gap:14px 20px;grid-template-columns:repeat(2,minmax(0,1fr));margin-bottom:12px}
+  .field{display:flex;flex-direction:column;gap:6px}
+  .field label{color:var(--muted);font-weight:600;font-size:13px}
+  .field input{
+    height:42px;padding:10px 12px;border-radius:12px;border:1px solid var(--line);
+    background:#fff;color:var(--ink);outline:none
+  }
+  .field input:focus{box-shadow:var(--focus);border-color:#fcd34d}
+
+  /* Validation */
+  .vld{color:#b91c1c;font-size:12px}
+  .vld-sum{margin:6px 0}
+
+  /* Buttons (đồng bộ với theme) */
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;
+       padding:10px 14px;border-radius:12px;border:1px solid transparent;
+       font-weight:700;cursor:pointer;transition:filter .15s ease,transform .02s}
+  .btn:active{transform:translateY(1px)}
+  .btn-primary{background:linear-gradient(180deg,var(--accent),var(--accent2));color:#fff;
+               box-shadow:0 6px 16px rgba(245,158,11,.35)}
+  .btn-primary:hover{filter:brightness(.97)}
+  .btn-ghost{background:#fff;color:#7c2d12;border:1px solid var(--line)}
+  .btn-ghost:hover{filter:brightness(.98)}
+  .actions{display:flex;gap:10px;margin-top:8px}
+
+  /* Responsive */
+  @media (max-width:900px){
+    .grid{grid-template-columns:1fr}
+    .tabs.tabs--with-action{flex-direction:column;align-items:flex-start;gap:10px}
+    .ep-avatar{align-self:flex-end}
+  }

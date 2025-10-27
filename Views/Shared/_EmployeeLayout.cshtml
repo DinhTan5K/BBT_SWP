@@ -1,0 +1,62 @@
+@{
+    Layout = null;
+    var active = (string?)ViewBag.ActiveMenu ?? "";
+
+    // đọc role từ Session (RoleID ưu tiên, fallback Role), chuẩn hóa in hoa
+    var roleRaw = Context?.Session?.GetString("RoleID") ?? Context?.Session?.GetString("Role");
+    var role    = roleRaw?.Trim().ToUpperInvariant();
+}
+
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>@ViewData["Title"] - Employee</title>
+
+    <!-- CSS chung cho khu vực nhân viên -->
+    <link rel="stylesheet" href="~/css/employee/profile.css" />
+
+    @* Cho phép view con chèn thêm CSS *@
+    @RenderSection("Styles", required: false)
+</head>
+<body>
+<div class="layout">
+
+  <aside class="sidebar">
+    <div class="sb-title">Menu</div>
+
+    <a class="sb-item @(active=="Profile" ? "active" : "")"
+       href="@Url.Action("Profile","Employee")">Hồ sơ của tôi</a>
+
+    @if (role is "EM" or "SL" or "NV")
+    {
+      <a class="sb-item @(ViewBag.ActiveMenu=="DayOff" ? "active" : "")"
+         href="@Url.Action("DayOff","Employee")">
+        Quản lý ngày nghỉ
+      </a>
+    }
+
+    <a class="sb-item @(active=="Schedule" ? "active" : "")"
+       href="@Url.Action("Schedule","Employee")">Lịch làm</a>
+
+
+    <a class="sb-item @(active=="EditProfile" ? "active" : "")"
+       href="@Url.Action("EditProfile","Employee")">Chỉnh sửa thông tin cá nhân</a>
+        <a class="sb-item @(active=="" ? "active" : "")"
+       href="@Url.Action("Index","Home")">Đăng xuất</a>
+  </aside>
+
+  <main>
+    <div class="wrap">
+      <section class="card">
+        @RenderBody()
+      </section>
+    </div>
+  </main>
+</div>
+
+@* Cho phép view con chèn script riêng *@
+@RenderSection("Scripts", required: false)
+</body>
+</html>

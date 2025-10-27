@@ -50,19 +50,6 @@
     }
 </style>
 
-<div class="page-header d-flex align-items-center justify-content-between mb-3">
-    <h2 class="mb-0 d-flex align-items-center gap-2">
-        <span class="me-2">🧋</span>
-        <span>Thanh toán</span>
-    </h2>
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb mb-0">
-            <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Trang chủ</a></li>
-            <li class="breadcrumb-item"><a asp-controller="Product" asp-action="Product">Thực đơn</a></li>
-            <li class="breadcrumb-item active" aria-current="page">Thanh toán</li>
-        </ol>
-    </nav>
-</div>
 
 @if (Model?.CartDetails == null || !Model.CartDetails.Any())
 {
@@ -114,14 +101,14 @@ else
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label"><i class="fa-regular fa-user me-1"></i>Họ tên</label>
-                                        <input type="text" name="Name" id="nameInput" class="form-control input-focus"
+                                        <input type="text" name="Name" id="nameInput" class="form-control input-focus" value ="@ViewData["CustomerName"]"
                                             required />
                                         <small id="nameError" class="text-danger d-none"></small>
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label"><i class="fa-solid fa-phone me-1"></i>Số điện
                                             thoại</label>
-                                        <input type="text" name="Phone" id="phoneInput" class="form-control input-focus"
+                                        <input type="text" name="Phone" id="phoneInput" class="form-control input-focus" value="@ViewData["CustomerPhone"]"
                                             required />
                                         <small id="phoneError" class="text-danger d-none"></small>
                                     </div>
@@ -130,19 +117,27 @@ else
                                     <label class="form-label"><i class="fa-solid fa-location-dot me-1"></i>Địa chỉ giao
                                         hàng</label>
                                     <div class="card shadow-sm border-0 p-4 rounded-4">
-                                        <div class="input-group mb-3">
-                                            <input type="text" name="Address" id="addressInput"
-                                                class="form-control input-focus" placeholder="Nhập địa chỉ của bạn...">
-                                            <button type="button" id="btnLocation"
-                                                class="btn btn-outline-primary d-flex align-items-center gap-2">
-                                                <i class="fa-solid fa-crosshairs"></i>
-                                                <span>Vị trí</span>
-                                            </button>
+
+                                        <div class="position-relative mb-3">
+                                            <div class="input-group">
+                                                <input type="text" name="Address" id="addressInput"
+                                                    class="form-control input-focus" placeholder="Nhập địa chỉ của bạn..." value="@ViewData["CustomerAddress"]">
+                                                <button type="button" id="btnLocation"
+                                                        class="btn btn-outline-primary d-flex align-items-center gap-2">
+                                                    <i class="fa-solid fa-crosshairs"></i>
+                                                    <span>Vị trí</span>
+                                                </button>
+                                            </div>
+
+                                            <ul id="addressSuggestions" class="list-group position-absolute w-100 shadow-lg"
+                                                style="z-index: 1000; top: 100%; left: 0; display: none; max-height: 250px; overflow-y: auto;">
+                                                </ul>
                                         </div>
-                                        <small id="addressError" class="text-danger d-none"></small>
-                                        <div class="form-floating mb-2">
+                                        <small id="addressError" class="text-danger d-none mb-2 d-block"></small>
+
+                                        <div class="form-floating">
                                             <textarea name="DetailAddress" class="form-control input-focus"
-                                            id="detailAddress" style="height: 100px"></textarea>
+                                                    id="detailAddress" style="height: 100px"></textarea>
                                             <label for="detailAddress">Ghi chú địa chỉ (số nhà, tên đường...)</label>
                                             <small id="detailError" class="text-danger d-none"></small>
                                         </div>
@@ -160,6 +155,8 @@ else
                                 </div>
                             </div>
                         </div>
+
+                        
                         <div class="tab-pane fade" id="pickupTab" role="tabpanel" aria-labelledby="pickup-tab-link">
                             <div class="p-3 border rounded bg-light shadow-sm">
                                 <div class="mb-3">
@@ -172,13 +169,13 @@ else
                                 <div class="mb-3">
                                     <label class="form-label"><i class="fa-regular fa-user me-1"></i>Họ tên</label>
                                     <input type="text" name="Name_Pickup" id="pickupNameInput"
-                                        class="form-control input-focus" />
+                                        class="form-control input-focus" value= "@ViewData["CustomerName"]"/>
                                     <small id="pickupNameError" class="text-danger d-none"></small>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label"><i class="fa-solid fa-phone me-1"></i>Số điện thoại</label>
                                     <input type="text" name="Phone_Pickup" id="pickupPhoneInput"
-                                        class="form-control input-focus" />
+                                        class="form-control input-focus" value="@ViewData["CustomerPhone"]"/>
                                     <small id="pickupPhoneError" class="text-danger d-none"></small>
                                 </div>
                                 <div class="mb-3">

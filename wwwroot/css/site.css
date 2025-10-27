@@ -366,7 +366,78 @@ body {
         0 8px 22px rgba(21, 203, 145, 0.18);
 }
 
+.auth-logged {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
 
+/* Link bao ngoại */
+.nav-privacy {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: var(--mt-text);
+    font-family: "Segoe UI", "Nunito", Arial, sans-serif; /* font nhẹ, thân thiện */
+    font-weight: 400;          /* không bold như menu chính */
+    font-size: 15px;
+    letter-spacing: 0.6px;     /* hơi giãn chữ như ảnh */
+    padding: 6px 8px;
+    border-radius: 8px;
+    transition: background 0.14s ease, transform 0.12s ease;
+}
 
+/* hover: nhẹ, không quá nổi bật */
+.nav-privacy:hover {
+    background: rgba(0,0,0,0.02);
+    transform: translateY(-1px);
+}
+
+/* Wrapper chuông (để giữ vòng tròn nhỏ, viền) */
+.bell-wrap {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #fff; /* nền trắng bên trong như ảnh phải */
+    border: 1px solid rgba(0,0,0,0.18); /* viền mảnh đen */
+    box-shadow: 0 6px 20px rgba(0,0,0,0.06);
+    padding: 3px;
+}
+
+/* Icon chuông: dùng FontAwesome regular (outline) */
+.bell-icon {
+    color: #2d261f; /* màu chữ/chủ đạo tối (giống text) */
+    font-size: 16px;
+    line-height: 1;
+    vertical-align: middle;
+}
+
+/* Text "Privacy" - kiểu gọn, nhẹ */
+.nav-privacy-text {
+    display: inline-block;
+    color: #2d261f;
+    font-weight: 500;              /* hơi đậm 1 chút để dễ đọc nhưng vẫn mảnh */
+    margin-left: 2px;
+}
+
+/* separator dọc nhỏ giữa privacy và avatar */
+.nav-sep {
+    width: 1px;
+    height: 38px;
+    background: rgba(0,0,0,0.06);
+    margin: 0 10px;
+}
+
+/* Mobile: giảm kích thước icon và khoảng cách */
+@media (max-width: 576px) {
+    .bell-wrap { width:30px; height:30px; }
+    .bell-icon { font-size:14px; }
+    .nav-privacy-text { font-size:14px; }
+    .nav-sep { height:28px; margin: 0 8px; }
+}
 
 

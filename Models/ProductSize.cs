@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations.Schema;
+using start.Models;
 
     [Table("ProductSize")]
     public class ProductSize

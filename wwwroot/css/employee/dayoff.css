@@ -1,0 +1,177 @@
+/* ===== Theme ===== */
+:root{
+    --theme: #f7a43a;      /* cam */
+    --label-bg: #ffe0b3;   /* kem nhạt cho nhãn */
+    --paper: #fffaf3;      /* nền trang */
+    --border: rgba(0,0,0,.08);
+    --radius: 14px;
+  }
+
+  body{ background: var(--paper); }
+
+  /* ===== Khung card ===== */
+  .card-header{
+    background:#fff;
+    border-bottom:1px solid var(--border);
+  }
+
+  /* ===== Căn giữa form + bảng với cùng bề rộng ===== */
+  .dayoff-wrap,
+  .history-wrap{
+    max-width: 980px;      /* chỉnh 900/860 nếu muốn hẹp hơn */
+    margin: 0 auto;
+  }
+
+  /* ===== Layout nhãn–giá trị cân xứng ===== */
+  .kv-grid{ display:grid; grid-auto-rows:auto; row-gap:12px; }
+  .kv-row{ display:grid; grid-template-columns: 220px 1fr; column-gap:14px; align-items:start; }
+
+  .kv-label{
+    display:flex; justify-content:center; align-items:center; text-align:center;
+    background: var(--label-bg);
+    border: none;
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    font-weight:600; color:#6b4a21;
+    min-height: 48px;
+  }
+
+  .kv-value{ background: transparent; border: none; padding: 0; }
+
+  /* Control lớn – đẹp */
+  .date-input-lg{
+    height: 48px;
+    font-size: 1.05rem;
+    padding: .6rem .75rem;
+    max-width: 360px;
+  }
+
+  .reason-lg{
+    width: 100%;
+    min-height: 200px;   /* ô to như bạn muốn */
+    resize: vertical;
+    font-size: .98rem;
+    line-height: 1.5;
+  }
+
+  /* Nút gửi */
+  .btn-theme{
+    background: var(--theme);
+    color:#fff;
+    border:none;
+    border-radius: 12px;
+    padding:.55rem 1rem;
+    margin-left: 896px;    
+  }
+  .btn-theme:hover{ filter:brightness(.95); color:#fff; }
+
+  /* Focus đẹp */
+  .form-control{ border-radius: 12px; border:1px solid #e8e2d9; background:#fff; }
+  .form-control:focus{ box-shadow:0 0 0 .2rem rgba(247,164,58,.20); border-color:#f5c27c; }
+
+  /* Hàng nút phải thẳng */
+  .kv-actions .kv-label{ display:none; }
+  .kv-actions .kv-value{ display:flex; justify-content:flex-end; align-items:center; }
+
+  /* ===== Bảng lịch sử ===== */
+  .dayoff-table thead th{ background:#fff5e6; border-bottom:1px solid var(--border); }
+  .dayoff-table tbody td{ border-top:1px solid var(--border); }
+
+  .badge-soft-success{ background:#e9f7ec; color:#2f7a3e; }
+  .badge-soft-danger{  background:#fdeceb; color:#b23c3c; }
+  .badge-soft-secondary{ background:#eef1f4; color:#5b6977; }
+
+  .truncate{ max-width:560px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+  /* ===== Responsive ===== */
+  @media (max-width: 768px){
+    .kv-row{ grid-template-columns: 1fr; }
+    .btn-theme{ width:100%; }
+    .dayoff-wrap, .history-wrap{ max-width:100%; padding: 0 8px; }
+    .date-input-lg{ max-width:100%; }
+    .reason-lg{ min-height:180px; }
+  }
+  /* ---- Lịch sử: bảng full chiều rộng card ---- */
+.history-wrap{
+    max-width: 100%;   /* bỏ giới hạn 980px */
+    margin: 0;         /* bỏ auto-center bằng margin */
+  }
+
+  /* cho container bảng có đệm nhẹ để không dính sát viền */
+  .card-body .table-responsive{
+    padding: 0 16px;
+  }
+
+  /* bảng full width + cột ổn định */
+  .dayoff-table{
+    width: 100%;
+    table-layout: fixed;   /* cột đều, không xô lệch */
+  }
+
+  /* canh giữa 2 cột đầu, cột lý do để trái; padding đều */
+  .dayoff-table th, .dayoff-table td{
+    padding: 12px 16px;
+  }
+  .dayoff-table thead th{ text-align: center; }
+  .dayoff-table tbody td:nth-child(1),
+  .dayoff-table tbody td:nth-child(2){ text-align: center; }
+  .dayoff-table tbody td:nth-child(3){ text-align: left; }
+
+  /* lý do hiển thị đẹp theo chiều rộng mới (không cắt cụt) */
+  .truncate{
+    max-width: 100%;
+    white-space: normal;    /* tự xuống dòng khi dài */
+    overflow: visible;
+    text-overflow: clip;
+  }
+/* ========== DayOff page tags ========== */
+.card-header .ui-tag{
+  display:inline-flex;
+  align-items:center;
+  line-height:1.2;
+}
+
+/* 1) "Đăng ký nghỉ 1 ngày" — tiêu đề to, rõ */
+.dayoff-card .card-header .ui-tag--title{
+  font-weight: 700;
+  letter-spacing: .2px;
+  font-size: 23px;
+  margin-bottom: -21px;
+  margin-left: 20px;
+  margin-top: 12px;
+  color: #f7a43a;         /* xám đậm dễ đọc */
+}
+
+/* 2) "Phải sau hôm nay ≥ 3 ngày" — nhãn cảnh báo dạng pill */
+.badge-note{
+  background:transparent;   /* giữ nền thẻ badge trong suốt */
+  border:none;
+  padding:0;
+
+
+}
+.badge-note .ui-tag--note{
+  font-size:.9rem;
+  font-weight:600;
+  padding:6px 12px;
+  border-radius:999px;      /* pill */
+  background:#fff3cd;       /* vàng nhạt (Bootstrap warning tint) */
+  border:1px solid #ffe69c; /* viền nhẹ */
+  color:#8a6d3b;            /* chữ nâu nhạt */
+  white-space:nowrap;
+  margin-left: 30px;
+}
+
+/* 3) "Đơn đã gửi" — tiêu đề khối lịch sử, nhấn mạnh vừa phải */
+.card .card-header .ui-tag--sent{
+  font-weight: 700;
+    letter-spacing: .2px;
+    font-size: 23px;
+    margin-bottom: 20px;
+    margin-left: 20px;
+    margin-top: 12px;
+    color: #f7a43a;
+}
+
+/* Tùy chọn: align icon & chữ đẹp hơn trong header */
+.card-header .bi{ transform:translateY(1px); }

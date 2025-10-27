@@ -1,0 +1,310 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700&family=Lora:wght@600&display=swap');
+
+/* --- BIẾN MÀU VÀ FONT --- */
+:root {
+    --bg-color: #fdfaf6;
+    --surface-color: #ffffff;
+    --text-color: #4a4a4a;
+    --heading-color: #3a2d27;
+    --muted-color: #887e74;
+    --brand-color: #f7b267;
+    --brand-dark-color: #e2903b;
+    --primary-color: #6f4e37; /* Màu nâu đậm chủ đạo */
+    --shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+    --border-light: #ede6dd;
+
+    --font-body: 'Nunito Sans', sans-serif;
+    --font-heading: 'Lora', serif;
+}
+
+/* --- THIẾT LẬP TỔNG THỂ --- */
+body {
+    font-family: var(--font-body);
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    margin: 0;
+    line-height: 1.6;
+}
+
+.container {
+    max-width: 1600px !important;
+    background-color: var(--surface-color);
+    border-radius: 20px;
+    box-shadow: var(--shadow);
+    /* Kéo container đè lên banner một chút */
+    margin-top: 10px !important;
+    position: relative;
+    z-index: 10;
+    padding: 40px !important;
+}
+
+/* --- BANNER --- */
+.news-banner {
+    margin-top: 100px;
+    height: 85vh;
+    width: 100%;
+    background-image: url('/img/Store/cua_hang_buble_tea_ngoai_that.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    border-radius: 0 0 25px 25px;
+    box-shadow: var(--mt-shadow);
+}
+
+
+
+
+/* --- TIÊU ĐỀ CHÍNH --- */
+.centered-title {
+    text-align: center;
+    color: var(--heading-color);
+    font-family: var(--font-heading);
+    font-size: 2.8rem;
+    font-weight: 600;
+    margin-bottom: 2rem;
+}
+
+/* --- FORM LỌC --- */
+#filterForm {
+    padding: 1.5rem;
+    background-color: var(--bg-color);
+    border-radius: 12px;
+    margin-bottom: 2rem !important;
+}
+
+#filterForm .form-control {
+    border-radius: 8px;
+    border: 1px solid var(--border-light);
+    padding: 10px 15px;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+#filterForm .form-control:focus {
+    border-color: var(--brand-color);
+    box-shadow: 0 0 0 4px rgba(247, 178, 103, 0.25);
+    outline: none;
+}
+
+#filterForm .btn {
+    font-weight: 700;
+    border-radius: 8px;
+    padding: 12px 22px;
+    transition: all 0.3s ease;
+    border: 1px solid transparent;
+    cursor: pointer;
+}
+
+#filterForm .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* --- BỐ CỤC CHÍNH (DANH SÁCH + BẢN ĐỒ) --- */
+.main-content-container {
+    display: flex;
+    gap: 25px;
+    height: 650px;
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid var(--border-light);
+}
+
+/* --- KHUNG BÊN TRÁI (DANH SÁCH & TÌM ĐƯỜNG) --- */
+#store-list-section,
+#route-section {
+    width: 35%;
+    min-width: 380px;
+    padding: 20px;
+    background-color: var(--bg-color);
+    overflow-y: auto;
+    transition: opacity 0.3s ease-in-out;
+}
+
+/* Tùy chỉnh thanh cuộn */
+#store-list-section::-webkit-scrollbar,
+#route-section::-webkit-scrollbar {
+    width: 8px;
+}
+
+#store-list-section::-webkit-scrollbar-track,
+#route-section::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+#store-list-section::-webkit-scrollbar-thumb,
+#route-section::-webkit-scrollbar-thumb {
+    background-color: var(--brand-color);
+    border-radius: 10px;
+    border: 2px solid var(--bg-color);
+}
+
+/* --- THẺ CỬA HÀNG --- */
+.store-item {
+    background-color: var(--surface-color);
+    border: 1px solid var(--border-light);
+    border-radius: 14px;
+    padding: 18px 22px;
+    margin-bottom: 15px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.store-item:hover {
+    border-color: var(--brand-dark-color);
+    background-color: var(--brand-color);
+    transform: translateY(-5px) scale(1.02);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+.store-item h5 {
+    margin: 0 0 8px 0;
+    color: var(--primary-color);
+    font-family: var(--font-heading);
+    font-size: 1.5rem;
+    transition: color 0.25s ease;   
+}
+
+.store-item p,
+.store-item small {
+    margin: 4px 0;
+    color: var(--muted-color);
+    font-size: 0.95rem;
+    transition: color 0.25s ease;
+}
+
+.store-item:hover h5,
+.store-item:hover p,
+.store-item:hover small {
+    color: #fff;
+}
+
+
+/* --- KHUNG TÌM ĐƯỜNG --- */
+#route-section {
+    background-color: var(--surface-color);
+}
+
+#route-section h4 {
+    font-family: var(--font-heading);
+    color: var(--heading-color);
+}
+
+#route-section h5 {
+    color: var(--heading-color);
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+#routeBtn {
+
+    background-color: transparent !important;
+    color: var(--brand-color) !important;
+    border-color: var(--brand-color) !important;
+}
+
+#routeBtn:hover {
+    background-color: var(--brand-dark-color) !important;
+    color: #fff !important;
+}
+#route-section .btn {
+    border: none;
+    font-weight: 600;
+    border-radius: 8px;
+    padding: 12px; /* Tăng padding cho dễ bấm */
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+#route-section .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+#route-section .btn-info {
+    background-color: var(--brand-color) !important; /* Dùng màu thương hiệu */
+    color: #fff !important;
+}
+#route-section .btn-info:hover {
+    background-color: var(--brand-dark-color) !important;
+}
+
+/* Nút "Xóa đường" */
+#route-section .btn-warning {
+    background-color: #f1f3f5 !important; /* Màu xám nhạt trung tính */
+    color: var(--muted-color) !important;
+    border: 1px solid #dee2e6 !important;
+}
+#route-section .btn-warning:hover {
+    background-color: #e9ecef !important;
+}
+
+#toggleMapType {
+    background-color: transparent !important;
+    color: var(--brand-color) !important;
+    border-color: var(--brand-color) !important;
+}
+
+#toggleMapType:hover {
+    background-color: var(--brand-color) !important;
+    color: #fff !important;
+}
+
+#branchList {
+    list-style: none;
+    padding-left: 0;
+}
+
+#branchList li {
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    border: 1px solid var(--border-light);
+    background-color: var(--bg-color);
+}
+#branchList li .btn {
+    background-color: transparent;
+    border: 1px solid var(--brand-color) !important;
+    color: var(--brand-dark-color) !important;
+    font-weight: 700 !important;
+    padding: 5px 12px !important;
+    font-size: 0.85rem !important;
+    border-radius: 20px !important; /* Bo tròn mềm mại */
+    transition: all 0.3s ease;
+}
+#branchList li .btn:hover {
+    background-color: var(--brand-color) !important;
+    color: #fff !important;
+    transform: none; /* Không cần hiệu ứng di chuyển */
+    box-shadow: none;
+}
+
+#directionsPanel {
+    display: none;
+    background: var(--bg-color);
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid var(--border-light);
+    margin-top: 15px;
+}
+
+#directionsPanel ol {
+    padding-left: 20px;
+    color: var(--text-color);
+}
+
+/* --- KHUNG BẢN ĐỒ --- */
+.map-section {
+    flex: 1; /* Chiếm hết không gian còn lại */
+    background-color: #eaf0f2;
+}
+
+#map {
+    width: 100%;
+    height: 100%;
+}

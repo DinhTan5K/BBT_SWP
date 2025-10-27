@@ -6,7 +6,8 @@ public interface IAuthService
     bool VerifyPassword(string password, string hashedPassword);
 
     // Đăng nhập
-    Customer? Login(string loginId, string password);
+    Customer? LoginCustomer(string loginId, string password);
+    Employee? LoginEmployee(string loginId, string password);
 
     // Đăng ký
     Customer? Register(Customer model, out string otp , out Dictionary<string, string> errors);

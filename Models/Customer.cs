@@ -44,4 +44,6 @@ public class Customer
     
     public DateTime? OtpExpired { get; set; }
 
+    public string Role { get; set; } = "CU";
+
 }

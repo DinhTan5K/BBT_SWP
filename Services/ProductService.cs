@@ -15,6 +15,7 @@ public class ProductService : IProductService
     {
         return _context.Products
             .Include(p => p.ProductSizes)
+            .OrderBy(p => p.CategoryID)
             .ToList();
     }
 
@@ -24,4 +25,13 @@ public class ProductService : IProductService
             .Include(p => p.ProductSizes)
             .FirstOrDefault(p => p.ProductID == id);
     }
+
+     public List<Product> GetFeaturedProducts(int take = 8)
+        {
+            return _context.Products
+                .Include(p => p.ProductSizes)
+                .Where(p => p.IsActive)
+                .Take(take)
+                .ToList();
+        }
 }

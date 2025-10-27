@@ -22,6 +22,12 @@ builder.Services.Configure<start.Models.Configurations.EmailSettings>(
 );
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<AiService>();
+builder.Services.AddScoped<IEmployeeProfileService, EmployeeProfileService>();
+builder.Services.AddScoped<IScheduleService, ScheduleService>();
+builder.Services.AddScoped<IPayrollService, PayrollService >();
+builder.Services.AddScoped<IDayOffService, DayOffService>();
+builder.Services.AddScoped<INewsService, NewsService>();
+builder.Services.AddScoped<IStoreService, StoreService>();
 
 builder.Logging.ClearProviders();
 builder.Logging.AddSimpleConsole(options =>
@@ -100,6 +106,7 @@ var app = builder.Build();
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
+    app.UseHttpsRedirection();
     app.UseHsts();
 }
 
@@ -125,6 +132,11 @@ app.UseStaticFiles(new StaticFileOptions
         Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/uploads")),
     RequestPath = "/uploads"
 });
+
+app.MapControllerRoute(
+    name: "employee",
+    pattern: "Employee/{action=Profile}/{id?}",
+    defaults: new { controller = "Employee" });
 
 app.MapControllerRoute(
     name: "default",

@@ -1,0 +1,29 @@
+@model News 
+
+@{
+    ViewData["Title"] = "Chi tiết tin tức";
+}
+
+<head>
+    <link rel="stylesheet" href="/css/NewsDetail.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+
+<div class="news-detail-container">
+    @if (Model != null)
+    {
+        <h2>@Model.Title</h2>
+        <img src="@Model.ImageUrl" alt="@Model.Title" class="img-fluid mb-4">
+        <div class="news-content">
+            @Html.Raw(Model.Content) 
+        </div>
+    }
+    else
+    {
+        <p>Không tìm thấy tin tức.</p>
+    }
+
+    <div class="text-center mt-4">
+        <a asp-controller="Home" asp-action="News" class="btn-back">← Quay lại tin tức</a>
+    </div>
+</div>

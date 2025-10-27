@@ -1,0 +1,112 @@
+:root {
+    --mt-bg: #fffaf5;             /* nền kem nhẹ */
+    --mt-surface: #ffffff;        /* nền thẻ trắng */
+    --mt-text: #3a2d24;           /* màu chữ socola */
+    --mt-muted: #85766b;          /* chữ phụ */
+    --mt-brand: #ffca7a;          /* cam caramel nhẹ */
+    --mt-brand-dark: #e6a758;     /* cam đậm */
+    --mt-accent: #7b5541;         /* nâu cà phê */
+    --mt-shadow: 0 4px 16px rgba(0,0,0,0.08);
+}
+
+/* Toàn bộ vùng chi tiết tin tức */
+.news-detail-container {
+    max-width: 850px;
+    margin: 50px auto;
+    padding: 35px;
+    background: var(--mt-surface);
+    border-radius: 20px;
+    box-shadow: var(--mt-shadow);
+    font-family: 'Poppins', 'Segoe UI', sans-serif;
+    line-height: 1.7;
+    color: var(--mt-text);
+    background-color: var(--mt-bg);
+}
+
+/* Tiêu đề tin tức */
+.news-detail-container h2 {
+    font-size: 2rem;
+    font-weight: 600;
+    text-align: center;
+    color: var(--mt-brand-dark);
+    margin-bottom: 20px;
+    letter-spacing: 0.4px;
+    font-family: 'Merriweather', serif;
+}
+
+/* Hình ảnh tin tức */
+.news-detail-container img {
+    width: 100%;
+    height: auto;
+    border-radius: 16px;
+    margin: 25px 0;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+/* Nội dung bài viết */
+.news-content {
+    text-align: justify;
+    margin-bottom: 25px;
+}
+
+.news-content p {
+    margin-bottom: 15px;
+    font-size: 16px;
+    color: var(--mt-text);
+}
+
+/* Danh sách các điểm nổi bật */
+.news-content ul {
+    margin-left: 25px;
+    padding-left: 0;
+}
+
+.news-content li {
+    margin-bottom: 10px;
+    font-size: 15.5px;
+    display: flex;
+    align-items: flex-start;
+    color: var(--mt-text);
+}
+
+.news-content i {
+    margin-right: 8px;
+    flex-shrink: 0;
+    color: var(--mt-brand-dark);
+}
+
+/* Nút quay lại */
+.btn-back {
+    display: inline-block;
+    background-color: var(--mt-brand);
+    color: var(--mt-accent);
+    text-decoration: none;
+    padding: 10px 22px;
+    border-radius: 30px;
+    font-size: 15px;
+    transition: all 0.3s ease;
+    box-shadow: 0 3px 10px rgba(255, 202, 122, 0.5);
+    font-weight: 600;
+}
+
+.btn-back:hover {
+    background-color: var(--mt-brand-dark);
+    color: #fff;
+    transform: translateY(-2px);
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+    .news-detail-container {
+        padding: 22px;
+        margin: 20px;
+    }
+
+    .news-detail-container h2 {
+        font-size: 1.6rem;
+    }
+
+    .news-content p, .news-content li {
+        font-size: 14.5px;
+    }
+}

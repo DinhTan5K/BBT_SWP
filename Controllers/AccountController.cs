@@ -26,34 +26,63 @@ namespace start.Controllers
         [HttpGet]
         public IActionResult Login() => View();
 
-        [HttpPost]
-        public IActionResult Login(string loginId, string password)
+                [HttpPost]
+    public IActionResult Login(string loginId, string password)
+    {
+        if (string.IsNullOrWhiteSpace(loginId) || string.IsNullOrWhiteSpace(password))
         {
-            if (string.IsNullOrWhiteSpace(loginId) || string.IsNullOrWhiteSpace(password))
+            ModelState.AddModelError("", "Vui lòng nhập Email/Username và mật khẩu");
+            return View();
+        }
+
+        try
+        {
+            // 1) Ưu tiên Employee (quản trị, nhân sự nội bộ)
+            var emp = _authService.LoginEmployee(loginId, password);
+            if (emp != null)
             {
-                ModelState.AddModelError("", "Vui lòng nhập Email/Username và mật khẩu");
-                return View();
+                // set session cho Employee
+                HttpContext.Session.SetString("EmployeeID", emp.EmployeeID);
+                HttpContext.Session.SetString("EmployeeName", emp.FullName ?? "");
+                    HttpContext.Session.SetString("Role", emp.RoleID ?? "EM");
+                if (emp.BranchID.HasValue) // Kiểm tra nếu nhân viên có chi nhánh
+        {
+            HttpContext.Session.SetString("BranchId", emp.BranchID.Value.ToString());
+        }
+
+                // điều hướng theo role nội bộ
+                if (emp.RoleID == "AD")         // Admin
+                    return RedirectToAction("Profile", "Employee");
+            else if (emp.RoleID?.Equals("EM", StringComparison.OrdinalIgnoreCase) == true)
+        return RedirectToAction("Profile", "Employee"); // <-- đúng controller
+                else if (emp.RoleID == "SL")    // Shift Leader (nếu có)
+                    return RedirectToAction("Profile", "Employee");
+                else if (emp.RoleID == "BM")    // Branch Manager (nếu có)
+                    return RedirectToAction("Index", "BManager");
+                else if (emp.RoleID == "RM")    // Region Manager (nếu có)
+                    return RedirectToAction("Profile", "Employee");
             }
 
-            try
+            // 2) Nếu không phải Employee, thử Customer (người dùng ngoài)
+            var customer = _authService.LoginCustomer(loginId, password);
+            if (customer != null)
             {
-                var user = _authService.Login(loginId, password);
-                if (user == null)
-                {
-                    ModelState.AddModelError("", "Sai Email/Username hoặc mật khẩu");
-                    return View();
-                }
-                HttpContext.Session.SetInt32("CustomerID", user.CustomerID);
-                HttpContext.Session.SetString("CustomerName", user.Name ?? "");
-
+                HttpContext.Session.SetInt32("CustomerID", customer.CustomerID);
+                HttpContext.Session.SetString("CustomerName", customer.Name ?? "");
+                HttpContext.Session.SetString("Role", "Customer");
                 return RedirectToAction("Index", "Home");
             }
-            catch (Exception ex)
-            {
-                ModelState.AddModelError("", ex.Message);
-                return View();
-            }
+
+            // 3) Sai thông tin
+            ModelState.AddModelError("", "Sai Email/Username hoặc mật khẩu");
+            return View();
         }
+        catch (Exception ex)
+        {
+            ModelState.AddModelError("", ex.Message);
+            return View();
+        }
+    }
 
         #endregion
 

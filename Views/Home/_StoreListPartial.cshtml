@@ -1,0 +1,12 @@
+@model IEnumerable<Branch>
+
+@foreach (var store in Model)
+{
+    <div class="store-item" 
+         onclick="selectStore(@store.Latitude.ToString().Replace(',', '.'), 
+                               @store.Longitude.ToString().Replace(',', '.'), 
+                               '@store.Name')">
+        <h5>@store.Name</h5>
+        <p>@store.Address</p>
+    </div>
+}
