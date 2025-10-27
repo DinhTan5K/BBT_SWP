@@ -10,7 +10,6 @@ public class PayrollService : IPayrollService
     private readonly ApplicationDbContext _db;
     private readonly IAuthService _auth;
     private readonly IWebHostEnvironment _env;
-    private readonly IConfiguration _cfg;
 
     public PayrollService(ApplicationDbContext db, IAuthService auth, IWebHostEnvironment env)
 

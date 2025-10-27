@@ -10,7 +10,6 @@ public class ScheduleService : IScheduleService
     private readonly ApplicationDbContext _db;
     private readonly IAuthService _auth;
     private readonly IWebHostEnvironment _env;
-    private readonly IConfiguration _cfg;
 
     public ScheduleService(ApplicationDbContext db, IAuthService auth, IWebHostEnvironment env)
 

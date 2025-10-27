@@ -53,7 +53,9 @@ namespace start.Services
                     return $"Lỗi API: {response.StatusCode}. Chi tiết: {errorBody}";
                 }
 
-                dynamic data = JsonConvert.DeserializeObject(result);
+                dynamic? data = JsonConvert.DeserializeObject(result);
+                if (data == null) throw new Exception("Invalid JSON result");
+
 
                 // Kiểm tra cấu trúc response
                 if (data?.candidates != null && data.candidates.Count > 0)

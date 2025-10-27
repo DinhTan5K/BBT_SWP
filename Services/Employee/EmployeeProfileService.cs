@@ -10,8 +10,6 @@ public class EmployeeProfileService : IEmployeeProfileService
    private readonly ApplicationDbContext _db;
     private readonly IAuthService _auth;
     private readonly IWebHostEnvironment _env;
-    private readonly IConfiguration _cfg;
-
     public EmployeeProfileService(ApplicationDbContext db, IAuthService auth, IWebHostEnvironment env)
     {
         _db = db; _auth = auth; _env = env;

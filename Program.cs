@@ -26,7 +26,6 @@ builder.Services.AddScoped<IEmployeeProfileService, EmployeeProfileService>();
 builder.Services.AddScoped<IScheduleService, ScheduleService>();
 builder.Services.AddScoped<IPayrollService, PayrollService >();
 builder.Services.AddScoped<IDayOffService, DayOffService>();
-builder.Services.AddScoped<IBManagerService, BManagerService>();
 builder.Services.AddScoped<INewsService, NewsService>();
 builder.Services.AddScoped<IStoreService, StoreService>();
 
