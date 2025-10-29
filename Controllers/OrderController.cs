@@ -157,7 +157,7 @@ public class OrderController : Controller
     public IActionResult OrderFailed()
     {
         ViewBag.Message = "Thanh toán thất bại, vui lòng thử lại.";
-        return View();
+        return RedirectToAction("Order", "Order");
     }
 
     [HttpPost("Cancel/{id}")]

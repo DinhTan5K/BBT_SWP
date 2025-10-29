@@ -6,7 +6,6 @@ using start.Services;
 public class HomeController : Controller
 {
     private readonly ILogger<HomeController> _logger;
-    private readonly IWebHostEnvironment _env;
     private readonly IEmailService _emailService;
     private readonly IStoreService _storeService;
     private readonly INewsService _newsService;

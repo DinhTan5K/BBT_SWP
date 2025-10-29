@@ -8,7 +8,7 @@
     var emp = ViewData["Employee"] as Employee;
     var avatarUrl = !string.IsNullOrWhiteSpace(emp?.AvatarUrl)
         ? emp!.AvatarUrl
-        : Url.Content("~/img/logo1.png");
+        : Url.Content("https://res.cloudinary.com/do48qpmut/image/upload/v1761645429/uploads/tdppvgyas8bhvfs7lton.png");
 }
 
 @section Styles { <link rel="stylesheet" href="~/css/employee/editprofile.css" /> }

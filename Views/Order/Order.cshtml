@@ -3,51 +3,12 @@
     ViewData["Title"] = "Thanh toán";
 }
 
-<link rel="stylesheet" href="/css/order.css" />
+@section Styles {
+    <link rel="stylesheet" href="~/css/Order/order.css" />
+}
+
 <style>
-    /* Style cho các tag mã giảm giá */
-    .promo-tag {
-        display: inline-flex;
-        align-items: center;
-        padding: 0.35em 0.5em 0.35em 0.75em;
-        font-size: 0.9em;
-        font-weight: 500;
-        line-height: 1;
-        color: #fff;
-        background-color: #198754;
-        border-radius: 0.375rem;
-        animation: fadeIn 0.3s ease;
-        transition: background-color 0.2s;
-    }
-
-    .promo-tag.invalid {
-        background-color: #dc3545;
-    }
-
-    .promo-tag .btn-close {
-        width: 0.5em;
-        height: 0.5em;
-        padding: 0;
-        margin-left: 0.5rem;
-        opacity: 0.7;
-        transition: opacity 0.2s;
-    }
-
-    .promo-tag .btn-close:hover {
-        opacity: 1;
-    }
-
-    @@keyframes fadeIn {
-        from {
-            opacity: 0;
-            transform: scale(0.9);
-        }
-
-        to {
-            opacity: 1;
-            transform: scale(1);
-        }
-    }
+    
 </style>
 
 

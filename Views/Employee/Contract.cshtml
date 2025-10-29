@@ -64,7 +64,7 @@
       </div>
       <div class="pair">
         <div class="lbl">Ngày tạo</div>
-        <div class="val">@Model.Created_At</div>
+        <div class="val">@Model.CreatedAt</div>
       </div>
 
 
@@ -88,7 +88,7 @@
   </div>
 
   <div class="card-footer text-muted small">
-    Tạo: @Model.Created_At.ToString("yyyy-MM-dd HH:mm")
+    Tạo: @Model.CreatedAt.ToString("yyyy-MM-dd HH:mm")
     @if (Model.UpdatedAt.HasValue)
     {
         <span class="ms-3">Cập nhật: @Model.UpdatedAt.Value.ToString("yyyy-MM-dd HH:mm")</span>

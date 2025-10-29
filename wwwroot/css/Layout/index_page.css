@@ -18,7 +18,7 @@ html, body {
     height: 100vh;
     min-height: 350px;
     max-height: none;
-    background: url('/img/index2.jpg') no-repeat center center / cover;
+    background: url('https://res.cloudinary.com/do48qpmut/image/upload/v1761645374/uploads/dvv9zs30gmeareymskzo.jpg') no-repeat center center / cover;
     display: flex;
     align-items: center;
     justify-content: center;

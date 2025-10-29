@@ -45,16 +45,10 @@ namespace start.Models
         [Column("status", TypeName = "nvarchar(20)")]
         public string Status { get; set; } = null!;
 
-        [Required]
-        [Column("CreatedAt", TypeName = "datetime2")]
-        public DateTime Created_At { get; set; } = DateTime.Now;
-
-         [Column("created_at")]
-        [Display(Name = "Created At")]
+         [Column("CreatedAt")]
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 
-         [Column("updated_at")]
-        [Display(Name = "Updated At")]
+         [Column("UpdatedAt")]
         public DateTime? UpdatedAt { get; set; }
 
         // Navigation
