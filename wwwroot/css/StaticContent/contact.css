@@ -7,7 +7,7 @@
 /*---------- Background chỉ cho phần liên hệ ----------*/
 .page-background {
     position: relative;
-    background-image: url('/img/ContactBackground.jpg'); /* thay bằng ảnh của bạn */
+    background-image: url('https://res.cloudinary.com/do48qpmut/image/upload/v1761645180/uploads/jv9ikayccqqph2cso18m.png'); /* thay bằng ảnh của bạn */
     background-size: cover;
     background-position: center;
     background-attachment: fixed;

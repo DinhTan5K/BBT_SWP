@@ -4,7 +4,7 @@
 
     var avatar = !string.IsNullOrWhiteSpace(Model.AvatarUrl)
          ? Url.Content(Model.AvatarUrl) 
-        : Url.Content("~/img/logo1.png");
+        : Url.Content("https://res.cloudinary.com/do48qpmut/image/upload/v1761645429/uploads/tdppvgyas8bhvfs7lton.png");
 
     string roleText = (Model.RoleID == "AD" ? "Quản trị"
                        : Model.RoleID == "SL" ? "Trưởng ca"

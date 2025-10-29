@@ -5,14 +5,14 @@
 
     // Lấy URL Avatar từ Model (hoặc dùng avatar mặc định)
     var avatarUrl = string.IsNullOrEmpty(Model.ProfileImagePath)
-    ? Url.Content("~/img/logo1.png")
+    ? Url.Content("https://res.cloudinary.com/do48qpmut/image/upload/v1761645429/uploads/tdppvgyas8bhvfs7lton.png")
     : Url.Content(Model.ProfileImagePath);
 
     // Giả lập cấp độ Loyalty (Có thể thay bằng dữ liệu thực tế)
     var loyaltyLevel = "Thành viên Bạc";
 }
 
-<link rel="stylesheet" href="/css/profile.css" />
+<link rel="stylesheet" href="/css/Account/profile.css" />
 
 <div class="profile-container">
     <div class="profile-header">

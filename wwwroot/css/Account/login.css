@@ -105,7 +105,7 @@
 .background {
   position: fixed;
   inset: 0;
-  background: url("/img/Background.jpg") no-repeat center center / cover;
+  background: url("https://res.cloudinary.com/do48qpmut/image/upload/v1761645164/uploads/jfom7ydm7lzhzrwubevc.jpg") no-repeat center center / cover;
   filter: blur(6px);
   transform: scale(1.1);
   z-index: -1;

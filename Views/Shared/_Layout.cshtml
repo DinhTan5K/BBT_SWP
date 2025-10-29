@@ -17,7 +17,7 @@
     }
 
     var avatarUrl = string.IsNullOrEmpty(customerAvatar)
-    ? Url.Content("~/img/logo1.png")
+    ? Url.Content("https://res.cloudinary.com/do48qpmut/image/upload/v1761645429/uploads/tdppvgyas8bhvfs7lton.png")
     : Url.Content(customerAvatar);
 
     var currentController = ViewContext.RouteData.Values["Controller"]?.ToString()?.ToLowerInvariant();
@@ -30,9 +30,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"]</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/Layout/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/start.styles.css" asp-append-version="true" />
-    <link rel="shortcut icon" type="image/x-icon" href="/img/valo.png" />
+    <link rel="shortcut icon" type="image/x-icon" href="https://res.cloudinary.com/do48qpmut/image/upload/v1761655863/rtqvgmhsxpjtavejobfy.png" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
     <link href="https://fonts.googleapis.com/css2?family=Muli:wght@400;600&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@900&display=swap" rel="stylesheet">
@@ -47,7 +47,7 @@
 
             <div class="logo-title">
                 <a asp-controller="Home" asp-action="Index" class="logo-link">
-                    <img src="/img/logo1.png" alt="Logo" />
+                    <img src="https://res.cloudinary.com/do48qpmut/image/upload/v1761645429/uploads/tdppvgyas8bhvfs7lton.png" alt="Logo" />
                     <span class="brand-title">
                         Buble <span class="brand-hub">Tea</span>
                     </span>
@@ -158,7 +158,7 @@
     </div>
 
     <button id="chatbot-toggle">
-        <img id="chatbot-avatar" src="@Url.Content("~/img/milktea.jpg")" alt="AI Avatar" />
+        <img id="chatbot-avatar" src="@Url.Content("https://res.cloudinary.com/do48qpmut/image/upload/v1761645461/uploads/gfygjmyo6m7vf6kfcepg.jpg")" alt="AI Avatar" />
     </button>
 
     <script>
@@ -170,7 +170,7 @@
         const messagesDiv = document.getElementById("chatbot-messages");
 
         // ✨ Cập nhật URL Avatar và lời chào
-        const aiAvatarUrl = '@Url.Content("~/img/milktea.jpg")';
+        const aiAvatarUrl = '@Url.Content("https://res.cloudinary.com/do48qpmut/image/upload/v1761645461/uploads/gfygjmyo6m7vf6kfcepg.jpg")';
         const userAvatarUrl = '@avatarUrl';
         const defaultWelcomeMessage = "Xin chào bro! Mình là AI tư vấn của Buble Tea. Bro cần mình hỗ trợ thông tin gì về menu, sản phẩm, hoặc chương trình khuyến mãi không? Cứ hỏi nhé! 😉";
 

@@ -30,9 +30,10 @@ h2 {
 
 /* Banner */
 .news-banner {
+    margin-top: 70px;
     height: 90vh;
     width: 100%;
-    background-image: url('/img/News/tin_tuc_su_kien_tra_sua.png');
+    background-image: url('https://res.cloudinary.com/do48qpmut/image/upload/v1761644888/uploads/qj1d5vk30z2zyv9totfs.png');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
