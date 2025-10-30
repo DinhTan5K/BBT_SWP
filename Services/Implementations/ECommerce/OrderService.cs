@@ -508,8 +508,6 @@ public class OrderService : IOrderService
         })
         .FirstOrDefaultAsync();
 
-    Console.WriteLine($"DEBUG - Repo returned TransId: {order?.TransId}");
-
     return order;
 }
 

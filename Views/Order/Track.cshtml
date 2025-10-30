@@ -46,13 +46,13 @@
             steps.forEach((step, index) => {
                 const isActive = (status === "Đã hủy") ? (index === 2) : (index <= activeIndex);
                 html += `
-                                        <li class="progress-step ${isActive ? 'active' : ''}">
-                                            <div class="progress-step-icon">
-                                                <i class="fas ${icons[index]}"></i>
-                                            </div>
-                                            <div class="progress-step-label">${step}</div>
-                                        </li>
-                                    `;
+                                            <li class="progress-step ${isActive ? 'active' : ''}">
+                                                <div class="progress-step-icon">
+                                                    <i class="fas ${icons[index]}"></i>
+                                                </div>
+                                                <div class="progress-step-label">${step}</div>
+                                            </li>
+                                        `;
             });
             html += '</ul>';
             return html;
@@ -72,7 +72,6 @@
 
             if (!orderCode) {
                 resultDiv.innerHTML = `<p class="error-message">Vui lòng nhập mã đơn hàng để tra cứu.</p>`;
-                noResult.style.display = "flex";
                 return;
             }
 
@@ -100,82 +99,82 @@
 
                     const isDelivery = order.address && !order.address.startsWith("Nhận tại:");
                     const deliveryInfo = isDelivery ? `
-                                            <div class="info-row">
-                                                <i class="fas fa-map-marker-alt"></i>
-                                                <div>
-                                                    <span>Địa chỉ nhận hàng: </span>
-                                                    <p>${order.address}, ${order.detailAddress || ''}</p>
-                                                    <span> Địa chỉ chi tiết: </span>
-                                                     <p>${order.detailAddress}</p>
+                                                <div class="info-row">
+                                                    <i class="fas fa-map-marker-alt"></i>
+                                                    <div>
+                                                        <span>Địa chỉ nhận hàng: </span>
+                                                        <p>${order.address}, ${order.detailAddress || ''}</p>
+                                                        <span> Địa chỉ chi tiết: </span>
+                                                         <p>${order.detailAddress}</p>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                            <div class="info-row">
-                                                <i class="fas fa-credit-card"></i>
-                                                <div>
-                                                    <span>Thanh toán</span>
-                                                    <p>${order.paymentMethod || 'Khi nhận hàng (COD)'}</p>
+                                                <div class="info-row">
+                                                    <i class="fas fa-credit-card"></i>
+                                                    <div>
+                                                        <span>Thanh toán</span>
+                                                        <p>${order.paymentMethod || 'Khi nhận hàng (COD)'}</p>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        ` : `
-                                            <div class="info-row">
-                                                <i class="fas fa-store"></i>
-                                                <div>
-                                                    <p>${order.address}</p>
+                                            ` : `
+                                                <div class="info-row">
+                                                    <i class="fas fa-store"></i>
+                                                    <div>
+                                                        <p>${order.address}</p>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        `;
+                                            `;
 
                     resultDiv.innerHTML = `
-                                            <div class="order-card">
-                                                <div class="card-header">
-                                                    <h3>Mã đơn hàng: #${order.orderCode}</h3>
-                                                    <p>Đặt lúc: ${new Date(order.createdAt).toLocaleString("vi-VN")}</p>
-                                                </div>
-                                                ${progressTrackerHTML}
-                                                <div class="info-grid">
-                                                    <div class="info-row">
-                                                        <i class="fas fa-user"></i>
-                                                        <div>
-                                                            <span>Người nhận</span>
-                                                            <p>${order.receiverName}</p>
-                                                        </div>
+                                                <div class="order-card">
+                                                    <div class="card-header">
+                                                        <h3>Mã đơn hàng: #${order.orderCode}</h3>
+                                                        <p>Đặt lúc: ${new Date(order.createdAt).toLocaleString("vi-VN")}</p>
                                                     </div>
-                                                    <div class="info-row">
-                                                        <i class="fas fa-phone"></i>
-                                                        <div>
-                                                            <span>Số điện thoại</span>
-                                                            <p>${order.receiverPhone}</p>
-                                                        </div>
-                                                    </div>
-                                                    ${deliveryInfo}
-                                                    <div class="info-row">
-                                                        <i class="fas fa-tag"></i>
-                                                        <div>
-                                                            <span>Khuyến mãi</span>
-                                                            <p>${order.promoCode || 'Không áp dụng'}</p>
-                                                        </div>
-                                                    </div>
-                                                    <div class="info-row">
-                                                        <i class="fas fa-coins"></i>
-                                                        <div>
-                                                            <span>Tổng cộng</span>
-                                                            <p>${formatCurrency(order.total)}</p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                ${order.noteOrder ? `
-                                                    <div class="info-grid" style="grid-template-columns: 1fr;">
+                                                    ${progressTrackerHTML}
+                                                    <div class="info-grid">
                                                         <div class="info-row">
-                                                            <i class="fas fa-sticky-note"></i>
+                                                            <i class="fas fa-user"></i>
                                                             <div>
-                                                                <span>Ghi chú</span>
-                                                                <p>${order.noteOrder}</p>
+                                                                <span>Người nhận</span>
+                                                                <p>${order.receiverName}</p>
+                                                            </div>
+                                                        </div>
+                                                        <div class="info-row">
+                                                            <i class="fas fa-phone"></i>
+                                                            <div>
+                                                                <span>Số điện thoại</span>
+                                                                <p>${order.receiverPhone}</p>
+                                                            </div>
+                                                        </div>
+                                                        ${deliveryInfo}
+                                                        <div class="info-row">
+                                                            <i class="fas fa-tag"></i>
+                                                            <div>
+                                                                <span>Khuyến mãi</span>
+                                                                <p>${order.promoCode || 'Không áp dụng'}</p>
+                                                            </div>
+                                                        </div>
+                                                        <div class="info-row">
+                                                            <i class="fas fa-coins"></i>
+                                                            <div>
+                                                                <span>Tổng cộng</span>
+                                                                <p>${formatCurrency(order.total)}</p>
                                                             </div>
                                                         </div>
                                                     </div>
-                                                ` : ''}
-                                            </div>
-                                        `;
+                                                    ${order.noteOrder ? `
+                                                        <div class="info-grid" style="grid-template-columns: 1fr;">
+                                                            <div class="info-row">
+                                                                <i class="fas fa-sticky-note"></i>
+                                                                <div>
+                                                                    <span>Ghi chú</span>
+                                                                    <p>${order.noteOrder}</p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ` : ''}
+                                                </div>
+                                            `;
                     resultDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
             } catch (error) {
@@ -198,6 +197,16 @@
         orderCodeInput.addEventListener("keydown", (event) => {
             if (event.key === "Enter") {
                 event.preventDefault();
+                trackOrder();
+            }
+        });
+        
+        // --- AUTO-TRACK FROM URL ---
+        window.addEventListener("DOMContentLoaded", () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const codeFromUrl = urlParams.get("orderCode");
+            if (codeFromUrl) {
+                document.getElementById("orderCode").value = codeFromUrl;
                 trackOrder();
             }
         });
