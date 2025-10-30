@@ -49,9 +49,11 @@ public class OrderReadService : IOrderReadService
                 CancelReason = order.CancelReason,
                 ReceiverName = order.ReceiverName,
                 ReceiverPhone = order.ReceiverPhone,
+                PaymentMethod = order.PaymentMethod,
                 Address = order.Address,
                 DetailAddress = order.DetailAddress,
                 NoteOrder = order.NoteOrder,
+                TransId = order.TransId,
                 OrderDetails = order.OrderDetails.Select(detail => new OrderDetailItemViewModel
                 {
                     ProductName = detail.Product.ProductName,

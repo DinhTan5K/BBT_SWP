@@ -6,6 +6,7 @@ using start.Models;
     public interface IPaymentService
     {
         Task<string> CreatePaymentAsync(decimal amount, string orderInfo, HttpContext httpContext);
-        Task<bool> HandleCallbackAsync(IQueryCollection query);
+    Task<(bool success, string? transId)> HandleCallbackAsync(IQueryCollection query);
+         Task<string> RefundAsync(string transId, decimal amount, string description);
     }
 

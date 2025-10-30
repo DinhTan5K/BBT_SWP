@@ -483,28 +483,35 @@ public class OrderService : IOrderService
     }
 
     public async Task<object?> GetOrderByCodeAsync(string orderCode)
-    {
-        return await _context.Orders
-            .Where(o => o.OrderCode == orderCode)
-            .Select(o => new
-            {
-                o.OrderID,
-                o.CustomerID,
-                o.CreatedAt,
-                o.OrderCode,
-                o.Status,
-                o.Total,
-                o.DetailAddress,
-                o.NoteOrder,
-                o.ShippingFee,
-                o.PromoCode,
-                o.Address,
-                o.ReceiverName,
-                o.ReceiverPhone,
-                o.PaymentMethod
-            })
-            .FirstOrDefaultAsync();
-    }
+{
+    var order = await _context.Orders
+        .Where(o => o.OrderCode == orderCode)
+        .Select(o => new
+        {
+            o.OrderID,
+            o.CustomerID,
+            o.CreatedAt,
+            o.OrderCode,
+            o.Status,
+            o.Total,
+            o.DetailAddress,
+            o.NoteOrder,
+            o.ShippingFee,
+            o.PromoCode,
+            o.Address,
+            o.ReceiverName,
+            o.ReceiverPhone,
+            o.PaymentMethod,
+            o.TransId,
+            o.CancelledAt,
+            o.CancelReason
+        })
+        .FirstOrDefaultAsync();
+
+    Console.WriteLine($"DEBUG - Repo returned TransId: {order?.TransId}");
+
+    return order;
+}
 
     public async Task<(bool success, string message)> CancelByCustomerAsync(int orderId, int customerId, string? reason)
     {
@@ -597,4 +604,14 @@ public class OrderService : IOrderService
         _context.SaveChanges();
         return true;
     }
+
+    public async Task UpdateTransIdAsync(int orderId, string transId)
+{
+    var order = await _context.Orders.FindAsync(orderId);
+    if (order == null) return;
+
+    order.TransId = transId;
+    await _context.SaveChangesAsync();
+}
+
 }

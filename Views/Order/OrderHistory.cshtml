@@ -59,6 +59,7 @@
                                 <div class="shipping-info">
                                     <p><strong>Người nhận:</strong> @order.ReceiverName</p>
                                     <p><strong>Số điện thoại:</strong> @order.ReceiverPhone</p>
+                                    <p><strong>PTTT:</strong> @order.PaymentMethod</p>
                                     <p><strong>Địa chỉ:</strong> @order.Address, @order.DetailAddress</p>
                                     @if (!string.IsNullOrEmpty(order.NoteOrder))
                                     {
@@ -76,20 +77,40 @@
                             </div>
                         </div>
                         <div class="order-actions">
-                            <a href="/Order/Track?orderCode=@order.OrderCode" class="btn-action btn-track"><i class="fas fa-truck"></i> Theo dõi đơn</a>
-                            @if (order.Status != "Chờ xác nhận")
-                            {
-                                <button class="btn-action btn-reorder" data-order-id="@order.OrderID"><i class="fas fa-sync-alt"></i> Đặt lại</button>
-                            }
-                            @if (order.Status == "Chờ xác nhận")
-                            {
-                                <form method="post" action="/Order/Cancel/@order.OrderID" class="cancel-order-form" data-order-id="@order.OrderID">
-                                    @Html.AntiForgeryToken()
-                                    <input type="hidden" name="reason" class="cancel-reason-input" value="" />
-                                    <button type="button" class="btn-action btn-cancel btn-open-cancel"><i class="fas fa-times"></i> Hủy đơn</button>
-                                </form>
-                            }
-                        </div>
+    <a href="/Order/Track?orderCode=@order.OrderCode" class="btn-action btn-track">
+        <i class="fas fa-truck"></i> Theo dõi đơn
+    </a>
+
+    @if (order.Status != "Chờ xác nhận")
+    {
+        <button class="btn-action btn-reorder" data-order-id="@order.OrderID">
+            <i class="fas fa-sync-alt"></i> Đặt lại
+        </button>
+    }
+
+    @if (order.Status == "Chờ xác nhận")
+    {
+        <form method="post" action="/Order/Cancel/@order.OrderID" class="cancel-order-form" data-order-id="@order.OrderID">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="reason" class="cancel-reason-input" value="" />
+            <button type="button" class="btn-action btn-cancel btn-open-cancel">
+                <i class="fas fa-times"></i> Hủy đơn
+            </button>
+        </form>
+    }
+    @* ✅ HIỂN THỊ NÚT HOÀN TIỀN NẾU CÓ TRANSID *@
+    @if (!string.IsNullOrEmpty(order.TransId))
+    {
+        <form method="post" action="/Order/RefundMomo/@order.OrderID" class="refund-form" style="display:inline;">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn-action btn-refund" style="background:#ff7675;color:#fff;border:none;border-radius:6px;padding:6px 10px;margin-left:6px;cursor:pointer;">
+                <i class="fas fa-undo"></i> Hoàn tiền
+            </button>
+        </form>
+    }
+</div>
+
+
                     </div>
                 </div>
             }
@@ -131,3 +152,15 @@
         </div>
     </div>
     </div>
+
+    <script>
+document.addEventListener("DOMContentLoaded", function() {
+    document.querySelectorAll(".refund-form").forEach(form => {
+        form.addEventListener("submit", function(e) {
+            if (!confirm("Xác nhận hoàn tiền cho đơn hàng này?")) {
+                e.preventDefault();
+            }
+        });
+    });
+});
+</script>

@@ -33,6 +33,11 @@ namespace start.Models
         public string? PromoCode { get; set; }
         [Column(TypeName = "decimal(18,2)")]
         public decimal Total { get; set; }
+        public string? TransId { get; set; }
+
+        public string? RefundTransId { get; set; }
+        public DateTime? RefundAt { get; set; }
+
         public ICollection<OrderDetail>? OrderDetails
         { get; set; }
 

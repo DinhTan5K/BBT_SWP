@@ -49,25 +49,31 @@ public class CheckoutService : ICheckoutService
     }
 
     public async Task<(bool success, int? orderId)> HandleMomoCallbackAsync(IQueryCollection query, int customerId, ISession session)
+{
+    var (isSuccess, transId) = await _paymentService.HandleCallbackAsync(query);
+    if (!isSuccess)
     {
-        var isSuccess = await _paymentService.HandleCallbackAsync(query);
-        if (!isSuccess)
-        {
-            session.Remove("PendingOrderForm");
-            return (false, null);
-        }
-
-        var formJson = session.GetString("PendingOrderForm");
-        if (string.IsNullOrEmpty(formJson)) return (false, null);
-        var form = JsonSerializer.Deserialize<OrderFormModel>(formJson);
-        if (form == null) return (false, null);
-
-        var result = await _orderService.CreateOrderAsync(customerId, form);
         session.Remove("PendingOrderForm");
-
-        if (!result.success) return (false, null);
-        return (true, result.orderId);
+        return (false, null);
     }
+
+    var formJson = session.GetString("PendingOrderForm");
+    if (string.IsNullOrEmpty(formJson)) return (false, null);
+    var form = JsonSerializer.Deserialize<OrderFormModel>(formJson);
+    if (form == null) return (false, null);
+
+    var result = await _orderService.CreateOrderAsync(customerId, form);
+    session.Remove("PendingOrderForm");
+
+    // ✅ Cập nhật TransId sau khi tạo đơn
+    if (result.success && !string.IsNullOrEmpty(transId))
+    {
+        await _orderService.UpdateTransIdAsync(result.orderId.Value, transId);
+    }
+
+    return (result.success, result.orderId);
+}
+
 }
 
 

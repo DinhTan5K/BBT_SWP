@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using start.Models;
 using start.Data;
 using System.Security.Claims;
+using start.DTOs;
 
 [Route("Order")]
 public class OrderController : Controller
@@ -11,14 +12,16 @@ public class OrderController : Controller
     private readonly IOrderReadService _orderReadService;
     private readonly ICheckoutService _checkoutService;
     private readonly ApplicationDbContext _context;
+    private readonly IPaymentService _paymentService;
 
 
-    public OrderController(IOrderService orderService, IOrderReadService orderReadService, ICheckoutService checkoutService, ApplicationDbContext context)
+    public OrderController(IOrderService orderService, IOrderReadService orderReadService, ICheckoutService checkoutService, ApplicationDbContext context, IPaymentService paymentService)
     {
         _orderService = orderService;
         _orderReadService = orderReadService;
         _checkoutService = checkoutService;
         _context = context;
+        _paymentService = paymentService;
     }
 
     [HttpGet("Track")]
@@ -122,7 +125,7 @@ public class OrderController : Controller
         var vm = await _orderReadService.GetOrderHistoryAsync(customerId.Value);
         return View(vm);
     }
-
+    #region Payment with MoMo
     [HttpGet("PayWithMomo")]
     public async Task<IActionResult> PayWithMomo()
     {
@@ -142,6 +145,7 @@ public class OrderController : Controller
         return Redirect(payUrl);
     }
 
+
     [HttpGet("PaymentCallback")]
     public async Task<IActionResult> PaymentCallback()
     {
@@ -153,6 +157,40 @@ public class OrderController : Controller
         return RedirectToAction("OrderConfirmed", new { id = result.orderId });
     }
 
+    [HttpPost("RefundMomo/{orderId}")]
+[ValidateAntiForgeryToken]
+public async Task<IActionResult> RefundMomo(int orderId)
+{
+    var order = await _orderService.GetOrderByIdAsync(orderId);
+    if (order == null || string.IsNullOrEmpty(order.TransId))
+        return BadRequest("Không tìm thấy giao dịch để hoàn tiền.");
+
+    // 🟢 Gọi API Refund MoMo
+    var resultJson = await _paymentService.RefundAsync(order.TransId, order.Total, "Hoàn tiền đơn hàng");
+
+    var response = System.Text.Json.JsonSerializer.Deserialize<MomoRefundResponse>(resultJson);
+    if (response == null)
+        return BadRequest("Không thể đọc phản hồi từ MoMo.");
+
+    // 🟢 Nếu refund thành công
+    if (response.resultCode == 0)
+    {
+        order.Status = "Đã hoàn tiền";
+        order.RefundTransId = response.orderId;
+        order.RefundAt = DateTime.Now;
+
+        await _context.SaveChangesAsync();
+        Console.WriteLine($"✅ Refund thành công: {order.OrderCode} - TransId: {order.TransId}");
+    }
+    else
+    {
+        Console.WriteLine($"❌ Refund thất bại: {response.message}");
+    }
+
+    return RedirectToAction("OrderHistory", "Order");
+}
+
+    #endregion
     [HttpGet("Failed")]
     public IActionResult OrderFailed()
     {
