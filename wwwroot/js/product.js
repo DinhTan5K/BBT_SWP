@@ -47,9 +47,11 @@ let cart = [];
 // });
 
 
-document.querySelectorAll('.filter-btn').forEach(btn => {
+// Category filter buttons only (not wishlist buttons)
+document.querySelectorAll('.filter-btn[data-category]').forEach(btn => {
     btn.addEventListener('click', () => {
-        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        // Only remove active from category buttons, not wishlist buttons
+        document.querySelectorAll('.filter-btn[data-category]').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
 
         const categoryId = btn.getAttribute('data-category');
@@ -154,7 +156,10 @@ function addToCart(productId) {
                 return;
             }
 
-            if (data.success) loadCart();
+            if (data.success) {
+                loadCart();
+                showCartToast('Đã thêm sản phẩm vào giỏ hàng!');
+            }
             else alert('Lỗi: ' + data.message);
         })
         .catch(err => console.error(err));
@@ -230,4 +235,107 @@ document.addEventListener('DOMContentLoaded', () => {
 
     loadCart();
 });
+
+// ---- Quick View ----
+document.addEventListener('DOMContentLoaded', function () {
+    // Quick View
+    document.querySelectorAll('.btn-quickview').forEach(btn => {
+        btn.addEventListener('click', function () {
+            const productId = this.dataset.id;
+            const productEl = this.closest('.product-item');
+            const titleText = productEl ? (productEl.querySelector('h3')?.textContent || 'Thông tin sản phẩm') : 'Thông tin sản phẩm';
+            fetch(`/Product/QuickView?id=${productId}`)
+                .then(res => res.text())
+                .then(html => {
+                    const contentEl = document.getElementById('quickViewContent');
+                    contentEl.innerHTML = html || '<p>Lỗi không lấy được chi tiết.</p>';
+
+                    // Sync modal heart with grid heart initial state
+                    const gridHeart = document.querySelector(`.btn-wishlist[data-id='${productId}'] .heart-icon`);
+                    const modalHeart = contentEl.querySelector('.btn-wishlist .heart-icon');
+                    if (gridHeart && modalHeart) {
+                        const active = gridHeart.classList.contains('text-danger');
+                        modalHeart.classList.toggle('text-danger', active);
+                        modalHeart.classList.toggle('text-secondary', !active);
+                    }
+
+                    // Initialize size options inside modal (scripts in innerHTML won't run)
+                    const sizeGroups = contentEl.querySelectorAll('.size-options');
+                    sizeGroups.forEach(group => {
+                        const options = group.querySelectorAll('.size-option');
+                        options.forEach((opt, idx) => {
+                            opt.addEventListener('click', () => {
+                                options.forEach(o => o.classList.remove('active'));
+                                opt.classList.add('active');
+                            });
+                            if (idx === 0) opt.classList.add('active');
+                        });
+                    });
+
+                    // Bind wishlist button inside modal
+                    const modalWishBtn = contentEl.querySelector('.btn-wishlist');
+                    if (modalWishBtn) {
+                        modalWishBtn.addEventListener('click', function () {
+                            const pid = this.dataset.id;
+                            fetch('/Wishlist/Toggle', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ productId: pid })
+                            }).then(r => r.json()).then(d => {
+                                if (d && d.success === true) {
+                                    setWishlistStateFor(pid, d.isWishlisted);
+                                }
+                            });
+                        });
+                    }
+
+                    const modal = new bootstrap.Modal(document.getElementById('quickViewModal'));
+                    modal.show();
+                });
+        });
+    });
+    // Wishlist
+    document.querySelectorAll('.btn-wishlist').forEach(btn => {
+        btn.addEventListener('click', function () {
+            const productId = this.dataset.id;
+            fetch('/Wishlist/Toggle', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ productId: productId })
+            }).then(res => res.json())
+              .then(data => {
+                  if (data && data.success === true) {
+                      setWishlistStateFor(productId, data.isWishlisted);
+                  }
+              });
+        });
+    });
+});
+
+// Thông báo khi thêm vào giỏ thành công
+function showCartToast(message) {
+    Toastify({
+        text: message,
+        duration: 1000,
+        gravity: "top",
+        position: "right",
+        backgroundColor: "linear-gradient(to right,#00b09b,#96c93d)",
+    }).showToast();
+}
+
+function setWishlistStateFor(productId, isWishlisted) {
+    document.querySelectorAll(`.btn-wishlist[data-id='${productId}'] .heart-icon`).forEach(icon => {
+        if (isWishlisted) {
+            icon.classList.remove('text-secondary');
+            icon.classList.add('text-danger');
+        } else {
+            icon.classList.remove('text-danger');
+            icon.classList.add('text-secondary');
+        }
+    });
+}
+
+// Expose functions globally for use in product-ajax.js
+window.setWishlistStateFor = setWishlistStateFor;
+window.showCartToast = showCartToast;
 

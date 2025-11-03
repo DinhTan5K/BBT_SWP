@@ -3,6 +3,7 @@
 
 @{
     var antiforgeryToken = Antiforgery.GetAndStoreTokens(Context).RequestToken;
+    var wishIds = (List<int>?)ViewBag.WishlistedIds ?? new List<int>();
 }
 
 <link rel="stylesheet" href="/css/Product/product.css" />
@@ -14,51 +15,78 @@
             <i class="fa fa-search"></i>
             <input type="text" id="searchInput" placeholder="Tìm trà sữa..." />
         </div>
-        <button class="filter-btn active" data-category="all">Tất cả</button>
-        <button class="filter-btn" data-category="1">Truyền Thống</button>
-        <button class="filter-btn" data-category="2">Trái Cây</button>
-        <button class="filter-btn" data-category="3">Bộ Sưu Tập</button>
-        <button class="filter-btn" data-category="4">Topping</button>
-        <button class="filter-btn" data-category="5">Con Chim</button>
+        <div class="filter-section">
+            <h4 class="filter-section-title">
+                <i class="fa fa-heart"></i> Yêu thích
+            </h4>
+            <div class="filter-buttons-group">
+                <button class="filter-btn filter-wishlist" data-wishlist="true">
+                    Chỉ sản phẩm yêu thích
+                </button>
+            </div>
+        </div>
+        <div class="filter-section">
+            <h4 class="filter-section-title">
+                <i class="fa fa-tags"></i> Danh mục
+            </h4>
+            <div class="filter-buttons-group">
+                <button class="filter-btn active" data-category="all">Tất cả</button>
+                <button class="filter-btn" data-category="1">Truyền Thống</button>
+                <button class="filter-btn" data-category="2">Trái Cây</button>
+                <button class="filter-btn" data-category="3">Bộ Sưu Tập</button>
+                <button class="filter-btn" data-category="4">Topping</button>
+                <button class="filter-btn" data-category="5">Con Chim</button>
+            </div>
+        </div>
+        <div class="filter-section">
+            <h4 class="filter-section-title">
+                <i class="fa fa-dollar-sign"></i> Khoảng giá
+            </h4>
+            <div id="priceSlider" class="price-slider-container"></div>
+            <div class="price-display">
+                <span id="priceMin" class="price-value">0 đ</span>
+                <span class="price-separator">-</span>
+                <span id="priceMax" class="price-value">100,000 đ</span>
+            </div>
+        </div>
     </aside>
 
     <div class="products-grid-container">
-        <div class="products-grid">
-            @if (Model != null && Model.Any())
-            {
-                foreach (var item in Model)
-                {
-                    <div class="product-item" data-category="@item.CategoryID" data-product-id="@item.ProductID"
-                             data-name="@item.ProductName.ToLower()">
-                            <img src="@item.Image_Url" alt="@item.ProductName" />
-
-                            <div class="product-info-wrapper">
-                                <h3>@item.ProductName</h3>
-                                <p class="price">
-                                    Giá: <span class="selected-price">
-                                        @($"{item.ProductSizes.FirstOrDefault()?.Price:#,0} đ")
-                                    </span>
-                                </p>
-
-                                <div class="product-actions">
-                                    <div class="size-options" data-product-id="@item.ProductID">
-                                        @foreach (var size in item.ProductSizes)
-                                        {
-                                            <div class="size-option" data-size-id="@size.ProductSizeID" data-price="@size.Price">
-                                                @size.Size
-                                            </div>
-                                        }
-                                    </div>
-                                    <button class="btn-add">Add to Cart</button>
-                                </div>
-                            </div>
-                        </div>
-                }
-            }
-            else
-            {
-                <p>Không có sản phẩm nào!</p>
-            }
+        <div class="products-header">
+            <h3 class="products-title">Sản phẩm</h3>
+            <div class="sort-wrapper">
+                <i class="fa fa-sort-amount-down sort-icon"></i>
+                <div class="custom-select">
+                    <div class="custom-select-trigger" id="sortTrigger">
+                        <span>Sắp xếp mặc định</span>
+                        <i class="fa fa-chevron-down"></i>
+                    </div>
+                    <div class="custom-select-options" id="sortOptions">
+                        <div class="custom-select-option" data-value="" data-selected="true">Sắp xếp mặc định</div>
+                        <div class="custom-select-option" data-value="price_asc">Giá: Tăng dần</div>
+                        <div class="custom-select-option" data-value="price_desc">Giá: Giảm dần</div>
+                        <div class="custom-select-option" data-value="name_asc">Tên: A-Z</div>
+                        <div class="custom-select-option" data-value="name_desc">Tên: Z-A</div>
+                        <div class="custom-select-option" data-value="newest">Mới nhất</div>
+                    </div>
+                </div>
+                <!-- Hidden select để giữ compatibility với code cũ -->
+                <select id="sortSelect" class="sort-select" style="display: none;">
+                    <option value="">Sắp xếp mặc định</option>
+                    <option value="price_asc">Giá: Tăng dần</option>
+                    <option value="price_desc">Giá: Giảm dần</option>
+                    <option value="name_asc">Tên: A-Z</option>
+                    <option value="name_desc">Tên: Z-A</option>
+                    <option value="newest">Mới nhất</option>
+                </select>
+            </div>
+        </div>
+        <div class="loading-indicator" id="loadingIndicator" style="display: none;">
+            <i class="fa fa-spinner fa-spin"></i>
+            <span>Đang tải...</span>
+        </div>
+        <div class="products-grid" id="productsGrid">
+            <!-- Products will be loaded via AJAX -->
         </div>
 
         <div class="no-result">
@@ -81,98 +109,68 @@
     </div>
 </div>
 
+<!-- noUiSlider for Price Range -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nouislider@15.7.0/dist/nouislider.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/nouislider@15.7.0/dist/nouislider.min.js"></script>
+
 <script src="/js/product.js"></script>
 <script>
-    document.addEventListener("DOMContentLoaded", function () {
-        const ITEMS_PER_PAGE = 6;
-        let currentPage = 1;
-        let currentCategory = 'all';
-        let currentSearchTerm = '';
-
-        const allProducts = document.querySelectorAll(".product-item");
-        const productsGrid = document.querySelector(".products-grid");
-        const noResultMessage = document.querySelector(".no-result");
-        const paginationContainer = document.getElementById("pagination-container");
-        const searchInput = document.getElementById("searchInput");
-        const filterButtons = document.querySelectorAll(".filter-btn");
-
-        function updateProductDisplay() {
-            const visibleProducts = getVisibleProducts();
-
-            if (visibleProducts.length === 0) {
-                productsGrid.style.display = 'none';
-                noResultMessage.style.display = 'flex';
-            } else {
-                productsGrid.style.display = 'grid';
-                noResultMessage.style.display = 'none';
-            }
-
-            renderPagination(visibleProducts);
-            showPage(1, visibleProducts);
-        }
-
-        function getVisibleProducts() {
-            const searchTerm = currentSearchTerm.toLowerCase().trim();
-            return Array.from(allProducts).filter(product => {
-                const categoryMatch = currentCategory === 'all' || product.dataset.category === currentCategory;
-                // ✅ Sửa lỗi tìm kiếm bằng cách kiểm tra data-name
-                const nameMatch = product.dataset.name.includes(searchTerm);
-                return categoryMatch && nameMatch;
-            });
-        }
-
-        function showPage(page, productsToShow) {
-            currentPage = page;
-            allProducts.forEach(p => p.style.display = "none");
-            const start = (page - 1) * ITEMS_PER_PAGE;
-            const end = start + ITEMS_PER_PAGE;
-            const pageProducts = productsToShow.slice(start, end);
-            pageProducts.forEach(p => p.style.display = "block");
-
-            document.querySelectorAll("#pagination-container button").forEach(btn => {
-                btn.classList.toggle('active', parseInt(btn.innerText) === currentPage);
-            });
-        }
-
-        function renderPagination(productsToShow) {
-            const totalPages = Math.ceil(productsToShow.length / ITEMS_PER_PAGE);
-            paginationContainer.innerHTML = "";
-
-            if (totalPages <= 1) {
-                paginationContainer.style.display = "none";
-                return;
-            }
-
-            paginationContainer.style.display = "flex";
-
-            for (let i = 1; i <= totalPages; i++) {
-                const btn = document.createElement("button");
-                btn.innerText = i;
-                btn.addEventListener('click', () => {
-                    showPage(i, productsToShow);
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Expose csrfToken globally
+    window.csrfToken = '@antiforgeryToken';
+</script>
+<script src="/js/product-ajax.js"></script>
+<script>
+    // Initialize Price Range Slider
+    document.addEventListener('DOMContentLoaded', function() {
+        if (typeof noUiSlider !== 'undefined') {
+            const slider = document.getElementById('priceSlider');
+            if (slider) {
+                noUiSlider.create(slider, {
+                    start: [0, 100000],
+                    connect: true,
+                    range: {
+                        'min': 0,
+                        'max': 100000
+                    },
+                    step: 1000,
+                    format: {
+                        to: function (value) {
+                            return Math.round(value);
+                        },
+                        from: function (value) {
+                            return Number(value);
+                        }
+                    }
                 });
-                paginationContainer.appendChild(btn);
+                
+                slider.noUiSlider.on('update', function (values) {
+                    const min = parseInt(values[0]);
+                    const max = parseInt(values[1]);
+                    document.getElementById('priceMin').textContent = min.toLocaleString('vi-VN') + ' đ';
+                    document.getElementById('priceMax').textContent = max.toLocaleString('vi-VN') + ' đ';
+                });
+                
+                slider.noUiSlider.on('end', function (values) {
+                    currentFilters.minPrice = parseInt(values[0]) || null;
+                    currentFilters.maxPrice = parseInt(values[1]) === 100000 ? null : parseInt(values[1]);
+                    currentFilters.page = 1;
+                    loadProducts();
+                });
             }
         }
-
-        // Gắn sự kiện cho các nút Lọc
-        filterButtons.forEach(button => {
-            button.addEventListener('click', function () {
-                filterButtons.forEach(btn => btn.classList.remove('active'));
-                this.classList.add('active');
-                currentCategory = this.dataset.category;
-                updateProductDisplay();
-            });
-        });
-
-        // Gắn sự kiện cho ô Tìm kiếm
-        searchInput.addEventListener('input', function () {
-            currentSearchTerm = this.value;
-            updateProductDisplay();
-        });
-
-        // Khởi động
-        updateProductDisplay();
     });
 </script>
+
+<!-- Quick View Modal: update to add class quickview-modal -->
+<div class="modal fade quickview-modal" id="quickViewModal" tabindex="-1" aria-labelledby="quickViewTitle" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="quickViewTitle">Thông tin sản phẩm</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="quickViewContent">
+      </div>
+    </div>
+  </div>
+</div>

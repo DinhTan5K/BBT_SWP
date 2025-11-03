@@ -35,29 +35,89 @@
                 currency: "VND",
             });
         }
+/**
+ * Xây dựng thanh theo dõi tiến trình đơn hàng dựa trên trạng thái.
+ * @@param {string} status - Trạng thái hiện tại của đơn hàng.
+ * @@returns {string} Chuỗi HTML của thanh theo dõi tiến trình.
+ */
+function buildProgressTracker(status) {
+    // 1. Cấu hình tập trung cho tất cả các bước (thêm "Chờ hoàn tiền")
+    const stepConfig = {
+        "Chờ xác nhận": { icon: "fa-hourglass-half" },
+        "Đã xác nhận": { icon: "fa-check-circle" },
+        "Đang giao": { icon: "fa-shipping-fast" },
+        "Đã giao": { icon: "fa-box-open" },
+        "Đã hủy": { icon: "fa-times-circle", stateClass: "failure" },
+        // TRẠNG THÁI MỚI
+        "Chờ hoàn tiền": { icon: "fa-history", stateClass: "pending-refund" }, 
+        "Đã hoàn tiền": { icon: "fa-undo", stateClass: "special" }
+    };
 
-        function buildProgressTracker(status) {
-            const steps = ["Chờ xác nhận", "Đã xác nhận", "Đã hủy"];
-            const icons = ["fa-hourglass-half", "fa-check-circle", "fa-times-circle"];
-            let activeIndex = steps.indexOf(status);
-            if (activeIndex === -1) activeIndex = 0;
+    // 2. Định nghĩa các luồng xử lý
+    const successFlow = ["Chờ xác nhận", "Đã xác nhận", "Đang giao", "Đã giao"];
+    // LUỒNG MỚI: Luồng hoàn tiền sẽ đi qua bước "Đã hủy"
+    const refundFlow = ["Chờ xác nhận", "Đã hủy", "Chờ hoàn tiền", "Đã hoàn tiền"];
+    
+    let stepsToDisplay;
 
-            let html = '<ul class="progress-tracker">';
-            steps.forEach((step, index) => {
-                const isActive = (status === "Đã hủy") ? (index === 2) : (index <= activeIndex);
-                html += `
-                                            <li class="progress-step ${isActive ? 'active' : ''}">
-                                                <div class="progress-step-icon">
-                                                    <i class="fas ${icons[index]}"></i>
-                                                </div>
-                                                <div class="progress-step-label">${step}</div>
-                                            </li>
-                                        `;
-            });
-            html += '</ul>';
-            return html;
+    // 3. Quyết định luồng nào sẽ được hiển thị (LOGIC MỚI)
+    switch (status) {
+        // Trường hợp chỉ hủy đơn, không có hoàn tiền
+        case "Đã hủy":
+            stepsToDisplay = ["Chờ xác nhận", "Đã hủy"];
+            break;
+
+        // Cả hai trạng thái này đều thuộc cùng một luồng hiển thị
+        case "Chờ hoàn tiền":
+        case "Đã hoàn tiền":
+            stepsToDisplay = refundFlow;
+            break;
+            
+        // Mặc định là luồng thành công
+        default:
+            stepsToDisplay = successFlow;
+            break;
+    }
+
+    const activeIndex = stepsToDisplay.indexOf(status);
+
+    if (activeIndex === -1) {
+        console.error("Trạng thái không hợp lệ hoặc không nằm trong luồng xử lý:", status);
+        return '<div class="error-message">Trạng thái đơn hàng không hợp lệ.</div>';
+    }
+
+    // 4. Xây dựng HTML (Không thay đổi)
+    let html = '<ul class="progress-tracker">';
+    stepsToDisplay.forEach((step, index) => {
+        const config = stepConfig[step];
+        let liClass = 'progress-step';
+
+        if (index < activeIndex) {
+            liClass += ' done';
+        } else if (index === activeIndex) {
+            liClass += ' active';
         }
 
+        if (config.stateClass) {
+            liClass += ` ${config.stateClass}`;
+        }
+        
+        // Sửa lỗi nhỏ: Cần kiểm tra config tồn tại trước khi truy cập
+        const iconClass = config ? config.icon : 'fa-question-circle'; 
+
+        html += `
+            <li class="${liClass}">
+                <div class="progress-step-icon">
+                    <i class="fas ${iconClass}"></i>
+                </div>
+                <div class="progress-step-label">${step}</div>
+            </li>
+        `;
+    });
+    html += '</ul>';
+
+    return html;
+}
         async function trackOrder() {
             const orderCodeInput = document.getElementById("orderCode");
             let orderCode = orderCodeInput.value.trim();
@@ -173,6 +233,11 @@
                                                             </div>
                                                         </div>
                                                     ` : ''}
+                                                    <div class="button-actions text-center mt-4">
+                                                        <a href="/Order/OrderHistory" class="btn-back-order">
+                                                            <i class="fas fa-arrow-left me-2"></i> Quay Lại Lịch Sử Mua Hàng
+                                                        </a>
+                                                    </div>
                                                 </div>
                                             `;
                     resultDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });

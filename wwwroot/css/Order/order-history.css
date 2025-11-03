@@ -11,8 +11,10 @@
     --success-color: #2e7d32;      /* Hoàn thành */
     --pending-color: #ed6c02;      /* Chờ xác nhận */
     --cancelled-color: #d32f2f;   /* Đã hủy */
+    --warning-color: #ffc107;
     --shadow: 0 5px 20px rgba(139, 94, 60, 0.08);
     --font-main: 'Inter', sans-serif;
+
 }
 
 /* --- Main Container & Typography --- */
@@ -33,9 +35,11 @@ body { background-color: var(--bg-color); font-family: var(--font-main)}
 .summary-total span { font-weight: 700; font-size: 1.1rem; color: var(--brand-dark); }
 .status-badge { padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 0.8rem; color: #fff; min-width: 110px; text-align: center; }
 .status-badge.status-đã-xác-nhận { background-color: var(--success-color); }
+.status-badge.status-đã-giao{ background-color: var(--success-color); }
 .status-badge.status-chờ-xác-nhận { background-color: var(--pending-color); }
 .status-badge.status-đã-hủy { background-color: var(--cancelled-color); }
-.status-badge.status-đã-hoàn-tiền { background-color: #6a1b9a; }
+.status-badge.status-đã-hoàn-tiền { background-color: #17a2b8; }
+.status-badge.status-chờ-hoàn-tiền { background-color: var(--warning-color); }
 .toggle-icon { margin-left: 20px; font-size: 1rem; color: var(--muted-color); transition: transform 0.4s ease; }
 
 /* --- Accordion Details Section --- */
