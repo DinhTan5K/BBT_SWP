@@ -1,0 +1,20 @@
+@model Product
+<div class="quickview-content row">
+  <div class="col-md-5 d-flex align-items-center">
+    <img class="quickview-img-preview img-fluid" src="@Model.Image_Url" alt="@Model.ProductName" />
+  </div>
+  <div class="col-md-7 quickview-info-box d-flex flex-column justify-content-between">
+    <div>
+      <h2 class="quickview-title">@Model.ProductName</h2>   
+      <div class="quickview-desc">@Model.Description</div>
+      <div class="mt-2 mb-1">Giá:
+        <span class="fw-bold text-brand">@string.Join(" / ", Model.ProductSizes.Select(s => $"{s.Size}: {s.Price:#,0} đ"))</span>
+      </div>
+      <div>Cỡ:
+        <span class="ms-1">@string.Join(", ", Model.ProductSizes.Select(s => s.Size))</span>
+      </div>
+      <div><small>Danh mục: @Model.Category?.CategoryName</small></div>
+    </div>
+  </div>
+</div>
+<script src="/js/product.js"></script>

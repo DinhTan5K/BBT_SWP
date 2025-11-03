@@ -11,8 +11,10 @@
     --success-color: #2e7d32;      /* Hoàn thành */
     --pending-color: #ed6c02;      /* Chờ xác nhận */
     --cancelled-color: #d32f2f;   /* Đã hủy */
+    --warning-color: #ffc107;
     --shadow: 0 5px 20px rgba(139, 94, 60, 0.08);
     --font-main: 'Inter', sans-serif;
+
 }
 
 /* --- Main Container & Typography --- */
@@ -33,8 +35,11 @@ body { background-color: var(--bg-color); font-family: var(--font-main)}
 .summary-total span { font-weight: 700; font-size: 1.1rem; color: var(--brand-dark); }
 .status-badge { padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 0.8rem; color: #fff; min-width: 110px; text-align: center; }
 .status-badge.status-đã-xác-nhận { background-color: var(--success-color); }
+.status-badge.status-đã-giao{ background-color: var(--success-color); }
 .status-badge.status-chờ-xác-nhận { background-color: var(--pending-color); }
 .status-badge.status-đã-hủy { background-color: var(--cancelled-color); }
+.status-badge.status-đã-hoàn-tiền { background-color: #17a2b8; }
+.status-badge.status-chờ-hoàn-tiền { background-color: var(--warning-color); }
 .toggle-icon { margin-left: 20px; font-size: 1rem; color: var(--muted-color); transition: transform 0.4s ease; }
 
 /* --- Accordion Details Section --- */
@@ -84,3 +89,30 @@ body { background-color: var(--bg-color); font-family: var(--font-main)}
 .no-orders h3 { font-size: 1.5rem; }
 .no-orders p { color: var(--muted-color); margin-bottom: 30px; }
 .btn-shop-now { background-color: var(--brand-dark); color: #fff; text-decoration: none; padding: 12px 30px; border-radius: 8px; font-weight: 600; }
+
+/* style nút hoàn tiền */
+.btn-action.btn-refund {
+  display: inline-block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+
+  background-color: #ff7675 !important;
+  color: #fff !important;
+  border: none !important;
+  border-radius: 6px !important;
+  padding: 6px 10px !important;
+  margin-left: 6px !important;
+  cursor: pointer !important;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.12) !important;
+  transition: transform .08s ease-in-out !important;
+}
+
+.btn-action.btn-refund:hover {
+  transform: translateY(-1px) !important;
+}
+
+/* nếu có icon bên trong */
+.btn-action.btn-refund i {
+  margin-right: 6px;
+}

@@ -1,133 +1,166 @@
-@model OrderHistoryViewModel
-@{
-    ViewData["Title"] = "Lịch Sử Đơn Hàng";
-}
-@* Đảm bảo bạn đã thêm Font Awesome vào file _Layout.cshtml *@
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
-<link rel="stylesheet" href="~/css/Order/order-history.css" />
+    @model OrderHistoryViewModel
+    @{
+        ViewData["Title"] = "Lịch Sử Đơn Hàng";
+    }
+    @* Đảm bảo bạn đã thêm Font Awesome vào file _Layout.cshtml *@
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+    <link rel="stylesheet" href="~/css/Order/order-history.css" />
 
-<div class="history-container">
-    <h1>Lịch Sử Đơn Hàng</h1>
-    <p>Xem lại tất cả các đơn hàng bạn đã đặt.</p>
+    <div class="history-container">
+        <h1>Lịch Sử Đơn Hàng</h1>
+        <p>Xem lại tất cả các đơn hàng bạn đã đặt.</p>
 
-    @if (Model != null && Model.Orders.Any())
-    {
-        <div class="order-list">
-            @foreach (var order in Model.Orders)
-            {
-                <div class="order-card">
-                    <div class="order-summary">
-                        <div class="summary-info">
-                            <h4>Mã đơn: #@order.OrderCode</h4>
-                            <p>Ngày đặt: @order.CreatedAt.ToString("dd/MM/yyyy HH:mm")</p>
-                        </div>
-                        <div class="summary-total">
-                            <p>Tổng cộng</p>
-                            <span>@string.Format("{0:N0} ₫", order.Total)</span>
-                        </div>
-                        <div class="summary-status">
-                            <span class="status-badge status-@(order.Status.Replace(" ", "-").ToLower())">@order.Status</span>
-                        </div>
-                        <div class="toggle-icon">
-                            <i class="fas fa-chevron-down"></i>
-                        </div>
-                    </div>
-
-                    <div class="order-details">
-                        <div class="details-content">
-                            <div class="items-section">
-                                <h5>Các sản phẩm</h5>
-                                @foreach (var item in order.OrderDetails)
-                                {
-                                    <div class="order-item">
-                                        <img src="@item.ProductImageUrl" alt="@item.ProductName" class="item-image" />
-                                        <div class="item-info">
-                                            <h4>@item.ProductName</h4>
-                                            <p>Size: @item.SizeName ・ Đơn giá: @string.Format("{0:N0} ₫", item.UnitPrice)</p>
-                                        </div>
-                                        <div class="item-quantity">
-                                            <p>x @item.Quantity</p>
-                                        </div>
-                                        <div class="item-price">
-                                            <span>@string.Format("{0:N0} ₫", item.Total)</span>
-                                        </div>
-                                    </div>
-                                }
+        @if (Model != null && Model.Orders.Any())
+        {
+            <div class="order-list">
+                @foreach (var order in Model.Orders)
+                {
+                    <div class="order-card">
+                        <div class="order-summary">
+                            <div class="summary-info">
+                                <h4>Mã đơn: #@order.OrderCode</h4>
+                                <p>Ngày đặt: @order.CreatedAt.ToString("dd/MM/yyyy HH:mm")</p>
                             </div>
-                            <div class="shipping-section">
-                                <h5>Thông tin giao hàng</h5>
-                                <div class="shipping-info">
-                                    <p><strong>Người nhận:</strong> @order.ReceiverName</p>
-                                    <p><strong>Số điện thoại:</strong> @order.ReceiverPhone</p>
-                                    <p><strong>Địa chỉ:</strong> @order.Address, @order.DetailAddress</p>
-                                    @if (!string.IsNullOrEmpty(order.NoteOrder))
+                            <div class="summary-total">
+                                <p>Tổng cộng</p>
+                                <span>@string.Format("{0:N0} ₫", order.Total)</span>
+                            </div>
+                            <div class="summary-status">
+                                <span class="status-badge status-@(order.Status.Replace(" ", "-").ToLower())">@order.Status</span>
+                            </div>
+                            <div class="toggle-icon">
+                                <i class="fas fa-chevron-down"></i>
+                            </div>
+                        </div>
+
+                        <div class="order-details">
+                            <div class="details-content">
+                                <div class="items-section">
+                                    <h5>Các sản phẩm</h5>
+                                    @foreach (var item in order.OrderDetails)
                                     {
-                                        <p><strong>Ghi chú:</strong> @order.NoteOrder</p>
-                                    }
-                                    @if (order.Status == "Đã hủy")
-                                    {
-                                        <p><strong>Ngày hủy:</strong> @(order.CancelledAt?.ToString("dd/MM/yyyy HH:mm"))</p>
-                                        @if (!string.IsNullOrEmpty(order.CancelReason))
-                                        {
-                                            <p><strong>Lý do hủy:</strong> @order.CancelReason</p>
-                                        }
+                                        <div class="order-item">
+                                            <img src="@item.ProductImageUrl" alt="@item.ProductName" class="item-image" />
+                                            <div class="item-info">
+                                                <h4>@item.ProductName</h4>
+                                                <p>Size: @item.SizeName ・ Đơn giá: @string.Format("{0:N0} ₫", item.UnitPrice)</p>
+                                            </div>
+                                            <div class="item-quantity">
+                                                <p>x @item.Quantity</p>
+                                            </div>
+                                            <div class="item-price">
+                                                <span>@string.Format("{0:N0} ₫", item.Total)</span>
+                                            </div>
+                                        </div>
                                     }
                                 </div>
+                                <div class="shipping-section">
+                                    <h5>Thông tin giao hàng</h5>
+                                    <div class="shipping-info">
+                                        <p><strong>Người nhận:</strong> @order.ReceiverName</p>
+                                        <p><strong>Số điện thoại:</strong> @order.ReceiverPhone</p>
+                                        <p><strong>PTTT:</strong> @order.PaymentMethod</p>
+                                        <p><strong>Địa chỉ:</strong> @order.Address, @order.DetailAddress</p>
+                                        @if (!string.IsNullOrEmpty(order.NoteOrder))
+                                        {
+                                            <p><strong>Ghi chú:</strong> @order.NoteOrder</p>
+                                        }
+                                        @if (order.Status == "Đã hủy")
+                                        {
+                                            <p><strong>Ngày hủy:</strong> @(order.CancelledAt?.ToString("dd/MM/yyyy HH:mm"))</p>
+                                            @if (!string.IsNullOrEmpty(order.CancelReason))
+                                            {
+                                                <p><strong>Lý do hủy:</strong> @order.CancelReason</p>
+                                            }
+                                        }
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                        <div class="order-actions">
-                            <a href="/Order/Track?orderCode=@order.OrderCode" class="btn-action btn-track"><i class="fas fa-truck"></i> Theo dõi đơn</a>
-                            @if (order.Status != "Chờ xác nhận")
-                            {
-                                <button class="btn-action btn-reorder" data-order-id="@order.OrderID"><i class="fas fa-sync-alt"></i> Đặt lại</button>
-                            }
-                            @if (order.Status == "Chờ xác nhận")
-                            {
-                                <form method="post" action="/Order/Cancel/@order.OrderID" class="cancel-order-form" data-order-id="@order.OrderID">
-                                    @Html.AntiForgeryToken()
-                                    <input type="hidden" name="reason" class="cancel-reason-input" value="" />
-                                    <button type="button" class="btn-action btn-cancel btn-open-cancel"><i class="fas fa-times"></i> Hủy đơn</button>
-                                </form>
-                            }
+                            <div class="order-actions">
+        <a href="/Order/Track?orderCode=@order.OrderCode" class="btn-action btn-track">
+            <i class="fas fa-truck"></i> Theo dõi đơn
+        </a>
+
+        @if (order.Status != "Chờ xác nhận")
+        {
+            <button class="btn-action btn-reorder" data-order-id="@order.OrderID">
+                <i class="fas fa-sync-alt"></i> Đặt lại
+            </button>
+        }
+
+        @if (order.Status == "Chờ xác nhận")
+        {
+            <form method="post" action="/Order/Cancel/@order.OrderID" class="cancel-order-form" data-order-id="@order.OrderID">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="reason" class="cancel-reason-input" value="" />
+                <button type="button" class="btn-action btn-cancel btn-open-cancel">
+                    <i class="fas fa-times"></i> Hủy đơn
+                </button>
+            </form>
+        }
+        @* ✅ HIỂN THỊ NÚT HOÀN TIỀN NẾU CÓ TRANSID *@
+        @if (!string.IsNullOrEmpty(order.TransId))
+        {
+            <form method="post" action="/Order/RefundMomo/@order.OrderID" class="refund-form" style="display:inline;">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn-action btn-refund" style="background:#ff7675;color:#fff;border:none;border-radius:6px;padding:6px 10px;margin-left:6px;cursor:pointer;">
+                    <i class="fas fa-undo"></i> Hoàn tiền
+                </button>
+            </form>
+        }
+    </div>
+
+
                         </div>
                     </div>
-                </div>
-            }
-        </div>
-    }
-    else
-    {
-        <div class="no-orders">
-            <i class="fas fa-receipt"></i>
-            <h3>Bạn chưa có đơn hàng nào</h3>
-            <p>Hãy bắt đầu mua sắm để xem lịch sử đơn hàng của bạn ở đây.</p>
-            <a asp-controller="Product" asp-action="Product" class="btn-shop-now">Bắt đầu mua sắm</a>
-        </div>
-    }
-</div>
-
-@section Scripts {
-    <script src="~/js/order-history.js"></script>
-}
-
-<!-- Cancel Reason Modal -->
-<div class="modal fade" id="cancelModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Hủy đơn hàng</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                }
             </div>
-            <div class="modal-body">
-                <div class="mb-3">
-                    <label class="form-label">Lý do hủy (tùy chọn)</label>
-                    <textarea class="form-control" id="cancelReasonText" rows="3" placeholder="Ví dụ: Đặt nhầm, đổi ý, ..."></textarea>
-                </div>
+        }
+        else
+        {
+            <div class="no-orders">
+                <i class="fas fa-receipt"></i>
+                <h3>Bạn chưa có đơn hàng nào</h3>
+                <p>Hãy bắt đầu mua sắm để xem lịch sử đơn hàng của bạn ở đây.</p>
+                <a asp-controller="Product" asp-action="Product" class="btn-shop-now">Bắt đầu mua sắm</a>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-                <button type="button" class="btn btn-danger" id="confirmCancelBtn">Xác nhận hủy</button>
-            </div>
-        </div>
+        }
     </div>
-    </div>
+
+    @section Scripts {
+        <script src="~/js/order-history.js"></script>
+    }
+
+    <!-- Cancel Reason Modal -->
+    <div class="modal fade" id="cancelModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Hủy đơn hàng</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Lý do hủy (tùy chọn)</label>
+                        <textarea class="form-control" id="cancelReasonText" rows="3" placeholder="Ví dụ: Đặt nhầm, đổi ý, ..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                    <button type="button" class="btn btn-danger" id="confirmCancelBtn">Xác nhận hủy</button>
+                </div>
+            </div>
+        </div>
+        </div>
+
+        <script>
+    document.addEventListener("DOMContentLoaded", function() {
+        document.querySelectorAll(".refund-form").forEach(form => {
+            form.addEventListener("submit", function(e) {
+                if (!confirm("Xác nhận hoàn tiền cho đơn hàng này?")) {
+                    e.preventDefault();
+                }
+            });
+        });
+    });
+    </script>

@@ -34,6 +34,8 @@ namespace start.Data
         public DbSet<DayOffRequest> DayOffRequests => Set<DayOffRequest>();
         public DbSet<ProductCategory> ProductCategories { get; set; }
         public DbSet<News> News { get; set; }
+        public DbSet<Wishlist> Wishlist { get; set; }
+        public DbSet<ChatHistory> ChatHistories { get; set; }
 
     }
 }

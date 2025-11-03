@@ -175,16 +175,28 @@
         const defaultWelcomeMessage = "Xin chào bro! Mình là AI tư vấn của Buble Tea. Bro cần mình hỗ trợ thông tin gì về menu, sản phẩm, hoặc chương trình khuyến mãi không? Cứ hỏi nhé! 😉";
 
         // ✨ HÀM HIỂN THỊ TIN NHẮN TỪ BOT (có hỗ trợ avatar và loading)
-        function displayBotMessage(message, is_loading = false) {
+        function displayBotMessage(message, is_loading = false, autoScroll = true) {
+            if (!message || message === 'undefined' || message === 'null') {
+                console.warn("Không thể hiển thị message: message is invalid");
+                return;
+            }
             const loadingId = is_loading ? " id='loading-ai-msg'" : "";
-            const safeMessage = String(message).trim();
+            const safeMessage = String(message || '').trim();
+            if (!safeMessage) return;
             messagesDiv.innerHTML += `<div class='ai-msg'><img class='ai-avatar' src='${aiAvatarUrl}' alt='AI Avatar'/><div class='ai-msg-content'${loadingId}>${safeMessage}</div></div>`;
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            if (autoScroll) {
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            }
         }
 
         // ✨ HÀM HIỂN THỊ TIN NHẮN TỪ USER (có hỗ trợ avatar)
-        function displayUserMessage(question) {
-            const safeQuestion = String(question).trim();
+        function displayUserMessage(question, autoScroll = true) {
+            if (!question || question === 'undefined' || question === 'null') {
+                console.warn("Không thể hiển thị question: question is invalid");
+                return;
+            }
+            const safeQuestion = String(question || '').trim();
+            if (!safeQuestion) return;
 
             // ✨✨✨ ĐÂY LÀ PHẦN QUAN TRỌNG NHẤT ✨✨✨
             // Đảo ngược thứ tự: Avatar lên trước, Content ra sau.
@@ -197,7 +209,9 @@
     `;
             // ------------------------------------------
 
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            if (autoScroll) {
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            }
         }
 
         // ✨ HÀM HIỂN THỊ LỜI CHÀO MỪNG TỰ ĐỘNG
@@ -205,13 +219,86 @@
             // Chỉ hiển thị nếu chưa có tin nhắn nào
             if (messagesDiv.children.length === 0) {
                 displayBotMessage(defaultWelcomeMessage);
+                // Đảm bảo scroll xuống cuối sau khi hiển thị welcome message
+                setTimeout(() => {
+                    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                }, 50);
+            }
+        }
+
+        // ✨ HÀM LOAD LỊCH SỬ CHAT TỪ DATABASE
+        async function loadChatHistory() {
+            try {
+                const res = await fetch("/Ai/GetChatHistory", {
+                    method: "GET",
+                    headers: { "Content-Type": "application/json" }
+                });
+
+                const data = await res.json();
+                
+                console.log("📥 Chat history loaded:", data.history?.length || 0, "messages");
+                
+                if (data.history && data.history.length > 0) {
+                    // Xóa welcome message nếu có
+                    messagesDiv.innerHTML = "";
+                    
+                    // Hiển thị lại tất cả tin nhắn từ lịch sử (TẮT autoScroll để không scroll từng tin nhắn)
+                    data.history.forEach((item, index) => {
+                        // Dùng camelCase (question, answer) thay vì PascalCase
+                        const question = item.question || item.Question;
+                        const answer = item.answer || item.Answer;
+                        
+                        console.log(`Message ${index}:`, { question: question, answer: answer?.substring(0, 50) });
+                        
+                        // Hiển thị Question nếu có (TẮT autoScroll)
+                        if (question && String(question).trim() !== '' && String(question) !== 'undefined' && String(question) !== 'null') {
+                            displayUserMessage(question, false); // false = không auto scroll
+                        }
+                        
+                        // Hiển thị Answer nếu có (TẮT autoScroll)
+                        if (answer && String(answer).trim() !== '' && String(answer) !== 'undefined' && String(answer) !== 'null') {
+                            displayBotMessage(answer, false, false); // false, false = không loading, không auto scroll
+                        }
+                    });
+                    
+                    // CHỈ scroll một lần cuối cùng sau khi load xong TẤT CẢ tin nhắn
+                    // Dùng nhiều cách để đảm bảo scroll được
+                    const scrollToBottom = () => {
+                        // Cách 1: Scroll đến phần tử cuối cùng
+                        const lastChild = messagesDiv.lastElementChild;
+                        if (lastChild) {
+                            lastChild.scrollIntoView({ behavior: 'instant', block: 'end' });
+                        }
+                        // Cách 2: Dùng scrollTop (backup)
+                        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                    };
+                    
+                    // Chờ DOM render xong rồi scroll
+                    setTimeout(() => {
+                        scrollToBottom();
+                        // Thử lại sau 100ms
+                        setTimeout(scrollToBottom, 100);
+                        // Thử lại sau 300ms để chắc chắn DOM đã render xong
+                        setTimeout(scrollToBottom, 300);
+                    }, 50);
+                } else {
+                    console.log("📭 No chat history found, showing welcome message");
+                    // Nếu không có lịch sử, hiển thị welcome message
+                    displayWelcomeMessage();
+                }
+            } catch (error) {
+                console.error("Lỗi load chat history:", error);
+                // Nếu lỗi, vẫn hiển thị welcome message
+                displayWelcomeMessage();
             }
         }
 
         chatbotToggle.addEventListener("click", () => {
             chatbotContainer.style.display = "flex";
             chatbotToggle.style.display = "none";
-            displayWelcomeMessage(); // GỌI HÀM CHÀO MỪNG KHI MỞ CHAT
+            // Load lịch sử chat thay vì chỉ hiển thị welcome message
+            // loadChatHistory() sẽ tự scroll xuống cuối sau khi load xong
+            loadChatHistory();
         });
 
         closeChat.addEventListener("click", () => {
@@ -249,6 +336,12 @@
 
                 // hiển thị câu trả lời (Dùng hàm mới)
                 displayBotMessage(data.answer);
+                 if (data.redirectUrl) {
+                    // Tăng delay lên 2.5 giây để đảm bảo server kịp lưu lịch sử vào database
+                    setTimeout(function() {
+                        window.location.href = data.redirectUrl;
+                    }, 2500);
+                }
 
             } catch (error) {
                 // Xử lý lỗi
@@ -498,6 +591,9 @@
             border-radius: 12px 0 12px 12px;
         }
     </style>
+
+    <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
 
 </body>
 
