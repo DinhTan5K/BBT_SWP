@@ -88,8 +88,8 @@
                         {
                             <tr>
                                 <td>@order.OrderCode</td>
-                                <td>@order.Customer?.Name</td>
-                                <td>@order.Customer?.Phone</td>
+                                <td>@order.ReceiverName</td>
+                                <td>@order.ReceiverPhone</td>
                                 <td>
                                     @order.Address
                                     @if (!string.IsNullOrWhiteSpace(order.DetailAddress))
@@ -166,8 +166,8 @@
                         {
                             <tr>
                                 <td>@order.OrderCode</td>
-                                <td>@order.Customer?.Name</td>
-                                <td>@order.Customer?.Phone</td>
+                                <td>@order.ReceiverName</td>
+                                <td>@order.ReceiverPhone</td>
                                 <td>
                                     @order.Address
                                     @if (!string.IsNullOrWhiteSpace(order.DetailAddress))
@@ -179,13 +179,7 @@
                                 <td>@order.Total.ToString("C")</td>
                                 <td>@order.Status</td>
                                 <td>
-                                    @if (order.Status == "Đã xác nhận")
-                                    {
-                                        <button type="button" class="order-btn ship-btn deliver-btn" data-order-id="@order.OrderID">
-                                            Giao hàng
-                                        </button>
-                                    }
-                                    else if (order.Status == "Đang giao")
+                                    @if (order.Status.Trim() == "Đã xác nhận")
                                     {
                                         <button type="button" class="order-btn done-btn complete-btn"
                                             data-order-id="@order.OrderID">
@@ -239,10 +233,18 @@
 
             <h2 class="text-lg font-semibold mb-6 text-green-700 text-center">
                 Báo cáo doanh thu @revenueDisplayShift - Ngày @revenueDate
-                <button id="refreshRevenueBtn" class="refresh-btn">↻ Cập nhật</button>
-                <button id="exportExcelBtn" class="export-btn">🧾 In báo cáo</button>
-                <button id="captureChartsBtn" class="export-btn">📸 In biểu đồ</button>
-                <button id="uploadReportBtn" class="export-btn">📤 Nộp báo cáo</button>
+                <button id="refreshRevenueBtn" class="refresh-btn">
+                    <i data-lucide="refresh-cw"></i> Cập nhật
+                </button>
+
+                <button id="exportExcelBtn" class="export-btn">
+                    <i data-lucide="file-spreadsheet"></i> In báo cáo
+                </button>
+
+                <button id="captureChartsBtn" class="export-btn">
+                    <i data-lucide="camera"></i> Chụp biểu đồ
+                </button>
+
             </h2>
 
             @if (ViewBag.Message != null)
@@ -313,25 +315,6 @@
                     <canvas id="revenueChart"></canvas>
                 </div>
             }
-
-            <!-- Modal upload -->
-            <div id="uploadModal" class="modal-overlay" style="display:none;">
-                <div class="modal-content">
-                    <h3 class="text-lg font-semibold mb-4 text-green-700">📤 Nộp báo cáo ca làm</h3>
-                    <form id="uploadForm" enctype="multipart/form-data">
-                        <input type="hidden" name="branchId" value='@Context.Session.GetString("BranchId")' />
-                        <input type="hidden" name="shift" value='@Context.Session.GetString("SelectedShift")' />
-                        <label>File Excel:</label>
-                        <input type="file" name="excelFile" accept=".xlsx,.xls" required /><br><br>
-                        <label>Ảnh biểu đồ (nếu có):</label>
-                        <input type="file" name="imageFile" accept="image/*" /><br><br>
-                        <div class="flex gap-3 mt-4">
-                            <button type="submit" class="refresh-btn">📩 Gửi báo cáo</button>
-                            <button type="button" id="cancelUpload" class="export-btn">❌ Hủy</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
         </div>
 
     </div>
@@ -422,34 +405,9 @@
     }
 
     /* =====================================================
-       🔹 FUNCTION 3: GIAO HÀNG & HOÀN TẤT
+       🔹 FUNCTION 3: HOÀN TẤT
     ===================================================== */
     function initDeliverButtons() {
-        document.querySelectorAll(".deliver-btn").forEach(button => {
-            button.addEventListener("click", async function () {
-                const orderId = this.dataset.orderId;
-                const row = this.closest("tr");
-                try {
-                    const response = await fetch(`/Internal/DeliverOrder`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                        body: `orderId=${orderId}`
-                    });
-                    const data = await response.json();
-                    if (!data.success) return alert(data.message);
-
-                    const statusCell = row.querySelector("td:nth-child(7)");
-                    if (statusCell) statusCell.textContent = "Đang giao";
-                    this.textContent = "Hoàn tất đơn hàng";
-                    this.classList.replace("deliver-btn", "complete-btn");
-                    alert(data.message);
-                } catch (err) {
-                    console.error(err);
-                    alert("Lỗi khi cập nhật đơn hàng.");
-                }
-            });
-        });
-
         document.addEventListener("click", async e => {
             if (e.target.classList.contains("complete-btn")) {
                 const btn = e.target;
@@ -932,45 +890,6 @@
         });
     });
 
-    document.addEventListener("DOMContentLoaded", () => {
-        const uploadBtn = document.getElementById("uploadReportBtn");
-        const modal = document.getElementById("uploadModal");
-        const cancelBtn = document.getElementById("cancelUpload");
-        const form = document.getElementById("uploadForm");
-
-        uploadBtn?.addEventListener("click", () => {
-            modal.style.display = "flex";
-        });
-
-        cancelBtn?.addEventListener("click", () => {
-            modal.style.display = "none";
-        });
-
-        form?.addEventListener("submit", async (e) => {
-            e.preventDefault();
-            const formData = new FormData(form);
-
-            try {
-                const res = await fetch("/Internal/UploadShiftReport", {
-                    method: "POST",
-                    body: formData
-                });
-
-                if (!res.ok) {
-                    const text = await res.text();
-                    throw new Error(`Server trả lỗi ${res.status}: ${text}`);
-                }
-
-                const data = await res.json();
-                alert(data.message || "✅ Đã nộp báo cáo thành công!");
-                modal.style.display = "none";
-            } catch (err) {
-                console.error("❌ Lỗi khi gửi báo cáo:", err);
-                alert(`❌ Lỗi khi gửi báo cáo!\nChi tiết: ${err.message}`);
-            }
-
-        });
-    });
 
 </script>
 <script src="https://unpkg.com/lucide@latest"></script>

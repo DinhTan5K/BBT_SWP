@@ -25,12 +25,15 @@ builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<AiService>();
 builder.Services.AddScoped<IEmployeeProfileService, EmployeeProfileService>();
 builder.Services.AddScoped<IScheduleService, ScheduleService>();
-builder.Services.AddScoped<IPayrollService, PayrollService >();
+builder.Services.AddScoped<IPayrollService, PayrollService>();
 builder.Services.AddScoped<IMarketingKPIService, MarketingKPIService>();
 builder.Services.AddScoped<IDayOffService, DayOffService>();
 builder.Services.AddScoped<INewsService, NewsService>();
 builder.Services.AddScoped<IStoreService, StoreService>();
 builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
+builder.Services.AddScoped<RevenueService>();
+builder.Services.AddScoped<ShiftService>();
+builder.Services.AddScoped<SessionService>();
 
 builder.Logging.ClearProviders();
 builder.Logging.AddSimpleConsole(options =>
@@ -58,9 +61,9 @@ builder.Services.Configure<CookiePolicyOptions>(options =>
 {
     options.MinimumSameSitePolicy = SameSiteMode.Lax;
     // Chỉ bắt buộc Secure trong production (HTTPS), cho phép HTTP trong development
-    options.Secure = builder.Environment.IsDevelopment() 
-        ? CookieSecurePolicy.None 
-        : CookieSecurePolicy.Always; 
+    options.Secure = builder.Environment.IsDevelopment()
+        ? CookieSecurePolicy.None
+        : CookieSecurePolicy.Always;
 });
 
 
@@ -103,7 +106,7 @@ builder.Services.AddAuthentication(options =>
         // Log lỗi kết nối Google OAuth
         var logger = ctx.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
         logger.LogError(ctx.Failure, "Lỗi khi kết nối với Google OAuth: {Error}", ctx.Failure?.Message);
-        
+
         // Redirect về trang login với thông báo lỗi
         ctx.Response.Redirect("/Account/Login?error=google_connection_failed");
         ctx.HandleResponse();
@@ -155,7 +158,7 @@ if (!app.Environment.IsDevelopment())
 app.UseRouting();
 
 // THÊM VÀO: Sử dụng Cookie Policy (phải đặt trước UseAuthentication và UseSession)
-app.UseCookiePolicy(); 
+app.UseCookiePolicy();
 
 app.UseAuthentication();
 app.UseAuthorization();
