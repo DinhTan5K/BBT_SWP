@@ -26,11 +26,11 @@ namespace start.Controllers
         private string? CurrentRole =>
             (HttpContext.Session.GetString("RoleID") ??   // ưu tiên RoleID
              HttpContext.Session.GetString("Role"));      // fallback Role
-
-        // CHO PHÉP: NV | EM | SL
+        // SỬA LẠI: Cho phép cả Shipper (SH, SP) truy cập
+        // CHO PHÉP: NV | EM | SL | SH | SP
         private bool CanAccessDayOff() {
             var normalizedRole = CurrentRole?.Trim().Replace(" ", "").ToUpperInvariant();
-            return normalizedRole is "NV" or "EM" or "SL";
+            return normalizedRole is "NV" or "EM" or "SL" or "SH" or "SP";
         }
 
         public EmployeeController(ApplicationDbContext db, IEmployeeProfileService svc, IScheduleService s, IPayrollService p, IDayOffService dayoff, IRegisterScheduleService registerService, IAttendanceService attendanceService)
