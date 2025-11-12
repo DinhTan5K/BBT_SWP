@@ -46,46 +46,48 @@ namespace start.Controllers
                     HttpContext.Session.SetString("EmployeeName", emp.FullName ?? "");
                     HttpContext.Session.SetString("RoleID", emp.RoleID ?? "EM"); // ✅ sửa key thành RoleID
 
-                // điều hướng theo role nội bộ
-                if (emp.RoleID == "AD")         // Admin
-                    return RedirectToAction("Profile", "Employee");
-            else if (emp.RoleID?.Equals("EM", StringComparison.OrdinalIgnoreCase) == true)
-        return RedirectToAction("Profile", "Employee"); // <-- đúng controller
-                else if (emp.RoleID == "SL")    // Shift Leader (nếu có)
-                    return RedirectToAction("Profile", "Employee");
-                else if (emp.RoleID == "BM")
-                        {
-                            // --- SỬA LỖI: THÊM LƯU SESSION CHO BRANCH MANAGER ---
-                            // Luồng xác thực của BManager đang dựa vào Session, nên phải set ở đây.
-                            HttpContext.Session.SetString("EmployeeID", emp.EmployeeID);
-                            HttpContext.Session.SetString("EmployeeName", emp.FullName ?? "");
-                            HttpContext.Session.SetString("RoleID", emp.RoleID);
-                            HttpContext.Session.SetString("BranchId", emp.BranchID.ToString());
+                    // điều hướng theo role nội bộ
+                    if (emp.RoleID == "AD")         // Admin
+                        return RedirectToAction("Profile", "Employee");
+                    else if (emp.RoleID?.Equals("EM", StringComparison.OrdinalIgnoreCase) == true)
+                        return RedirectToAction("Profile", "Employee"); // <-- đúng controller
+                    else if (emp.RoleID == "SL")    // Shift Leader (nếu có)
+                        return RedirectToAction("Profile", "Employee");
+                    else if (emp.RoleID == "BM")
+                    {
+                        // --- SỬA LỖI: THÊM LƯU SESSION CHO BRANCH MANAGER ---
+                        // Luồng xác thực của BManager đang dựa vào Session, nên phải set ở đây.
+                        HttpContext.Session.SetString("EmployeeID", emp.EmployeeID);
+                        HttpContext.Session.SetString("EmployeeName", emp.FullName ?? "");
+                        HttpContext.Session.SetString("RoleID", emp.RoleID);
+                        HttpContext.Session.SetString("BranchId", emp.BranchID.ToString());
 
-                            var claims = new List<Claim>
+                        var claims = new List<Claim>
                             {
                                 new Claim(ClaimTypes.NameIdentifier, emp.EmployeeID),
                                 new Claim(ClaimTypes.Name, emp.FullName ?? "User"),
                                 new Claim(ClaimTypes.Role, emp.RoleID),
                                 new Claim(ClaimTypes.Email, emp.Email ?? "") // Layout BManager sẽ đọc cái này
                             };
-                            if (emp.BranchID.HasValue)
-                            {
-                                claims.Add(new Claim("BranchId", emp.BranchID.Value.ToString()));
-                            }
-
-                            var claimsIdentity = new ClaimsIdentity(
-                                claims, CookieAuthenticationDefaults.AuthenticationScheme);
-
-                            // Đăng nhập BManager bằng Cookie (Claims)
-                            await HttpContext.SignInAsync(
-                                CookieAuthenticationDefaults.AuthenticationScheme,
-                                new ClaimsPrincipal(claimsIdentity));
-
-                            return RedirectToAction("Index", "BManager");
+                        if (emp.BranchID.HasValue)
+                        {
+                            claims.Add(new Claim("BranchId", emp.BranchID.Value.ToString()));
                         }
-                else if (emp.RoleID == "RM")    // Region Manager (nếu có)
-                    return RedirectToAction("Profile", "Employee");
+
+                        var claimsIdentity = new ClaimsIdentity(
+                            claims, CookieAuthenticationDefaults.AuthenticationScheme);
+
+                        // Đăng nhập BManager bằng Cookie (Claims)
+                        await HttpContext.SignInAsync(
+                            CookieAuthenticationDefaults.AuthenticationScheme,
+                            new ClaimsPrincipal(claimsIdentity));
+
+                        return RedirectToAction("Index", "BManager");
+                    }
+                    else if (emp.RoleID == "RM")    // Region Manager (nếu có)
+                        return RedirectToAction("Profile", "Employee");
+                    else if (emp.RoleID == "SH")    // ✅ Shipper mới thêm
+    return RedirectToAction("MyOrders", "Shipper");
             }
 
             // 2) Nếu không phải Employee, thử Customer (người dùng ngoài)

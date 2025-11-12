@@ -84,6 +84,57 @@ public class PayrollService : IPayrollService
             return (false, $"Lương tháng này đã được chốt lại tối đa {Max_Retries} lần. Không thể chốt lại nữa.");
         }
 
+        // --- LOGIC MỚI: KIỂM TRA LOẠI HỢP ĐỒNG (THEO GIỜ vs THEO ĐƠN) ---
+        // SỬA LỖI 1 & 2: Truy vấn trực tiếp DB để lấy hợp đồng và kiểm tra PaymentType bằng chuỗi
+        var activeContract = await _db.Contracts
+            .Where(c => c.EmployeeId == employeeId && c.StartDate <= m1 && (c.EndDate == null || c.EndDate >= m1) && c.Status == "Active")
+            .FirstOrDefaultAsync();
+
+        // Trường hợp 1: Nhân viên giao hàng (Shipper) - tính lương theo đơn
+        if (activeContract != null && activeContract.PaymentType == "Đơn hàng")
+        {
+            // Đếm số đơn hàng nhân viên đã giao thành công trong tháng
+            // SỬA LẠI: Dùng trường ShipperId mới trong bảng Order
+            int deliveredOrders = await _db.Orders
+                .CountAsync(o => o.ShipperId == employeeId &&
+                                 o.Status == "Đã giao" &&
+                                 o.UpdatedAt.HasValue &&
+                                 o.UpdatedAt.Value.Year == year &&
+                                 o.UpdatedAt.Value.Month == month);
+
+            decimal ratePerOrder = activeContract.BaseRate; // Lương/đơn lưu trong BaseRate
+            decimal baseSalary = deliveredOrders * ratePerOrder;
+            
+            // SỬA LỖI 4: Truy vấn trực tiếp DB để lấy thưởng/phạt
+            var adjustments = await _db.SalaryAdjustments
+                .Where(a => a.EmployeeID == employeeId && a.AdjustmentDate.Year == year && a.AdjustmentDate.Month == month)
+                .ToListAsync();
+            decimal totalBonus = adjustments.Where(a => a.Amount > 0).Sum(a => a.Amount);
+            decimal totalPenalty = adjustments.Where(a => a.Amount < 0).Sum(a => a.Amount);
+
+            // Tạo hoặc cập nhật bản ghi Salary cho shipper
+            if (existingSalary == null)
+            {
+                existingSalary = new Salary { EmployeeID = employeeId, SalaryMonth = m1, FinalizationCount = 0 };
+                _db.Salaries.Add(existingSalary);
+            }
+
+            existingSalary.TotalShifts = deliveredOrders; // Tái sử dụng trường TotalShifts để lưu số đơn
+            existingSalary.TotalHoursWorked = 0; // Shipper không tính giờ
+            existingSalary.HourlyRateAtTimeOfCalc = ratePerOrder; // Tái sử dụng để lưu rate/đơn
+            existingSalary.BaseSalary = baseSalary;
+            existingSalary.Bonus = totalBonus;
+            existingSalary.Penalty = totalPenalty;
+            existingSalary.Status = "Đã chốt";
+            existingSalary.CalculatedAt = DateTime.Now;
+            existingSalary.UpdatedAt = DateTime.Now;
+            existingSalary.FinalizationCount++;
+
+            await _db.SaveChangesAsync();
+            return (true, $"Đã chốt lương cho shipper. (Lần chốt: {existingSalary.FinalizationCount})");
+        }
+
+        // Trường hợp 2: Nhân viên theo giờ (Logic cũ)
         // 2. Tính toán lương bằng ReportService 
         var reports = await _reportService.GetSalaryReportAsync(employeeId, month, year, branchId);
         var liveReport = reports.FirstOrDefault();

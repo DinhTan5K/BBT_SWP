@@ -15,6 +15,12 @@ namespace start.Models
         [ForeignKey("Branch")]
         public int BranchID { get; set; }
         public Branch? Branch { get; set; }
+
+        // SỬA LẠI: Đổi tên để làm rõ vai trò Shipper và tránh xung đột
+        [ForeignKey("Shipper")]
+        public string? ShipperId { get; set; }
+        public Employee? Shipper { get; set; }
+
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 
         public string? OrderCode { get; set; }

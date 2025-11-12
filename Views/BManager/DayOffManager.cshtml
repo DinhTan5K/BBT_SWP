@@ -40,10 +40,14 @@
                         <div class="card-body">
                             <div class="request-date">
                                 <i class="fas fa-calendar-alt"></i>
-                                <span>@item.OffDate.ToString("dddd, dd/MM/yyyy")</span>
+                                <span class="small text-muted">Ngày nghỉ: <strong>@item.OffDate.ToString("dd/MM/yyyy")</strong></span>
                             </div>
-                            @* Dùng thẻ p và class request-reason để giới hạn text/hiển thị đẹp hơn *@
-                            <p class="request-reason" title="@item.Reason">Lý do: @item.Reason</p> 
+                            <blockquote class="blockquote bg-light p-2 rounded mt-2 mb-0 border-start border-4 border-secondary">
+                                <p class="mb-0 small" title="@item.Reason">
+                                    <strong class="text-dark">Lý do:</strong>
+                                    <span class="fst-italic">@item.Reason</span>
+                                </p>
+                            </blockquote>
                         </div>
                     </div>
                     <div class="card-actions">

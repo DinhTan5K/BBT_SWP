@@ -683,3 +683,15 @@ html.dark-mode .logout-link:hover {
     background-color: var(--surface-color);
     color: var(--text-color);
 }
+
+/* === DAY OFF MANAGER - DARK MODE FIX === */
+/* Sửa lỗi nền cho khung lý do trong trang duyệt đơn nghỉ phép */
+html.dark-mode .dayoff-grid .blockquote.bg-light {
+    background-color: var(--bg-color) !important; /* Dùng màu nền chính, tối hơn màu thẻ một chút */
+    border-color: var(--border-color) !important; /* Dùng màu viền của theme tối */
+}
+
+/* Đảm bảo chữ "Lý do:" có màu sáng */
+html.dark-mode .dayoff-grid .blockquote .text-dark {
+    color: var(--text-color) !important;
+}

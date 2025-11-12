@@ -59,8 +59,8 @@
                 <tr>
                     <th>#</th>
                     <th>Tên nhân viên</th>
-                    <th>Ca làm</th>
-                    <th>Tổng giờ</th>
+                    <th class="text-center">Chi tiết công việc</th>
+                    <th class="text-center">Hiệu suất</th>
                     <th>Tổng lương</th>
                     <th>Trạng thái</th>
                     <th>Lần chốt</th>
@@ -84,12 +84,26 @@
                     foreach (var item in Model)
                     {
                         bool isFinalized = item.IsFinalized;
+                        // Giả định: Nếu TotalHours = 0 và TotalShifts > 0 thì là shipper
+                        bool isShipper = item.TotalHours == 0 && item.TotalShifts > 0;
 
                         <tr class="@(isFinalized ? "table-success-soft" : "")" data-employee-id="@item.EmployeeID">
                             <td>@(index++)</td>
                             <td><strong>@item.FullName</strong></td>
-                            <td>@item.TotalShifts ca</td>
-                            <td>@item.TotalHours.ToString("0.##") giờ</td>
+                            
+                            @if(isShipper)
+                            {
+                                <td class="text-center">@item.TotalShifts đơn giao</td>
+                                <td class="text-center">
+                                    <span class="badge bg-info text-dark">Shipper</span>
+                                </td>
+                            }
+                            else
+                            {
+                                <td class="text-center">@item.TotalShifts ca</td>
+                                <td class="text-center">@item.TotalHours.ToString("0.##") giờ</td>
+                            }
+
                             <td><strong class="text-success">@item.TotalSalary.ToString("N0") đ</strong></td>
                             <td>
                                 @if (isFinalized)
@@ -136,7 +150,7 @@
                                         data-bs-target=".detail-@item.EmployeeID"
                                         data-employee-id="@item.EmployeeID"
                                         title="Xem chi tiết ca làm việc">
-                                    <i class="fas fa-chevron-down"></i> Chi tiết
+                                    <i class="fas fa-chevron-down"></i> 
                                 </button>
                             </td>
                         </tr>
