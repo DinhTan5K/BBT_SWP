@@ -25,7 +25,7 @@ namespace start.Services
 
             // 🔹 Xác định ca làm
             var work = await _context.WorkSchedules
-                .FirstOrDefaultAsync(w => w.EmployeeID == shipperId && w.WorkDate == today && w.IsActive);
+                .FirstOrDefaultAsync(w => w.EmployeeID == shipperId && w.Date == today && w.IsActive);
             if (work == null)
                 return new List<Order>();
 
@@ -51,7 +51,7 @@ namespace start.Services
 
             var today = DateTime.Today;
             var work = await _context.WorkSchedules
-                .FirstOrDefaultAsync(w => w.EmployeeID == empId && w.WorkDate == today && w.IsActive);
+                .FirstOrDefaultAsync(w => w.EmployeeID == empId && w.Date == today && w.IsActive);
             if (work == null)
                 return "⚠️ Bạn không có ca làm hôm nay.";
 

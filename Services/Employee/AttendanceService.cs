@@ -35,12 +35,12 @@ namespace start.Services
 
         var today = DateTime.Today;
         var workSchedule = await _db.WorkSchedules
-            .FirstOrDefaultAsync(w => w.EmployeeID == employeeId && w.WorkDate == today);
+            .FirstOrDefaultAsync(w => w.EmployeeID == employeeId && w.Date == today);
 
         if (workSchedule == null)
             return (false, $"Hôm nay ({today:dd/MM/yyyy}) bạn không có ca làm việc.", null);
 
-        if (!ShiftTimeHelper.CanCheckIn(DateTime.Now, workSchedule.WorkDate, workSchedule.Shift, out var msg))
+        if (!ShiftTimeHelper.CanCheckIn(DateTime.Now, workSchedule.Date, workSchedule.Shift, out var msg))
             return (false, msg, null);
 
         var already = await _db.Attendances

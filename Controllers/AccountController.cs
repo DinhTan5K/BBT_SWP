@@ -55,6 +55,12 @@ namespace start.Controllers
                     return RedirectToAction("Profile", "Employee");
                 else if (emp.RoleID == "BM")
                         {
+                            // --- SỬA LỖI: THÊM LƯU SESSION CHO BRANCH MANAGER ---
+                            // Luồng xác thực của BManager đang dựa vào Session, nên phải set ở đây.
+                            HttpContext.Session.SetString("EmployeeID", emp.EmployeeID);
+                            HttpContext.Session.SetString("EmployeeName", emp.FullName ?? "");
+                            HttpContext.Session.SetString("RoleID", emp.RoleID);
+                            HttpContext.Session.SetString("BranchId", emp.BranchID.ToString());
 
                             var claims = new List<Claim>
                             {

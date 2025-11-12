@@ -18,11 +18,17 @@
     // DayOfWeek: Sunday=0 ... Saturday=6
     int ToIsoDow(DayOfWeek d) => d == DayOfWeek.Sunday ? 7 : (int)d;
     var startIsoDow = ToIsoDow(firstOfMonth.DayOfWeek); // 1..7 (Mon..Sun)
-    // Map nhanh các ngày có ca làm
-    var workByDate = Model.Items // Lọc bỏ các ca "Chưa duyệt"
-        .Where(s => s.Status != "Chưa duyệt")
+    // Map nhanh các ngày có ca làm (đã được duyệt)
+    var workByDate = Model.Items
+        .Where(s => s.Status == "Đã duyệt")
         .GroupBy(x => x.Date.Date)
         .ToDictionary(g => g.Key, g => g.ToList());
+
+    // Lấy ID các ca đã có chấm công hoàn chỉnh để xác định trạng thái "Đã làm"
+    var scheduleIds = Model.Items.Select(i => i.WorkScheduleID).ToList();
+    var completedAttendanceScheduleIds = new HashSet<int>(
+        ViewBag.CompletedAttendances as List<int> ?? new List<int>()
+    );
 
     string[] dowHeaders = new[] { "T2", "T3", "T4", "T5", "T6", "T7", "CN" };
 
@@ -110,12 +116,12 @@
                           // --- SỬA LOGIC XÁC ĐỊNH TRẠNG THÁI ---
                           string badgeClass;
                           string statusText;
-                          if (w.CheckInTime.HasValue && w.CheckOutTime.HasValue)
+                          if (completedAttendanceScheduleIds.Contains(w.WorkScheduleID))
                           {
                               badgeClass = "badge-done";
                               statusText = "Đã làm";
                           }
-                          else // Mặc định là "Dự kiến" vì đã lọc "Chưa duyệt" ở trên
+                          else // Mặc định là "Dự kiến" vì đã lọc "Đã duyệt" ở trên
                           {
                               badgeClass = "badge-plan";
                               statusText = "Dự kiến";

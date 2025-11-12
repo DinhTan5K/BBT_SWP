@@ -25,12 +25,13 @@ namespace start.Controllers
         // CHỈNH
         private string? CurrentRole =>
             (HttpContext.Session.GetString("RoleID") ??   // ưu tiên RoleID
-             HttpContext.Session.GetString("Role"))       // fallback Role
-            ?.Trim().ToUpperInvariant();
+             HttpContext.Session.GetString("Role"));      // fallback Role
 
         // CHO PHÉP: NV | EM | SL
-        private bool CanAccessDayOff() =>
-            CurrentRole is "NV" or "EM" or "SL";
+        private bool CanAccessDayOff() {
+            var normalizedRole = CurrentRole?.Trim().Replace(" ", "").ToUpperInvariant();
+            return normalizedRole is "NV" or "EM" or "SL";
+        }
 
         public EmployeeController(ApplicationDbContext db, IEmployeeProfileService svc, IScheduleService s, IPayrollService p, IDayOffService dayoff, IRegisterScheduleService registerService, IAttendanceService attendanceService)
         {
@@ -208,7 +209,7 @@ var todayCheckIn = await _db.Attendances
                 .ToListAsync();
             
             var todaySchedules = allSchedules
-                .Where(w => w.WorkDate.Date == today.Date)
+                .Where(w => w.Date.Date == today.Date)
                 .ToList();
             
             // Debug: Log để kiểm tra
@@ -217,7 +218,7 @@ var todayCheckIn = await _db.Attendances
             System.Diagnostics.Debug.WriteLine($"Tổng số ca: {allSchedules.Count}");
             foreach (var s in allSchedules.Take(5))
             {
-                System.Diagnostics.Debug.WriteLine($"  Ca ID={s.WorkScheduleID}, Date={s.WorkDate:yyyy-MM-dd}, Shift={s.Shift}");
+                System.Diagnostics.Debug.WriteLine($"  Ca ID={s.WorkScheduleID}, Date={s.Date:yyyy-MM-dd}, Shift={s.Shift}");
             }
             System.Diagnostics.Debug.WriteLine($"Số ca hôm nay: {todaySchedules.Count}");
 
@@ -375,6 +376,16 @@ var todayCheckIn = await _db.Attendances
             // var schedules = await _bManagerService.GetSchedulesForEmployeeAsync(employeeId, start, end);
             var schedules = await _registerService.GetMySchedulesAsync(employeeId, start, end);
 
+            // Lấy danh sách ID các ca đã có chấm công hoàn chỉnh (check-in và check-out)
+            var completedAttendanceScheduleIds = await _db.Attendances
+                .Where(a => a.EmployeeID == employeeId && 
+                            a.WorkScheduleID.HasValue && 
+                            a.CheckOutTime.HasValue &&
+                            a.CheckInTime >= start && a.CheckInTime < end)
+                .Select(a => a.WorkScheduleID.Value)
+                .Distinct()
+                .ToListAsync();
+
             var events = schedules.Select(s => new
             {
                 id = s.WorkScheduleID, // ID của ca làm việc
@@ -384,8 +395,8 @@ var todayCheckIn = await _db.Attendances
                 
                 // extendedProps để truyền trạng thái tùy chỉnh cho FullCalendar
                 extendedProps = new {
-                    status = (s.CheckInTime.HasValue && s.CheckOutTime.HasValue)
-                                ? "Đã làm" // Đã check-in VÀ check-out -> Đã làm
+                    status = (completedAttendanceScheduleIds.Contains(s.WorkScheduleID))
+                                ? "Đã làm" // Nếu ID ca làm có trong danh sách đã chấm công -> Đã làm
                                 : (s.Status == "Đã duyệt" 
                                     ? "Đã duyệt" // Nếu chưa đủ điều kiện "Đã làm" và status là "Đã duyệt" -> Đã duyệt
                                     : "Chưa duyệt") // Còn lại là "Chưa duyệt"
@@ -413,55 +424,6 @@ var todayCheckIn = await _db.Attendances
 
             return BadRequest(message ?? "Lỗi khi hủy ca.");
         }
-    }
-
-
-
-    if (emp == null) return NotFound();
-
-    ViewBag.ActiveMenu = "DayOff";
-    ViewBag.Employee = emp;
-    ViewBag.Requests = await _dayoff.GetMyAsync(id);
-
-    var vm = new DayOffOneDayVm {
-        EmployeeID = id,
-        BranchID   = emp.BranchID,
-        OffDate    = DateTime.Today.AddDays(3)
-    };
-    return View("DayOff", vm);
-}
-
-  [HttpPost("DayOff")]
-[ValidateAntiForgeryToken]
-public async Task<IActionResult> DayOffSubmit(DayOffOneDayVm vm)
-{
-    // THÊM CHẶN QUYỀN NGAY ĐẦU
-    if (!CanAccessDayOff())
-        return Forbid();
-
-    if (vm.OffDate.Date < DateTime.Today.AddDays(3))
-        ModelState.AddModelError(nameof(vm.OffDate), "Ngày nghỉ phải sau hôm nay ít nhất 3 ngày.");
-
-    if (!ModelState.IsValid)
-    {
-        var emp = await _db.Employees.FindAsync(vm.EmployeeID);
-        ViewBag.Employee = emp;
-        ViewBag.Requests = await _dayoff.GetMyAsync(vm.EmployeeID);
-        return View("DayOff", vm);
-    }
-
-    try
-    {
-        await _dayoff.CreateOneDayAsync(vm);
-        TempData["ok"] = "Đã gửi yêu cầu nghỉ 1 ngày tới quản lý.";
-    }
-    catch (Exception ex)
-    {
-        TempData["err"] = ex.Message;
-    }
-
-    return RedirectToAction("DayOff", new { id = vm.EmployeeID });
-}
 
         // GET: Check-in/Check-out Modal
      
@@ -491,7 +453,7 @@ public async Task<IActionResult> CheckIn(int? workScheduleId)
     if (schedule == null)
     {
         schedule = await _db.WorkSchedules
-            .FirstOrDefaultAsync(w => w.EmployeeID == empId && w.WorkDate.Date == today);
+            .FirstOrDefaultAsync(w => w.EmployeeID == empId && w.Date.Date == today);
     }
 
     if (schedule == null)
@@ -499,7 +461,7 @@ public async Task<IActionResult> CheckIn(int? workScheduleId)
 
     // 🔽🔽🔽 Chính là 2 đoạn bạn hỏi ở đây 🔽🔽🔽
     var now = DateTime.Now;
-    if (!ShiftTimeHelper.CanCheckIn(now, schedule.WorkDate, schedule.Shift, out var msg))
+    if (!ShiftTimeHelper.CanCheckIn(now, schedule.Date, schedule.Shift, out var msg))
         return PartialView("_CheckInModal", new { canStart = false, message = msg, isCheckIn = true });
 
     var already = await _attendanceService.GetTodayCheckInAsync(empId);
@@ -533,7 +495,7 @@ public async Task<IActionResult> CheckOut(int? workScheduleId)
 
     // ✅ Lấy workScheduleId nếu null
     var wsId = workScheduleId ?? await _db.WorkSchedules
-        .Where(w => w.EmployeeID == empId && w.WorkDate == DateTime.Today)
+        .Where(w => w.EmployeeID == empId && w.Date == DateTime.Today)
         .Select(w => (int?)w.WorkScheduleID)
         .FirstOrDefaultAsync();
 

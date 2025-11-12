@@ -23,8 +23,17 @@ public class BranchManagerAuthorizeAttribute : Attribute, IAsyncAuthorizationFil
     public async Task OnAuthorizationAsync(AuthorizationFilterContext context)
     {
         var session = context.HttpContext.Session;
-        var roleValue = session.GetString("Role");
+        // SỬA: Kiểm tra cả "RoleID" và "Role" để nhất quán với toàn bộ ứng dụng
+        var roleValue = session.GetString("RoleID") ?? session.GetString("Role");
         var branchIdValue = session.GetString("BranchId");
+
+        // --- START DEBUG LOGGING ---
+        // Đoạn code này sẽ in ra cửa sổ Output/Debug của Visual Studio
+        // Giúp chúng ta biết chính xác giá trị trong Session là gì.
+        System.Diagnostics.Debug.WriteLine("--- BranchManagerAuthorize Check ---");
+        System.Diagnostics.Debug.WriteLine($"Session Role (from RoleID/Role): {roleValue}");
+        System.Diagnostics.Debug.WriteLine($"Session BranchId: {branchIdValue}");
+        // --- END DEBUG LOGGING ---
 
         var isAjax = string.Equals(
             context.HttpContext.Request.Headers["X-Requested-With"],
@@ -33,8 +42,11 @@ public class BranchManagerAuthorizeAttribute : Attribute, IAsyncAuthorizationFil
         );
 
         // Cho phép cả “BM” hoặc “BranchManager” để tương thích session khác nhau
-        bool isValidRole = !string.IsNullOrEmpty(roleValue)
-                           && (roleValue.Trim().ToUpper() == "BM" || roleValue.Trim().ToUpper() == "BRANCHMANAGER");
+        // SỬA: Mở rộng kiểm tra để chấp nhận cả "BRANCH MANAGER" (có dấu cách)
+        var normalizedRole = roleValue?.Trim().Replace(" ", "").ToUpperInvariant();
+        bool isValidRole = !string.IsNullOrEmpty(normalizedRole) && 
+                           (normalizedRole == "BM" || 
+                            normalizedRole == "BRANCHMANAGER");
 
         if (string.IsNullOrEmpty(branchIdValue) || !isValidRole)
         {
@@ -677,46 +689,53 @@ public async Task<IActionResult> ExportSalaryToExcel(string? name, int month = 0
         // ===========================================
         var wsDetail = workbook.Worksheets.Add($"2. Detail Shifts {month}-{year}");
         int detailRow = 1;
-
+        
         // Headers
         wsDetail.Cell(detailRow, 1).Value = "Employee ID";
         wsDetail.Cell(detailRow, 2).Value = "Full Name";
         wsDetail.Cell(detailRow, 3).Value = "Date";
-        wsDetail.Cell(detailRow, 4).Value = "Check In";
-        wsDetail.Cell(detailRow, 5).Value = "Check Out";
-        wsDetail.Cell(detailRow, 6).Value = "Duration (Hours)"; // Changed from 6 to 7
-        wsDetail.Cell(detailRow, 7).Value = "Base Rate"; // Changed from 7 to 8
-        wsDetail.Cell(detailRow, 9).Value = "Total Pay"; // Lương ca = (Rate * Multiplier) * Hours
-
+        wsDetail.Cell(detailRow, 4).Value = "Shift";
+        wsDetail.Cell(detailRow, 5).Value = "Check In";
+        wsDetail.Cell(detailRow, 6).Value = "Check Out";
+        wsDetail.Cell(detailRow, 7).Value = "Duration (Hours)";
+        wsDetail.Cell(detailRow, 8).Value = "Base Rate (VND/h)";
+        wsDetail.Cell(detailRow, 9).Value = "Total Pay (VND)";
+        
         wsDetail.Range("A1:I1").Style.Font.Bold = true;
         wsDetail.Range("A1:I1").Style.Fill.BackgroundColor = ClosedXML.Excel.XLColor.LightBlue;
         detailRow++;
-
-        // Data (Duyệt qua tất cả WorkSchedule đã lấy)
-        foreach (var ws in allWorkSchedules.OrderBy(w => w.EmployeeID).ThenBy(w => w.Date))
+        
+        // Lấy tất cả bản ghi chấm công trong tháng của chi nhánh
+        var attendancesForMonth = await _context.Attendances
+            .Include(a => a.WorkSchedule.Employee)
+            .Where(a => a.WorkSchedule.Employee.BranchID == CurrentBranchId.Value &&
+                        a.CheckInTime.Month == month &&
+                        a.CheckInTime.Year == year &&
+                        a.CheckOutTime.HasValue)
+            .OrderBy(a => a.EmployeeID).ThenBy(a => a.CheckInTime)
+            .ToListAsync();
+            
+        // Data (Duyệt qua tất cả Attendance đã lấy)
+        foreach (var att in attendancesForMonth)
         {
-            // Kiểm tra ca làm việc hợp lệ (đã check in/out)
-            if (!ws.CheckInTime.HasValue || !ws.CheckOutTime.HasValue) continue;
-
             // 1. Lấy lương giờ từ hợp đồng (Cần đảm bảo _contractService được inject)
-            var contract = await _contractService.GetActiveHourlyContractOnDateAsync(ws.EmployeeID, ws.Date);
+            var contract = await _contractService.GetActiveHourlyContractOnDateAsync(att.EmployeeID, att.CheckInTime.Date);
             decimal hourlyRate = (contract != null && contract.PaymentType == Contract.PaymentTypes.Gio) 
                                         ? contract.BaseRate 
                                         : 0m; 
             
-            double durationHours = (ws.CheckOutTime.Value - ws.CheckInTime.Value).TotalHours; // Duration in hours
-
-            // Calculate total pay without multiplier (no overtime)
+            double durationHours = (att.CheckOutTime.Value - att.CheckInTime).TotalHours;
             decimal totalShiftPay = (decimal)durationHours * hourlyRate;
-
-            wsDetail.Cell(detailRow, 1).Value = ws.EmployeeID;
-            wsDetail.Cell(detailRow, 2).Value = ws.Employee?.FullName ?? "N/A";
-            wsDetail.Cell(detailRow, 3).Value = ws.Date.ToString("yyyy-MM-dd");
-            wsDetail.Cell(detailRow, 4).Value = ws.CheckInTime?.ToString("HH:mm");
-            wsDetail.Cell(detailRow, 5).Value = ws.CheckOutTime?.ToString("HH:mm");
-            wsDetail.Cell(detailRow, 6).Value = durationHours; // Duration (Hours)
-            wsDetail.Cell(detailRow, 7).Value = hourlyRate; // Base Rate
-            wsDetail.Cell(detailRow, 8).Value = totalShiftPay; // Total Pay
+            
+            wsDetail.Cell(detailRow, 1).Value = att.EmployeeID;
+            wsDetail.Cell(detailRow, 2).Value = att.WorkSchedule?.Employee?.FullName ?? "N/A";
+            wsDetail.Cell(detailRow, 3).Value = att.CheckInTime.ToString("yyyy-MM-dd");
+            wsDetail.Cell(detailRow, 4).Value = att.WorkSchedule?.Shift ?? "N/A";
+            wsDetail.Cell(detailRow, 5).Value = att.CheckInTime.ToString("HH:mm");
+            wsDetail.Cell(detailRow, 6).Value = att.CheckOutTime?.ToString("HH:mm");
+            wsDetail.Cell(detailRow, 7).Value = durationHours;
+            wsDetail.Cell(detailRow, 8).Value = hourlyRate;
+            wsDetail.Cell(detailRow, 9).Value = totalShiftPay;
             detailRow++;
         }
         
