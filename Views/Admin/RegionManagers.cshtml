@@ -1,0 +1,212 @@
+@model List<start.Models.Employee>
+@using start.Models
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Quản lý Region Manager";
+    var activeCount = ViewBag.ActiveCount as int? ?? 0;
+    var inactiveCount = ViewBag.InactiveCount as int? ?? 0;
+    var totalCount = ViewBag.TotalCount as int? ?? 0;
+}
+
+@Html.AntiForgeryToken()
+<div style="padding: 24px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+        <h2 style="font-size: 24px; font-weight: 600; color: var(--ink); margin: 0;">
+            Quản lý Region Manager
+        </h2>
+        <a href="@Url.Action("CreateRegionManager", "Admin")" 
+           style="padding: 10px 20px; background: var(--admin-primary); color: white; border: none; border-radius: 8px; font-weight: 500; text-decoration: none; display: inline-block;">
+            <i class="fas fa-plus"></i> Tạo Region Manager mới
+        </a>
+    </div>
+
+    @* Hiển thị thông báo *@
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div style="padding: 12px 16px; background: #d1fae5; color: #065f46; border-radius: 8px; margin-bottom: 20px;">
+            <i class="fas fa-check-circle"></i> @TempData["SuccessMessage"]
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div style="padding: 12px 16px; background: #fee2e2; color: #991b1b; border-radius: 8px; margin-bottom: 20px;">
+            <i class="fas fa-exclamation-circle"></i> @TempData["ErrorMessage"]
+        </div>
+    }
+
+    @* Thống kê *@
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
+        <div style="background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 20px;">
+            <div style="font-size: 14px; color: var(--muted); margin-bottom: 8px;">Tổng số RM</div>
+            <div style="font-size: 32px; font-weight: 600; color: var(--ink);">@totalCount</div>
+        </div>
+        <div style="background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 20px;">
+            <div style="font-size: 14px; color: var(--muted); margin-bottom: 8px;">Đang hoạt động</div>
+            <div style="font-size: 32px; font-weight: 600; color: #065f46;">@activeCount</div>
+        </div>
+        <div style="background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 20px;">
+            <div style="font-size: 14px; color: var(--muted); margin-bottom: 8px;">Đã vô hiệu hóa</div>
+            <div style="font-size: 32px; font-weight: 600; color: #991b1b;">@inactiveCount</div>
+        </div>
+    </div>
+
+    @* Tìm kiếm và lọc *@
+    <div style="margin-bottom: 20px;">
+        <div class="admin-filter-container">
+            <div class="admin-filter-search">
+                <input type="text" id="searchRM" placeholder="Tìm kiếm Region Manager...">
+            </div>
+        </div>
+    </div>
+
+    @* Bảng danh sách RM *@
+    <div style="background: var(--card); border: 1px solid var(--line); border-radius: 12px; overflow: hidden;">
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background: var(--bg); border-bottom: 2px solid var(--line);">
+                    <th style="padding: 16px; text-align: left; font-weight: 600; color: var(--ink);">Mã RM</th>
+                    <th style="padding: 16px; text-align: left; font-weight: 600; color: var(--ink);">Họ tên</th>
+                    <th style="padding: 16px; text-align: left; font-weight: 600; color: var(--ink);">Email</th>
+                    <th style="padding: 16px; text-align: left; font-weight: 600; color: var(--ink);">Số điện thoại</th>
+                    <th style="padding: 16px; text-align: left; font-weight: 600; color: var(--ink);">Vùng quản lý</th>
+                    <th style="padding: 16px; text-align: center; font-weight: 600; color: var(--ink);">Trạng thái</th>
+                    <th style="padding: 16px; text-align: center; font-weight: 600; color: var(--ink);">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody id="rmTableBody">
+                @foreach (var rm in Model)
+                {
+                    <tr style="border-bottom: 1px solid var(--line);" 
+                        data-name="@rm.FullName?.ToLower()" 
+                        data-email="@rm.Email?.ToLower()" 
+                        data-phone="@rm.PhoneNumber">
+                        <td style="padding: 16px; color: var(--ink); font-weight: 500;">@rm.EmployeeID</td>
+                        <td style="padding: 16px; color: var(--ink);">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                @{
+                                    var rmAvatar = !string.IsNullOrEmpty(rm.AvatarUrl) 
+                                        ? rm.AvatarUrl 
+                                        : "https://res.cloudinary.com/do48qpmut/image/upload/v1761645429/uploads/tdppvgyas8bhvfs7lton.png";
+                                }
+                                <img src="@Url.Content(rmAvatar)" alt="Avatar" 
+                                     style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                                <span>@rm.FullName</span>
+                            </div>
+                        </td>
+                        <td style="padding: 16px; color: var(--muted);">@(rm.Email ?? "-")</td>
+                        <td style="padding: 16px; color: var(--muted);">@(rm.PhoneNumber ?? "-")</td>
+                        <td style="padding: 16px; color: var(--ink);">
+                            @if (rm.Region != null)
+                            {
+                                <span style="display: inline-block; padding: 4px 12px; background: var(--admin-primary-bg); color: var(--admin-primary); border-radius: 999px; font-size: 13px; font-weight: 500;">
+                                    @rm.Region.RegionName
+                                </span>
+                            }
+                            else
+                            {
+                                <span style="color: var(--muted);">-</span>
+                            }
+                        </td>
+                        <td style="padding: 16px; text-align: center;">
+                            @if (rm.IsActive)
+                            {
+                                <span style="display: inline-block; padding: 4px 12px; background: #d1fae5; color: #065f46; border-radius: 999px; font-size: 13px; font-weight: 500;">
+                                    Đang hoạt động
+                                </span>
+                            }
+                            else
+                            {
+                                <span style="display: inline-block; padding: 4px 12px; background: #fee2e2; color: #991b1b; border-radius: 999px; font-size: 13px; font-weight: 500;">
+                                    Đã vô hiệu hóa
+                                </span>
+                            }
+                        </td>
+                        <td style="padding: 16px; text-align: center;">
+                            <div style="display: flex; gap: 8px; justify-content: center;">
+                                <a href="@Url.Action("ViewRegionManager", "Admin", new { id = rm.EmployeeID })" 
+                                   style="padding: 6px 12px; background: var(--admin-primary); color: white; border-radius: 6px; text-decoration: none; font-size: 13px; display: inline-block;">
+                                    <i class="fas fa-eye"></i> Xem
+                                </a>
+                                <a href="@Url.Action("EditRegionManager", "Admin", new { id = rm.EmployeeID })" 
+                                   style="padding: 6px 12px; background: #f59e0b; color: white; border-radius: 6px; text-decoration: none; font-size: 13px; display: inline-block;">
+                                    <i class="fas fa-edit"></i> Sửa
+                                </a>
+                                <button onclick="toggleRMStatus('@rm.EmployeeID', @(rm.IsActive ? "true" : "false"), '@rm.FullName')" 
+                                        style="padding: 6px 12px; background: @(rm.IsActive ? "#ef4444" : "#10b981"); color: white; border: none; border-radius: 6px; font-size: 13px; cursor: pointer;">
+                                    <i class="fas fa-@(rm.IsActive ? "ban" : "check")"></i> @(rm.IsActive ? "Vô hiệu hóa" : "Kích hoạt")
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        @if (!Model.Any())
+        {
+            <div style="padding: 48px; text-align: center; color: var(--muted);">
+                <div style="font-size: 48px; margin-bottom: 16px; color: var(--admin-muted);"><i class="fas fa-user-shield"></i></div>
+                <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">Chưa có Region Manager nào</h3>
+                <p>Danh sách Region Manager sẽ hiển thị tại đây.</p>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Tìm kiếm RM
+        document.getElementById('searchRM')?.addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase().trim();
+            const rows = document.querySelectorAll('#rmTableBody tr');
+            
+            rows.forEach(row => {
+                const name = row.getAttribute('data-name') || '';
+                const email = row.getAttribute('data-email') || '';
+                const phone = row.getAttribute('data-phone') || '';
+                
+                if (name.includes(searchTerm) || email.includes(searchTerm) || phone.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+
+        // Toggle trạng thái RM (kích hoạt/vô hiệu hóa)
+        function toggleRMStatus(employeeId, isActive, fullName) {
+            const action = isActive === 'true' ? 'vô hiệu hóa' : 'kích hoạt';
+            const message = `Bạn có chắc chắn muốn ${action} Region Manager "${fullName}" không?`;
+            
+            if (!confirm(message)) {
+                return;
+            }
+
+            const tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+            const token = tokenInput ? tokenInput.value : '';
+
+            fetch('@Url.Action("ToggleRegionManagerStatus", "Admin")', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'RequestVerificationToken': token
+                },
+                body: `employeeId=${encodeURIComponent(employeeId)}&__RequestVerificationToken=${encodeURIComponent(token)}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    window.location.reload();
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Có lỗi xảy ra khi thực hiện thao tác.');
+            });
+        }
+    </script>
+}
+

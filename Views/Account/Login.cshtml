@@ -19,7 +19,15 @@
                 </div>
             </div>
         </div>
-        <form asp-controller="Account" asp-action="Login" method="post">
+        <form asp-controller="Account" asp-action="Login" method="post" id="loginForm" onsubmit="return handleLoginSubmit(event)">
+            <!-- Hiển thị lỗi từ Google OAuth -->
+            @if (ViewBag.ErrorMessage != null)
+            {
+                <div class="alert alert-danger error-message" role="alert">
+                    <i class="fa-solid fa-exclamation-triangle"></i>
+                    <span>@ViewBag.ErrorMessage</span>
+                </div>
+            }
             <!-- Hiển thị lỗi tổng quát -->
             @if (!ViewData.ModelState.IsValid)
             {
@@ -75,6 +83,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Form submission validation
     form.addEventListener('submit', function(e) {
+        console.log('Form submit event triggered');
         let isValid = true;
         
         inputs.forEach(input => {
@@ -84,9 +93,25 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         if (!isValid) {
+            console.log('Form validation failed, preventing submit');
             e.preventDefault();
+            return false;
         }
+        
+        console.log('Form validation passed, allowing submit');
+        // Không preventDefault nếu validation pass
     });
+    
+    // Hàm xử lý submit với AJAX để kiểm tra response
+    function handleLoginSubmit(event) {
+        console.log('handleLoginSubmit called');
+        const form = event.target;
+        const formData = new FormData(form);
+        
+        // Thử submit bình thường trước
+        // Nếu không hoạt động thì dùng AJAX
+        return true; // Cho phép form submit bình thường
+    }
     
     function validateField(input) {
         const inputGroup = input.closest('.input-group');

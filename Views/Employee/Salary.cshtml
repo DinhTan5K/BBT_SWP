@@ -1,11 +1,22 @@
 @model start.Models.ViewModels.MonthlySalaryVm?
 @{
-    Layout = "_EmployeeLayout";
+    // Kiểm tra role để dùng layout phù hợp
+    var emp = ViewBag.Employee as start.Models.Employee;
+    var role = (emp?.RoleID ?? "").Trim().ToUpperInvariant();
+    
+    if (role == "MK")
+    {
+        Layout = "~/Views/Shared/_MarketingLayout.cshtml";
+    }
+    else
+    {
+        Layout = "_EmployeeLayout";
+    }
+    
     ViewData["Title"] = "Bảng lương";
     var employeeId = (string)ViewData["EmployeeID"];
     var month = (int)ViewData["Month"];
     var year = (int)ViewData["Year"];
-    var emp = ViewBag.Employee as start.Models.Employee;
 }
 
 @section Styles {
@@ -54,12 +65,26 @@
         }
         else
         {
+            var isMarketing = emp?.RoleID == "MK";
+            var kpi = ViewBag.KPI as start.Models.ViewModels.MarketingKPIVm;
+            var kpiInfo = "";
+            if (isMarketing && kpi != null && kpi.KPIBonus > 0)
+            {
+                kpiInfo = $" (KPI: {kpi.KPIScore:F1} điểm - Thưởng KPI: {kpi.KPIBonus:N0} đ)";
+            }
             <div class="kpi-grid">
                 <div class="kpi"><div class="k">Tổng ca (đã làm)</div><div class="v">@Model.TotalShifts</div></div>
                 <div class="kpi"><div class="k">Tổng giờ (đã làm)</div><div class="v">@Model.TotalHoursWorked</div></div>
                 <div class="kpi"><div class="k">Lương giờ</div><div class="v">@Model.HourlyRate.ToString("n0") đ</div></div>
                 <div class="kpi"><div class="k">Lương cơ bản</div><div class="v">@Model.BaseSalary.ToString("n0") đ</div></div>
-                <div class="kpi good"><div class="k">Thưởng</div><div class="v">+@Model.Bonus.ToString("n0") đ</div></div>
+                <div class="kpi good">
+                    <div class="k">Thưởng@(isMarketing ? " (KPI)" : "")</div>
+                    <div class="v">+@Model.Bonus.ToString("n0") đ</div>
+                    @if (!string.IsNullOrEmpty(kpiInfo))
+                    {
+                        <div style="font-size: 11px; color: #059669; margin-top: 4px; font-weight: 500;">@kpiInfo</div>
+                    }
+                </div>
                 <div class="kpi bad"><div class="k">Phạt</div><div class="v">-@Model.Penalty.ToString("n0") đ</div></div>
                 <div class="kpi highlight"><div class="k">Thực lĩnh</div><div class="v big">@Model.TotalSalary.ToString("n0") đ</div></div>
                 <div class="kpi"><div class="k">Trạng thái</div><div class="pill">@Model.Status</div></div>

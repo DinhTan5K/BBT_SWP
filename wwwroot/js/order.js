@@ -285,6 +285,54 @@ document.addEventListener("DOMContentLoaded", () => {
         input?.addEventListener("input", updateCheckoutStepUI);
     });
 
+    // Real-time phone validation
+    const phoneRegex = /^(0[3|5|7|8|9])+([0-9]{8})\b/;
+    
+    function validatePhoneInput(input, errorElementId) {
+        const phone = input.value.trim();
+        const errorElement = document.getElementById(errorElementId);
+        
+        if (!phone) {
+            if (errorElement) {
+                errorElement.classList.add('d-none');
+            }
+            input.classList.remove('is-invalid');
+            return;
+        }
+        
+        if (!phoneRegex.test(phone)) {
+            if (errorElement) {
+                errorElement.textContent = phone.length < 10 
+                    ? 'Số điện thoại phải có ít nhất 10 số.' 
+                    : 'Số điện thoại không hợp lệ. Vui lòng nhập số bắt đầu bằng 0 và số thứ 2 là 3, 5, 7, 8 hoặc 9.';
+                errorElement.classList.remove('d-none');
+            }
+            input.classList.add('is-invalid');
+        } else {
+            if (errorElement) {
+                errorElement.classList.add('d-none');
+            }
+            input.classList.remove('is-invalid');
+        }
+    }
+
+    // Validate phone on blur and input
+    if (phoneInput) {
+        phoneInput.addEventListener('blur', () => validatePhoneInput(phoneInput, 'phoneError'));
+        phoneInput.addEventListener('input', () => {
+            validatePhoneInput(phoneInput, 'phoneError');
+            updateCheckoutStepUI();
+        });
+    }
+
+    if (pickupPhoneInput) {
+        pickupPhoneInput.addEventListener('blur', () => validatePhoneInput(pickupPhoneInput, 'pickupPhoneError'));
+        pickupPhoneInput.addEventListener('input', () => {
+            validatePhoneInput(pickupPhoneInput, 'pickupPhoneError');
+            updateCheckoutStepUI();
+        });
+    }
+
     document.querySelectorAll('input[name="Payment"]').forEach(radio => {
         radio.addEventListener("change", updateCheckoutStepUI);
     });

@@ -1,11 +1,36 @@
 @using start.Models
+@using System.Security.Claims
 @model EditEmployeeProfile
 @{
-    Layout = "~/Views/Shared/_EmployeeLayout.cshtml";
+    // Kiểm tra role để dùng layout phù hợp
+    // Ưu tiên: ViewBag.CurrentRole (từ controller) -> Claims -> Employee object
+    var roleFromViewBag = ViewBag.CurrentRole as string;
+    var roleFromClaims = User?.FindFirst("Role")?.Value ?? User?.FindFirst("RoleID")?.Value;
+    var emp = ViewBag.Employee as Employee ?? ViewData["Employee"] as Employee;
+    var roleFromEmployee = emp?.RoleID;
+    
+    var roleRaw = roleFromViewBag ?? roleFromClaims ?? roleFromEmployee;
+    var role = !string.IsNullOrWhiteSpace(roleRaw) ? roleRaw.Trim().ToUpperInvariant() : "";
+    
+    // Chọn layout dựa trên role
+    if (role == "MK")
+    {
+        Layout = "~/Views/Shared/_MarketingLayout.cshtml";
+    }
+    else
+    {
+        Layout = "~/Views/Shared/_EmployeeLayout.cshtml";
+    }
+    
     ViewBag.ActiveMenu = "EditProfile";
     ViewData["Title"] = "Chỉnh sửa thông tin cá nhân";
 
-    var emp = ViewData["Employee"] as Employee;
+    // Đảm bảo emp được set
+    if (emp == null)
+    {
+        emp = ViewBag.Employee as Employee ?? ViewData["Employee"] as Employee;
+    }
+    
     var avatarUrl = !string.IsNullOrWhiteSpace(emp?.AvatarUrl)
         ? emp!.AvatarUrl
         : Url.Content("https://res.cloudinary.com/do48qpmut/image/upload/v1761645429/uploads/tdppvgyas8bhvfs7lton.png");

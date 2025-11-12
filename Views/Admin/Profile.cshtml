@@ -1,0 +1,259 @@
+@model start.Models.Employee
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Hồ sơ cá nhân";
+
+    var avatar = !string.IsNullOrWhiteSpace(Model.AvatarUrl)
+         ? Url.Content(Model.AvatarUrl) 
+        : Url.Content("https://res.cloudinary.com/do48qpmut/image/upload/v1761645429/uploads/tdppvgyas8bhvfs7lton.png");
+
+    var roleText = "Quản trị viên";
+}
+
+<link rel="stylesheet" href="/css/Admin/profile.css" />
+
+<div class="profile-container">
+    <div class="profile-header">
+        <h2>@ViewData["Title"]</h2>
+    </div>
+
+    @* Toast Messages *@
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div id="successToast" class="alert alert-success text-center" role="alert"
+            style="position: fixed; top: 70px; right: 10px; z-index: 1050; max-width: 400px;">
+            <i class="fa-solid fa-check-circle"></i>
+            @TempData["SuccessMessage"]
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div id="errorToast" class="alert alert-danger text-center" role="alert"
+            style="position: fixed; top: 70px; right: 10px; z-index: 1050; max-width: 400px;">
+            <i class="fa-solid fa-exclamation-circle"></i>
+            @TempData["ErrorMessage"]
+        </div>
+    }
+
+    <div class="profile-content-grid">
+        @* Sidebar Card *@
+        <div class="profile-sidebar-card">
+            <div class="avatar-wrapper">
+                <img src="@avatar" alt="Avatar" class="profile-avatar-img" />
+                <div class="avatar-overlay" title="Thay đổi ảnh đại diện">
+                    <i class="fa fa-pen" style="color: white; font-size: 28px;"></i>
+                </div>
+                <form asp-action="UploadAvatar" asp-controller="Admin" method="post" enctype="multipart/form-data"
+                    id="avatarForm">
+                    <input type="file" name="avatar" id="avatarInput" accept="image/*" style="display:none;" />
+                </form>
+            </div>
+
+            <h3 class="customer-name">@Model.FullName</h3>
+            <div class="loyalty-level-badge">
+                <i class="fa fa-shield"></i> @roleText
+            </div>
+
+            <hr class="divider" />
+
+            <div class="quick-contact">
+                <p><i class="fa fa-envelope"></i> @(Model.Email ?? "-")</p>
+                <p><i class="fa fa-phone"></i> @(Model.PhoneNumber ?? "-")</p>
+                @if (Model.Branch != null)
+                {
+                    <p><i class="fa fa-building"></i> @Model.Branch.Name</p>
+                }
+            </div>
+        </div>
+
+        @* Main Content Area *@
+        <div class="profile-main-area">
+            @* Personal Information *@
+            <div class="detail-block">
+                <h4><i class="fa fa-user-circle"></i> Thông tin cá nhân</h4>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <strong>Mã nhân viên:</strong>
+                        <span>@Model.EmployeeID</span>
+                    </div>
+
+                    <div class="info-item">
+                        <strong>Họ và tên:</strong>
+                        <span>@Model.FullName</span>
+                    </div>
+
+                    <div class="info-item">
+                        <strong>Email:</strong>
+                        <span>@(Model.Email ?? "-")</span>
+                    </div>
+
+                    <div class="info-item">
+                        <strong>Số điện thoại:</strong>
+                        <span>@(Model.PhoneNumber ?? "-")</span>
+                    </div>
+
+                    <div class="info-item">
+                        <strong>Ngày sinh:</strong>
+                        <span>@(Model.DateOfBirth?.ToString("dd/MM/yyyy") ?? "-")</span>
+                    </div>
+
+                    <div class="info-item">
+                        <strong>Giới tính:</strong>
+                        <span>@(Model.Gender ?? "-")</span>
+                    </div>
+
+                    <div class="info-item">
+                        <strong>Quốc tịch:</strong>
+                        <span>@(Model.Nationality ?? "-")</span>
+                    </div>
+
+                    <div class="info-item">
+                        <strong>Dân tộc:</strong>
+                        <span>@(Model.Ethnicity ?? "-")</span>
+                    </div>
+
+                    <div class="info-item">
+                        <strong>Ngày vào làm:</strong>
+                        <span>@Model.HireDate.ToString("dd/MM/yyyy")</span>
+                    </div>
+
+                    <div class="info-item">
+                        <strong>Trạng thái:</strong>
+                        <span>
+                            @if (Model.IsActive)
+                            {
+                                <span style="display: inline-block; padding: 4px 12px; background: #d1fae5; color: #065f46; border-radius: 999px; font-size: 13px; font-weight: 500;">
+                                    <i class="fas fa-check"></i> Đang làm việc
+                                </span>
+                            }
+                            else
+                            {
+                                <span style="display: inline-block; padding: 4px 12px; background: #fee2e2; color: #991b1b; border-radius: 999px; font-size: 13px; font-weight: 500;">
+                                    <i class="fas fa-times"></i> Đã nghỉ
+                                </span>
+                            }
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            @* Branch Information *@
+            @if (Model.Branch != null)
+            {
+                <div class="detail-block">
+                    <h4><i class="fa fa-building"></i> Chi nhánh</h4>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <strong>Tên chi nhánh:</strong>
+                            <span>@Model.Branch.Name</span>
+                        </div>
+                        <div class="info-item full-width">
+                            <strong>Địa chỉ:</strong>
+                            <span>@Model.Branch.Address</span>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            @* Emergency Contacts *@
+            @if (!string.IsNullOrEmpty(Model.EmergencyPhone1) || !string.IsNullOrEmpty(Model.EmergencyPhone2))
+            {
+                <div class="detail-block">
+                    <h4><i class="fa fa-phone-alt"></i> Số điện thoại liên hệ khẩn cấp</h4>
+                    <div class="info-grid">
+                        @if (!string.IsNullOrEmpty(Model.EmergencyPhone1))
+                        {
+                            <div class="info-item">
+                                <strong>Liên hệ 1:</strong>
+                                <span>@Model.EmergencyPhone1</span>
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.EmergencyPhone2))
+                        {
+                            <div class="info-item">
+                                <strong>Liên hệ 2:</strong>
+                                <span>@Model.EmergencyPhone2</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<style>
+    #successToast, #errorToast {
+        animation: slideIn 0.5s ease-out;
+    }
+
+    #successToast.hide, #errorToast.hide {
+        animation: fadeOut 0.5s ease forwards;
+    }
+
+    @@keyframes slideIn {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+
+    @@keyframes fadeOut {
+        from {
+            opacity: 1;
+        }
+        to {
+            opacity: 0;
+            transform: translateX(100%);
+        }
+    }
+</style>
+
+@section Scripts {
+    <script>
+        // Auto-hide toast messages
+        setTimeout(function () {
+            var toasts = document.querySelectorAll('#successToast, #errorToast');
+            toasts.forEach(toast => {
+                if (toast) {
+                    toast.classList.add('hide');
+                    setTimeout(() => toast.remove(), 500);
+                }
+            });
+        }, 3000);
+
+        // Avatar upload logic - Giống customer profile
+        document.querySelectorAll('.avatar-wrapper').forEach(wrapper => {
+            const overlay = wrapper.querySelector('.avatar-overlay');
+            const avatarInput = wrapper.querySelector('#avatarInput');
+            const avatarForm = wrapper.querySelector('#avatarForm');
+
+            // Hiệu ứng hover
+            wrapper.addEventListener('mouseenter', () => {
+                // Kiểm tra xem đã có style opacity chưa trước khi đặt
+                const currentOpacity = window.getComputedStyle(overlay).opacity;
+                if (currentOpacity === '0' || currentOpacity === '') {
+                    overlay.style.opacity = 1;
+                }
+            });
+            wrapper.addEventListener('mouseleave', () => {
+                overlay.style.opacity = 0;
+            });
+
+            // Click vào overlay để mở chọn file
+            overlay.addEventListener('click', () => {
+                avatarInput.click();
+            });
+
+            // Khi file được chọn, tự động submit form
+            avatarInput.addEventListener('change', () => {
+                avatarForm.submit();
+            });
+        });
+    </script>
+}

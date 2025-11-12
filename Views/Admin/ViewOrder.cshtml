@@ -1,0 +1,240 @@
+@model start.Models.Order
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Chi tiết đơn hàng";
+}
+
+<div style="padding: 24px;">
+    <div style="margin-bottom: 24px;">
+        @{
+            string returnUrl = Url.Action("Orders", "Admin");
+            var returnQueryParts = new List<string>();
+            if (!string.IsNullOrEmpty(ViewBag.ReturnStatus as string))
+            {
+                returnQueryParts.Add("status=" + Uri.EscapeDataString(ViewBag.ReturnStatus));
+            }
+            if (!string.IsNullOrEmpty(ViewBag.ReturnSearch as string))
+            {
+                returnQueryParts.Add("search=" + Uri.EscapeDataString(ViewBag.ReturnSearch));
+            }
+            if (ViewBag.ReturnPage != null && (int)ViewBag.ReturnPage > 1)
+            {
+                returnQueryParts.Add("page=" + ViewBag.ReturnPage);
+            }
+            if (returnQueryParts.Any())
+            {
+                returnUrl += "?" + string.Join("&", returnQueryParts);
+            }
+        }
+        <a href="@returnUrl" 
+           style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; text-decoration: none; font-weight: 500; transition: all 0.2s;"
+           onmouseover="this.style.background='var(--card)'; this.style.borderColor='var(--admin-primary)'; this.style.color='var(--admin-primary)';"
+           onmouseout="this.style.background='var(--bg)'; this.style.borderColor='var(--line)'; this.style.color='var(--ink)';">
+            <i class="fas fa-arrow-left"></i> Quay lại danh sách đơn hàng
+        </a>
+    </div>
+
+    <!-- Thông tin đơn hàng -->
+    <div style="background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 24px;">
+            <div>
+                <h2 style="font-size: 24px; font-weight: 600; margin-bottom: 8px; color: var(--ink);">Đơn hàng #@Model.OrderCode</h2>
+                <div style="font-size: 14px; color: var(--muted);">Ngày đặt: @Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</div>
+            </div>
+            <div>
+                @{
+                    var statusColors = new Dictionary<string, string>
+                    {
+                        { "Chờ xác nhận", "background: #cbd5e1; color: #475569;" },
+                        { "Đã xác nhận", "background: #dbeafe; color: #1e40af;" },
+                        { "Đang giao", "background: #ddd6fe; color: #5b21b6;" },
+                        { "Đã giao", "background: #d1fae5; color: #065f46;" },
+                        { "Đã hủy", "background: #fee2e2; color: #991b1b;" },
+                        { "Chờ hoàn tiền", "background: #e0e7ff; color: #3730a3; border: 1px solid #6366f1;" },
+                        { "Đã hoàn tiền", "background: #6366f1; color: #ffffff;" }
+                    };
+                    var statusStyle = statusColors.ContainsKey(Model.Status ?? "") 
+                        ? statusColors[Model.Status ?? ""] 
+                        : "background: var(--bg); color: var(--muted);";
+                }
+                <span style="display: inline-block; padding: 6px 16px; @statusStyle border-radius: 999px; font-size: 14px; font-weight: 600;">
+                    @(Model.Status ?? "Chưa xác định")
+                </span>
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px;">
+            <div>
+                <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 12px; color: var(--ink); display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-user" style="color: var(--admin-primary);"></i>
+                    Thông tin khách hàng
+                </h3>
+                <div style="padding: 20px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line);">
+                    <div style="margin-bottom: 12px; display: flex; align-items: start; gap: 8px;">
+                        <i class="fas fa-user-circle" style="color: var(--muted); margin-top: 2px;"></i>
+                        <div>
+                            <div style="font-size: 12px; color: var(--muted); margin-bottom: 2px;">Tên khách hàng</div>
+                            <div style="font-weight: 600; color: var(--ink);">@(Model.Customer?.Name ?? Model.ReceiverName ?? "-")</div>
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 12px; display: flex; align-items: start; gap: 8px;">
+                        <i class="fas fa-phone" style="color: var(--muted); margin-top: 2px;"></i>
+                        <div>
+                            <div style="font-size: 12px; color: var(--muted); margin-bottom: 2px;">Số điện thoại</div>
+                            <div style="font-weight: 500; color: var(--ink);">@(Model.ReceiverPhone ?? Model.Customer?.Phone ?? "-")</div>
+                        </div>
+                    </div>
+                    @if (!string.IsNullOrEmpty(Model.Customer?.Email))
+                    {
+                        <div style="margin-bottom: 12px; display: flex; align-items: start; gap: 8px;">
+                            <i class="fas fa-envelope" style="color: var(--muted); margin-top: 2px;"></i>
+                            <div>
+                                <div style="font-size: 12px; color: var(--muted); margin-bottom: 2px;">Email</div>
+                                <div style="font-weight: 500; color: var(--ink);">@Model.Customer.Email</div>
+                            </div>
+                        </div>
+                    }
+                    <div style="display: flex; align-items: start; gap: 8px;">
+                        <i class="fas fa-map-marker-alt" style="color: var(--muted); margin-top: 2px;"></i>
+                        <div style="flex: 1;">
+                            <div style="font-size: 12px; color: var(--muted); margin-bottom: 2px;">Địa chỉ giao hàng</div>
+                            <div style="font-weight: 500; color: var(--ink); line-height: 1.5;">@(Model.Address ?? "-")</div>
+                            @if (!string.IsNullOrEmpty(Model.DetailAddress))
+                            {
+                                <div style="margin-top: 4px; color: var(--muted); font-size: 13px;">@Model.DetailAddress</div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 12px; color: var(--ink); display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-info-circle" style="color: var(--admin-primary);"></i>
+                    Thông tin đơn hàng
+                </h3>
+                <div style="padding: 20px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line);">
+                    <div style="margin-bottom: 12px; display: flex; align-items: start; gap: 8px;">
+                        <i class="fas fa-store" style="color: var(--muted); margin-top: 2px;"></i>
+                        <div>
+                            <div style="font-size: 12px; color: var(--muted); margin-bottom: 2px;">Chi nhánh</div>
+                            <div style="font-weight: 600; color: var(--ink);">@(Model.Branch?.Name ?? "-")</div>
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 12px; display: flex; align-items: start; gap: 8px;">
+                        <i class="fas fa-credit-card" style="color: var(--muted); margin-top: 2px;"></i>
+                        <div>
+                            <div style="font-size: 12px; color: var(--muted); margin-bottom: 2px;">Phương thức thanh toán</div>
+                            <div style="font-weight: 500; color: var(--ink);">@(Model.PaymentMethod ?? "-")</div>
+                        </div>
+                    </div>
+                    @if (!string.IsNullOrEmpty(Model.PromoCode))
+                    {
+                        <div style="margin-bottom: 12px; display: flex; align-items: start; gap: 8px;">
+                            <i class="fas fa-tag" style="color: var(--muted); margin-top: 2px;"></i>
+                            <div>
+                                <div style="font-size: 12px; color: var(--muted); margin-bottom: 2px;">Mã giảm giá</div>
+                                <div style="font-weight: 500; color: var(--ink);">
+                                    <span style="display: inline-block; padding: 4px 10px; background: #fef3c7; color: #92400e; border-radius: 6px; font-size: 12px; font-weight: 600;">@Model.PromoCode</span>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.NoteOrder))
+                    {
+                        <div style="display: flex; align-items: start; gap: 8px;">
+                            <i class="fas fa-sticky-note" style="color: var(--muted); margin-top: 2px;"></i>
+                            <div style="flex: 1;">
+                                <div style="font-size: 12px; color: var(--muted); margin-bottom: 2px;">Ghi chú</div>
+                                <div style="font-weight: 500; color: var(--ink); line-height: 1.5; padding: 8px; background: #fef3c7; border-radius: 6px; font-size: 13px;">@Model.NoteOrder</div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chi tiết sản phẩm -->
+    <div style="background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+        <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 20px; color: var(--ink); display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-shopping-bag" style="color: var(--admin-primary);"></i>
+            Sản phẩm đã đặt (@(Model.OrderDetails?.Count ?? 0) sản phẩm)
+        </h3>
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; min-width: 600px;">
+                <thead>
+                    <tr style="background: var(--bg); border-bottom: 2px solid var(--line);">
+                        <th style="padding: 14px; text-align: left; font-weight: 600; color: var(--ink); font-size: 14px;">Sản phẩm</th>
+                        <th style="padding: 14px; text-align: center; font-weight: 600; color: var(--ink); font-size: 14px;">Size</th>
+                        <th style="padding: 14px; text-align: center; font-weight: 600; color: var(--ink); font-size: 14px;">Số lượng</th>
+                        <th style="padding: 14px; text-align: right; font-weight: 600; color: var(--ink); font-size: 14px;">Đơn giá</th>
+                        <th style="padding: 14px; text-align: right; font-weight: 600; color: var(--ink); font-size: 14px;">Thành tiền</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var detail in Model.OrderDetails ?? new List<OrderDetail>())
+                    {
+                        <tr style="border-bottom: 1px solid var(--line); transition: background 0.2s;"
+                            onmouseover="this.style.background='var(--bg)';"
+                            onmouseout="this.style.background='transparent';">
+                            <td style="padding: 14px; color: var(--ink); font-weight: 500;">
+                                <div style="display: flex; align-items: center; gap: 12px;">
+                                    @if (!string.IsNullOrEmpty(detail.Product?.Image_Url))
+                                    {
+                                        <img src="@detail.Product.Image_Url" alt="@detail.Product.ProductName" 
+                                             style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line);">
+                                    }
+                                    <div>
+                                        <div style="font-weight: 600; margin-bottom: 4px;">@(detail.Product?.ProductName ?? "-")</div>
+                                        @if (!string.IsNullOrEmpty(detail.Product?.Description))
+                                        {
+                                            <div style="font-size: 12px; color: var(--muted); max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                                @(detail.Product.Description.Length > 50 ? detail.Product.Description.Substring(0, 50) + "..." : detail.Product.Description)
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </td>
+                            <td style="padding: 14px; text-align: center;">
+                                <span style="display: inline-block; padding: 4px 10px; background: #e0e7ff; color: #3730a3; border-radius: 6px; font-size: 13px; font-weight: 600;">
+                                    @(detail.ProductSize?.Size ?? "-")
+                                </span>
+                            </td>
+                            <td style="padding: 14px; text-align: center; color: var(--ink); font-weight: 600; font-size: 15px;">@detail.Quantity</td>
+                            <td style="padding: 14px; text-align: right; color: var(--ink); font-weight: 500;">@detail.UnitPrice.ToString("N0") đ</td>
+                            <td style="padding: 14px; text-align: right; color: var(--ink); font-weight: 700; font-size: 15px; color: #059669;">@detail.Total.ToString("N0") đ</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Tổng thanh toán -->
+    <div style="background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 24px;">
+        <div style="display: flex; justify-content: flex-end;">
+            <div style="width: 350px; background: var(--bg); border-radius: 10px; padding: 20px; border: 2px solid var(--line);">
+                <h4 style="font-size: 16px; font-weight: 600; margin-bottom: 16px; color: var(--ink); display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-calculator" style="color: var(--admin-primary);"></i>
+                    Tổng thanh toán
+                </h4>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--line);">
+                    <span style="color: var(--muted); font-size: 14px;">Tạm tính:</span>
+                    <span style="color: var(--ink); font-weight: 500; font-size: 14px;">@((Model.Total - Model.ShippingFee).ToString("N0")) đ</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 16px;">
+                    <span style="color: var(--muted); font-size: 14px;">Phí vận chuyển:</span>
+                    <span style="color: var(--ink); font-weight: 500; font-size: 14px;">@Model.ShippingFee.ToString("N0") đ</span>
+                </div>
+                <div style="border-top: 2px solid var(--line); padding-top: 16px; margin-top: 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-weight: 700; font-size: 18px; color: var(--ink);">Tổng cộng:</span>
+                        <span style="font-weight: 800; font-size: 22px; color: var(--admin-primary);">@Model.Total.ToString("N0") đ</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+

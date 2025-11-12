@@ -25,7 +25,9 @@
     <div class="sb-title">Menu</div>
 
     <a class="sb-item @(active=="Profile" ? "active" : "")"
-       href="@Url.Action("Profile","Employee")">Hồ sơ của tôi</a>
+       href="@Url.Action("Profile","Employee")">
+      <i class="fas fa-user"></i> Hồ sơ của tôi
+    </a>
 
     @if (role is "EM" or "SL" or "SH")
     {
@@ -55,6 +57,13 @@
       <a class="sb-item @(ViewBag.ActiveMenu=="MyOrders" ? "active" : "")"
          href="@Url.Action("MyOrders","Shipper")">
           ▶Quản lý đơn hàng
+      </a>
+    }
+    @if (role == "SL")
+  {
+      <a class="sb-item @(ViewBag.ActiveMenu=="BranchOrders" ? "active" : "")"
+         href="@Url.Action("BranchOrders","Internal")">
+          ▶Trang quản lý 
       </a>
     }
   </aside>

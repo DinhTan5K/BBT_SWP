@@ -21,13 +21,24 @@ namespace start.Services
         {
             string subject = "Mã xác thực OTP";
             string body = $"Mã OTP của bạn là: {otp}";
-            SendEmailAsync(toEmail, subject, body).Wait();
+            // Sử dụng GetAwaiter().GetResult() thay vì Wait() để tránh deadlock
+            SendEmailAsync(toEmail, subject, body).GetAwaiter().GetResult();
         }
 
         public async Task SendEmailAsync(string to, string subject, string htmlBody, string? replyTo = null)
         {
             try
             {
+                // Validate settings
+                if (string.IsNullOrEmpty(_settings.FromEmail) || string.IsNullOrEmpty(_settings.AppPassword))
+                {
+                    _logger.LogError("EmailSettings chưa được cấu hình đầy đủ: FromEmail hoặc AppPassword bị trống");
+                    throw new InvalidOperationException("EmailSettings chưa được cấu hình đầy đủ");
+                }
+
+                // Loại bỏ khoảng trắng trong App Password (Gmail App Password có thể có khoảng trắng)
+                string cleanAppPassword = _settings.AppPassword.Replace(" ", "");
+
                 using var message = new MailMessage();
                 message.From = new MailAddress(_settings.FromEmail, "Support Team");
                 message.To.Add(to);
@@ -43,21 +54,29 @@ namespace start.Services
                     Host = _settings.SmtpHost,
                     Port = _settings.SmtpPort,
                     EnableSsl = _settings.EnableSsl,
-                    Credentials = new NetworkCredential(_settings.FromEmail, _settings.AppPassword)
+                    UseDefaultCredentials = false, // Quan trọng: không dùng credentials mặc định
+                    DeliveryMethod = SmtpDeliveryMethod.Network, // Đảm bảo gửi qua network
+                    Credentials = new NetworkCredential(_settings.FromEmail, cleanAppPassword),
+                    Timeout = 30000 // 30 giây timeout
                 };
 
-                _logger.LogInformation("Đang gửi email tới {To}", to);
+                _logger.LogInformation("Đang gửi email tới {To} từ {From} qua {Host}:{Port}", to, _settings.FromEmail, _settings.SmtpHost, _settings.SmtpPort);
                 await smtp.SendMailAsync(message);
                 _logger.LogInformation("Gửi email thành công tới {To}", to);
             }
             catch (SmtpException ex)
             {
-                _logger.LogError(ex, "SMTP lỗi khi gửi email tới {To}: {Message}", to, ex.Message);
+                _logger.LogError(ex, "SMTP lỗi khi gửi email tới {To}: {Message}. StatusCode: {StatusCode}", to, ex.Message, ex.StatusCode);
+                
+                // Log thêm thông tin debug
+                _logger.LogError("SMTP Config - Host: {Host}, Port: {Port}, SSL: {SSL}, FromEmail: {FromEmail}", 
+                    _settings.SmtpHost, _settings.SmtpPort, _settings.EnableSsl, _settings.FromEmail);
+                
                 throw;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Lỗi bất ngờ khi gửi email tới {To}", to);
+                _logger.LogError(ex, "Lỗi bất ngờ khi gửi email tới {To}: {Error}", to, ex.Message);
                 throw;
             }
         }

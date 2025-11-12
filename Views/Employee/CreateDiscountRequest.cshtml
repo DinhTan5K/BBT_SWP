@@ -1,0 +1,404 @@
+@using start.Models
+@model start.Models.Employee
+@{
+    Layout = "~/Views/Shared/_MarketingLayout.cshtml";
+    ViewData["Title"] = "Tạo yêu cầu mã giảm giá";
+    var codeValue = (string?)ViewBag.CodeValue ?? "";
+    var percentValue = (decimal?)ViewBag.PercentValue;
+    var amountValue = (decimal?)ViewBag.AmountValue;
+    var typeValue = ViewBag.TypeValue is int i ? i : (int)DiscountType.Percentage;
+    var startAtValue = (string?)ViewBag.StartAtValue ?? "";
+    var endAtValue = (string?)ViewBag.EndAtValue ?? "";
+    var usageLimitValue = (int?)ViewBag.UsageLimitValue;
+    var role = (Model?.RoleID ?? "").Trim().ToUpperInvariant();
+}
+
+<link rel="stylesheet" href='@Url.Content("~/css/employee/profile.css")' />
+<style>
+    .mk-form-container {
+        padding: 32px;
+        max-width: 900px;
+        margin: 0 auto;
+    }
+    .mk-header {
+        margin-bottom: 32px;
+        padding-bottom: 20px;
+        border-bottom: 2px solid #fef3c7;
+    }
+    .mk-header h2 {
+        font-size: 28px;
+        font-weight: 700;
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin: 0 0 8px 0;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .mk-header p {
+        color: #6b7280;
+        font-size: 15px;
+        margin: 0;
+    }
+    .mk-form-group {
+        margin-bottom: 24px;
+    }
+    .mk-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 600;
+        color: #111827;
+        margin-bottom: 10px;
+        font-size: 14px;
+    }
+    .mk-label i {
+        color: #f59e0b;
+        font-size: 16px;
+    }
+    .mk-input, .mk-textarea, .mk-select {
+        width: 100%;
+        padding: 12px 16px;
+        border: 2px solid #e5e7eb;
+        border-radius: 10px;
+        font-size: 14px;
+        transition: all 0.2s ease;
+        background: #fff;
+        font-family: inherit;
+    }
+    .mk-input:focus, .mk-textarea:focus, .mk-select:focus {
+        outline: none;
+        border-color: #f59e0b;
+        box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+    }
+    .mk-select {
+        cursor: pointer;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23f59e0b' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 16px center;
+        padding-right: 40px;
+    }
+    .mk-grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+    }
+    .mk-actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 32px;
+        padding-top: 24px;
+        border-top: 2px solid #fef3c7;
+    }
+    .mk-btn {
+        padding: 12px 24px;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: none;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .mk-btn-cancel {
+        background: #f3f4f6;
+        color: #374151;
+        border: 2px solid #e5e7eb;
+    }
+    .mk-btn-cancel:hover {
+        background: #e5e7eb;
+        transform: translateY(-1px);
+    }
+    .mk-btn-submit {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        color: white;
+        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+    }
+    .mk-btn-submit:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(245, 158, 11, 0.4);
+    }
+    .mk-alert {
+        padding: 14px 18px;
+        border-radius: 10px;
+        margin-bottom: 24px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        border-left: 4px solid;
+    }
+    .mk-alert-error {
+        background: #fef2f2;
+        color: #991b1b;
+        border-color: #ef4444;
+    }
+    .mk-alert i {
+        font-size: 18px;
+    }
+    .mk-section-divider {
+        height: 1px;
+        background: linear-gradient(90deg, transparent, #fef3c7, transparent);
+        margin: 24px 0;
+    }
+    .mk-hint {
+        font-size: 12px;
+        color: #9ca3af;
+        margin-top: 6px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .mk-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        background: #fef3c7;
+        color: #92400e;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        margin-left: 8px;
+    }
+    .mk-info-box {
+        background: #fffbeb;
+        border: 2px solid #fef3c7;
+        border-radius: 10px;
+        padding: 16px;
+        margin-bottom: 24px;
+    }
+    .mk-info-box h4 {
+        margin: 0 0 8px 0;
+        font-size: 14px;
+        font-weight: 600;
+        color: #92400e;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .mk-info-box p {
+        margin: 0;
+        font-size: 13px;
+        color: #78350f;
+        line-height: 1.5;
+    }
+    .sb-item.mk-active {
+        background: rgba(255, 255, 255, 0.2);
+        box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.3);
+    }
+     @@media (max-width: 768px) {
+        .mk-grid-2 {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div class="mk-form-container">
+            <div class="mk-header">
+                <h2>
+                    <i class="fas fa-tag"></i>
+                    Tạo yêu cầu mã giảm giá
+                </h2>
+                <p>Thiết kế và gửi yêu cầu tạo mã giảm giá mới. Admin sẽ xem xét và kích hoạt mã sau khi duyệt.</p>
+            </div>
+
+            <div class="mk-info-box">
+                <h4>
+                    <i class="fas fa-lightbulb"></i>
+                    Mẹo tạo mã giảm giá hiệu quả
+                </h4>
+                <p>Chọn loại giảm giá phù hợp với chiến dịch. Mã nên ngắn gọn, dễ nhớ và có thời hạn rõ ràng để tạo cảm giác cấp bách.</p>
+            </div>
+
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <div class="mk-alert mk-alert-error">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span>Vui lòng kiểm tra lại các trường nhập và điền đầy đủ thông tin bắt buộc.</span>
+                </div>
+            }
+
+            <form method="post" action="@Url.Action("CreateDiscountRequest","Employee")" id="discountForm">
+                @Html.AntiForgeryToken()
+                
+                <div class="mk-form-group">
+                    <label class="mk-label">
+                        <i class="fas fa-barcode"></i>
+                        Mã giảm giá *
+                        <span class="mk-badge">Tối đa 50 ký tự</span>
+                    </label>
+                    <input name="code" value="@codeValue" required
+                           class="mk-input"
+                           placeholder="VD: SALE2024, WELCOME50..."
+                           maxlength="50"
+                           style="text-transform: uppercase; font-weight: 600; letter-spacing: 1px;" />
+                    @Html.ValidationMessage("code", null, new { style="color:#ef4444; font-size: 13px; margin-top: 6px; display: block;" })
+                    <div class="mk-hint">
+                        <i class="fas fa-info-circle"></i>
+                        Mã sẽ được tự động chuyển thành chữ in hoa. Nên sử dụng mã ngắn gọn, dễ nhớ.
+                    </div>
+                </div>
+
+                <div class="mk-section-divider"></div>
+
+                <div class="mk-form-group">
+                    <label class="mk-label">
+                        <i class="fas fa-percent"></i>
+                        Loại giảm giá *
+                    </label>
+                    <select name="type" id="discountType" class="mk-select" required>
+                        @if (typeValue == (int)DiscountType.Percentage) { <option value="0" selected>Phần trăm (%)</option> } else { <option value="0">Phần trăm (%)</option> }
+                        @if (typeValue == (int)DiscountType.FixedAmount) { <option value="1" selected>Số tiền cố định</option> } else { <option value="1">Số tiền cố định</option> }
+                        @if (typeValue == (int)DiscountType.FreeShipping) { <option value="2" selected>Miễn phí vận chuyển</option> } else { <option value="2">Miễn phí vận chuyển</option> }
+                        @if (typeValue == (int)DiscountType.FixedShippingDiscount) { <option value="3" selected>Giảm phí ship (cố định)</option> } else { <option value="3">Giảm phí ship (cố định)</option> }
+                        @if (typeValue == (int)DiscountType.PercentShippingDiscount) { <option value="4" selected>Giảm phí ship (%)</option> } else { <option value="4">Giảm phí ship (%)</option> }
+                    </select>
+                    <div class="mk-hint">
+                        <i class="fas fa-info-circle"></i>
+                        Chọn loại giảm giá phù hợp với chiến dịch marketing của bạn.
+                    </div>
+                </div>
+
+                <div id="percentGroup" class="mk-form-group" style="display:@(typeValue == (int)DiscountType.Percentage || typeValue == (int)DiscountType.PercentShippingDiscount ? "block" : "none");">
+                    <label class="mk-label">
+                        <i class="fas fa-percentage"></i>
+                        Phần trăm giảm giá *
+                    </label>
+                    <input name="percent" value="@(percentValue?.ToString() ?? "")" 
+                           type="number" 
+                           step="0.01" 
+                           min="0" 
+                           max="100"
+                           class="mk-input"
+                           placeholder="VD: 10, 15, 20..."
+                           id="percentInput" />
+                    @Html.ValidationMessage("percent", null, new { style="color:#ef4444; font-size: 13px; margin-top: 6px; display: block;" })
+                    <div class="mk-hint">
+                        <i class="fas fa-info-circle"></i>
+                        Nhập phần trăm giảm giá từ 0 đến 100. Ví dụ: 10 = giảm 10%
+                    </div>
+                </div>
+
+                <div id="amountGroup" class="mk-form-group" style="display:@(typeValue == (int)DiscountType.FixedAmount || typeValue == (int)DiscountType.FixedShippingDiscount ? "block" : "none");">
+                    <label class="mk-label">
+                        <i class="fas fa-money-bill-wave"></i>
+                        Số tiền giảm (VNĐ) *
+                    </label>
+                    <input name="amount" value="@(amountValue?.ToString() ?? "")" 
+                           type="number" 
+                           step="0.01" 
+                           min="0"
+                           class="mk-input"
+                           placeholder="VD: 50000, 100000..."
+                           id="amountInput" />
+                    @Html.ValidationMessage("amount", null, new { style="color:#ef4444; font-size: 13px; margin-top: 6px; display: block;" })
+                    <div class="mk-hint">
+                        <i class="fas fa-info-circle"></i>
+                        Nhập số tiền giảm cố định. Ví dụ: 50000 = giảm 50,000 VNĐ
+                    </div>
+                </div>
+
+                <div class="mk-section-divider"></div>
+
+                <div class="mk-form-group">
+                    <label class="mk-label">
+                        <i class="fas fa-calendar-alt"></i>
+                        Thời gian áp dụng
+                    </label>
+                    <div class="mk-grid-2">
+                        <div>
+                            <label style="display:block; font-weight:500; color:#6b7280; margin-bottom:8px; font-size:13px;">Bắt đầu</label>
+                            <input name="startAt" type="datetime-local" value="@startAtValue"
+                                   class="mk-input" />
+                        </div>
+                        <div>
+                            <label style="display:block; font-weight:500; color:#6b7280; margin-bottom:8px; font-size:13px;">Kết thúc *</label>
+                            <input name="endAt" type="datetime-local" value="@endAtValue"
+                                   class="mk-input" required />
+                            @Html.ValidationMessage("endAt", null, new { style="color:#ef4444; font-size: 13px; margin-top: 6px; display: block;" })
+                        </div>
+                    </div>
+                    <div class="mk-hint">
+                        <i class="fas fa-info-circle"></i>
+                        Thời gian kết thúc là bắt buộc. Mã sẽ tự động hết hạn sau thời gian này.
+                    </div>
+                </div>
+
+                <div class="mk-section-divider"></div>
+
+                <div class="mk-form-group">
+                    <label class="mk-label">
+                        <i class="fas fa-users"></i>
+                        Giới hạn lượt sử dụng
+                        <span class="mk-badge">Tùy chọn</span>
+                    </label>
+                    <input name="usageLimit" value="@(usageLimitValue?.ToString() ?? "")" 
+                           type="number" 
+                           min="0"
+                           class="mk-input"
+                           placeholder="VD: 100, 500, 1000..."
+                           id="usageLimitInput" />
+                    <div class="mk-hint">
+                        <i class="fas fa-info-circle"></i>
+                        Để trống nếu không giới hạn. Nhập số để giới hạn số lượng người có thể sử dụng mã này.
+                    </div>
+                </div>
+
+                <div class="mk-actions">
+                    <a href="@Url.Action("Profile","Employee")" class="mk-btn mk-btn-cancel">
+                        <i class="fas fa-times"></i>
+                        Hủy
+                    </a>
+                    <button type="submit" class="mk-btn mk-btn-submit">
+                        <i class="fas fa-paper-plane"></i>
+                        Gửi yêu cầu
+                    </button>
+                </div>
+            </form>
+</div>
+
+<script>
+    const typeSelect = document.getElementById('discountType');
+    const percentGroup = document.getElementById('percentGroup');
+    const amountGroup = document.getElementById('amountGroup');
+    const percentInput = document.getElementById('percentInput');
+    const amountInput = document.getElementById('amountInput');
+
+    function updateVisibility() {
+        const v = parseInt(typeSelect.value, 10);
+        // Hiển thị phần trăm cho: Percentage (0) hoặc PercentShippingDiscount (4)
+        if (v === @((int)DiscountType.Percentage) || v === @((int)DiscountType.PercentShippingDiscount)) {
+            percentGroup.style.display = 'block';
+            percentInput.required = true;
+        } else {
+            percentGroup.style.display = 'none';
+            percentInput.required = false;
+        }
+        // Hiển thị số tiền cho: FixedAmount (1) hoặc FixedShippingDiscount (3)
+        if (v === @((int)DiscountType.FixedAmount) || v === @((int)DiscountType.FixedShippingDiscount)) {
+            amountGroup.style.display = 'block';
+            amountInput.required = true;
+        } else {
+            amountGroup.style.display = 'none';
+            amountInput.required = false;
+        }
+        // FreeShipping (2) không cần cả hai
+    }
+
+    typeSelect.addEventListener('change', updateVisibility);
+    updateVisibility();
+
+    // Auto uppercase cho mã giảm giá
+    const codeInput = document.querySelector('input[name="code"]');
+    if (codeInput) {
+        codeInput.addEventListener('input', function() {
+            this.value = this.value.toUpperCase();
+        });
+    }
+</script>

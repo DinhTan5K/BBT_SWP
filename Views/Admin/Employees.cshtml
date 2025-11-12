@@ -1,0 +1,485 @@
+@model List<start.Models.Employee>
+@using start.Models
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Quản lý nhân sự";
+    var activeTab = ViewBag.ActiveTab as string ?? "employees";
+    var rolesWithStats = ViewBag.RolesWithStats as List<dynamic> ?? new List<dynamic>();
+    var currentRole = ViewBag.CurrentRole as string ?? "";
+}
+
+<div style="padding: 24px;">
+    @* Tabs để chuyển đổi giữa Nhân viên và Vai trò *@
+    <div style="display: flex; gap: 8px; margin-bottom: 24px; border-bottom: 2px solid var(--line);">
+        <a href="@Url.Action("Employees", "Admin", new { tab = "employees" })" 
+           style="padding: 12px 24px; text-decoration: none; color: var(--ink); font-weight: 500; border-bottom: 3px solid @(activeTab == "employees" ? "var(--admin-primary)" : "transparent"); margin-bottom: -2px;">
+            <i class="fas fa-users"></i> Nhân viên
+        </a>
+        <a href="@Url.Action("Employees", "Admin", new { tab = "roles" })" 
+           style="padding: 12px 24px; text-decoration: none; color: var(--ink); font-weight: 500; border-bottom: 3px solid @(activeTab == "roles" ? "var(--admin-primary)" : "transparent"); margin-bottom: -2px;">
+            <i class="fas fa-user-shield"></i> Vai trò
+        </a>
+    </div>
+
+    @if (activeTab == "employees")
+    {
+        @* Tab Nhân viên *@
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+            <h2 style="font-size: 24px; font-weight: 600; color: var(--ink); margin: 0;">
+                Danh sách nhân viên
+            </h2>
+            <div style="display: flex; gap: 12px; align-items: center;">
+                <a href="@Url.Action("Approvals", "Admin", new { requestType = "employeebranch" })" 
+                   style="padding: 10px 20px; background: var(--admin-primary); color: white; border: none; border-radius: 8px; font-weight: 500; text-decoration: none; display: inline-block;">
+                    <i class="fas fa-check-circle"></i> Duyệt yêu cầu nhân viên
+                </a>
+                <div class="admin-filter-container">
+                    <div class="admin-filter-search">
+                        <input type="text" id="searchEmployee" placeholder="Tìm kiếm nhân viên...">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div style="background: var(--card); border: 1px solid var(--line); border-radius: 12px; overflow: hidden;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background: var(--bg); border-bottom: 2px solid var(--line);">
+                        <th style="padding: 16px; text-align: left; font-weight: 600; color: var(--ink);">Mã NV</th>
+                        <th style="padding: 16px; text-align: left; font-weight: 600; color: var(--ink);">Họ tên</th>
+                        <th style="padding: 16px; text-align: left; font-weight: 600; color: var(--ink);">Email</th>
+                        <th style="padding: 16px; text-align: left; font-weight: 600; color: var(--ink);">Số điện thoại</th>
+                        <th style="padding: 16px; text-align: left; font-weight: 600; color: var(--ink);">Vị trí</th>
+                        <th style="padding: 16px; text-align: left; font-weight: 600; color: var(--ink);">Chi nhánh</th>
+                        <th style="padding: 16px; text-align: center; font-weight: 600; color: var(--ink);">Trạng thái</th>
+                        <th style="padding: 16px; text-align: center; font-weight: 600; color: var(--ink);">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody id="employeeTableBody">
+                    @foreach (var emp in Model)
+                    {
+                        // Lấy tên vai trò từ Role object nếu có, nếu không thì dùng mapping
+                        var roleText = emp.Role?.RoleName ?? 
+                                      (emp.RoleID == "SL" ? "Trưởng ca"
+                                      : emp.RoleID == "BM" ? "Quản lý chi nhánh"
+                                      : emp.RoleID == "RM" ? "Quản lý vùng"
+                                      : emp.RoleID == "MK" ? "Marketing"
+                                      : emp.RoleID == "SP" ? "Shipper"
+                                      : emp.RoleID == "EM" ? "Nhân viên"
+                                      : "Nhân viên");
+                        
+                        <tr style="border-bottom: 1px solid var(--line);" data-name="@emp.FullName?.ToLower()" 
+                            data-email="@emp.Email?.ToLower()" data-phone="@emp.PhoneNumber">
+                            <td style="padding: 16px; color: var(--ink); font-weight: 500;">@emp.EmployeeID</td>
+                            <td style="padding: 16px; color: var(--ink);">
+                                <div style="display: flex; align-items: center; gap: 12px;">
+                                    @{
+                                        var employeeAvatar = !string.IsNullOrEmpty(emp.AvatarUrl) 
+                                            ? emp.AvatarUrl 
+                                            : "https://res.cloudinary.com/do48qpmut/image/upload/v1761645429/uploads/tdppvgyas8bhvfs7lton.png";
+                                    }
+                                    <img src="@Url.Content(employeeAvatar)" alt="Avatar" 
+                                         style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                                    <span>@emp.FullName</span>
+                                </div>
+                            </td>
+                            <td style="padding: 16px; color: var(--muted);">@(emp.Email ?? "-")</td>
+                            <td style="padding: 16px; color: var(--muted);">@(emp.PhoneNumber ?? "-")</td>
+                            <td style="padding: 16px;">
+                                <span style="display: inline-block; padding: 4px 12px; background: var(--admin-primary-bg); color: var(--admin-primary); border-radius: 999px; font-size: 13px; font-weight: 500;">
+                                    @roleText
+                                </span>
+                            </td>
+                            <td style="padding: 16px; color: var(--muted);">@(emp.Branch?.Name ?? "-")</td>
+                            <td style="padding: 16px; text-align: center;">
+                                @if (emp.IsActive)
+                                {
+                                    <span style="display: inline-block; padding: 4px 12px; background: #d1fae5; color: #065f46; border-radius: 999px; font-size: 13px; font-weight: 500;">
+                                        Đang làm việc
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span style="display: inline-block; padding: 4px 12px; background: #fee2e2; color: #991b1b; border-radius: 999px; font-size: 13px; font-weight: 500;">
+                                        Đã nghỉ
+                                    </span>
+                                }
+                            </td>
+                            <td style="padding: 16px; text-align: center;">
+                                <a href="@Url.Action("ViewEmployee", "Admin", new { id = emp.EmployeeID })" 
+                                   style="padding: 6px 12px; background: var(--admin-primary); color: white; border-radius: 6px; text-decoration: none; font-size: 13px; display: inline-block;">
+                                    Xem chi tiết
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            @if (!Model.Any())
+            {
+                <div style="padding: 48px; text-align: center; color: var(--muted);">
+                    <div style="font-size: 48px; margin-bottom: 16px; color: var(--admin-muted);"><i class="fas fa-users"></i></div>
+                    <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">Chưa có nhân viên nào</h3>
+                    <p>Danh sách nhân viên sẽ hiển thị tại đây.</p>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        @* Tab Vai trò - Copy từ Roles.cshtml *@
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+            <h2 style="font-size: 24px; font-weight: 600; color: var(--ink); margin: 0;">
+                Quản lý vai trò
+            </h2>
+            <button onclick="openCreateRoleModal()" 
+                    style="padding: 10px 20px; background: var(--admin-primary); color: white; border: none; border-radius: 8px; font-weight: 500; cursor: pointer;">
+                <i class="fas fa-plus"></i> Tạo vai trò mới
+            </button>
+        </div>
+
+        @* Hiển thị thông báo *@
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div style="padding: 12px 16px; background: #d1fae5; color: #065f46; border-radius: 8px; margin-bottom: 20px;">
+                <i class="fas fa-check-circle"></i> @TempData["SuccessMessage"]
+            </div>
+        }
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div style="padding: 12px 16px; background: #fee2e2; color: #991b1b; border-radius: 8px; margin-bottom: 20px;">
+                <i class="fas fa-exclamation-circle"></i> @TempData["ErrorMessage"]
+            </div>
+        }
+
+        @* Thống kê tổng quan *@
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
+            @foreach (var item in rolesWithStats)
+            {
+                var role = (Role)item.Role;
+                var activeCount = (int)item.ActiveEmployeeCount;
+                var totalCount = (int)item.TotalEmployeeCount;
+                var inactiveCount = (int)item.InactiveEmployeeCount;
+                
+                <div style="background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
+                        <div>
+                            <div style="font-size: 14px; color: var(--muted); margin-bottom: 4px;">@role.RoleName</div>
+                            <div style="font-size: 20px; font-weight: 600; color: var(--ink);">@role.RoleID</div>
+                        </div>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span style="font-size: 13px; color: var(--muted);">Tổng số:</span>
+                            <span style="font-size: 13px; font-weight: 600; color: var(--ink);">@totalCount</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span style="font-size: 13px; color: var(--muted);">Đang làm việc:</span>
+                            <span style="font-size: 13px; font-weight: 600; color: #065f46;">@activeCount</span>
+                        </div>
+                        @if (inactiveCount > 0)
+                        {
+                            <div style="display: flex; justify-content: space-between;">
+                                <span style="font-size: 13px; color: var(--muted);">Đã nghỉ:</span>
+                                <span style="font-size: 13px; font-weight: 600; color: #991b1b;">@inactiveCount</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+
+        @* Bảng danh sách vai trò *@
+        <div style="background: var(--card); border: 1px solid var(--line); border-radius: 12px; overflow: hidden;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background: var(--bg); border-bottom: 2px solid var(--line);">
+                        <th style="padding: 16px; text-align: left; font-weight: 600; color: var(--ink);">Mã vai trò</th>
+                        <th style="padding: 16px; text-align: left; font-weight: 600; color: var(--ink);">Tên vai trò</th>
+                        <th style="padding: 16px; text-align: center; font-weight: 600; color: var(--ink);">Số nhân viên</th>
+                        <th style="padding: 16px; text-align: center; font-weight: 600; color: var(--ink);">Đang làm việc</th>
+                        <th style="padding: 16px; text-align: center; font-weight: 600; color: var(--ink);">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in rolesWithStats)
+                    {
+                        var role = (Role)item.Role;
+                        var activeCount = (int)item.ActiveEmployeeCount;
+                        var totalCount = (int)item.TotalEmployeeCount;
+                        var canEdit = true;
+                        var canDelete = true;
+                        
+                        <tr style="border-bottom: 1px solid var(--line);">
+                            <td style="padding: 16px; color: var(--ink); font-weight: 500;">@role.RoleID</td>
+                            <td style="padding: 16px; color: var(--ink);">@role.RoleName</td>
+                            <td style="padding: 16px; text-align: center; color: var(--ink);">
+                                <a href="@Url.Action("RoleEmployees", "Admin", new { roleId = role.RoleID })" 
+                                   style="color: var(--admin-primary); text-decoration: none; font-weight: 500;">
+                                    @totalCount nhân viên
+                                </a>
+                            </td>
+                            <td style="padding: 16px; text-align: center; color: #065f46; font-weight: 500;">@activeCount</td>
+                            <td style="padding: 16px; text-align: center;">
+                                <div style="display: flex; gap: 8px; justify-content: center;">
+                                    <a href="@Url.Action("RoleEmployees", "Admin", new { roleId = role.RoleID })" 
+                                       style="padding: 6px 12px; background: var(--admin-primary); color: white; border-radius: 6px; text-decoration: none; font-size: 13px; display: inline-block;">
+                                        <i class="fas fa-users"></i> Xem nhân viên
+                                    </a>
+                                    @if (canEdit)
+                                    {
+                                        <button onclick="openEditRoleModal('@role.RoleID', '@role.RoleName')" 
+                                                style="padding: 6px 12px; background: #f59e0b; color: white; border: none; border-radius: 6px; font-size: 13px; cursor: pointer;">
+                                            <i class="fas fa-edit"></i> Sửa
+                                        </button>
+                                    }
+                                    @if (canDelete)
+                                    {
+                                        <button onclick="deleteRole('@role.RoleID', @totalCount)" 
+                                                style="padding: 6px 12px; background: #ef4444; color: white; border: none; border-radius: 6px; font-size: 13px; cursor: pointer;">
+                                            <i class="fas fa-trash"></i> Xóa
+                                        </button>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@* Modals và Scripts cho Quản lý vai trò - Copy từ Roles.cshtml *@
+@if (activeTab == "roles")
+{
+    @* Modal tạo vai trò mới *@
+    <div id="createRoleModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+        <div style="background: white; border-radius: 12px; padding: 24px; width: 90%; max-width: 500px; position: relative;">
+            <button onclick="closeCreateRoleModal()" style="position: absolute; top: 16px; right: 16px; background: none; border: none; font-size: 24px; cursor: pointer; color: var(--muted);">&times;</button>
+            <h3 style="font-size: 20px; font-weight: 600; color: var(--ink); margin-bottom: 20px;">Tạo vai trò mới</h3>
+            <form id="createRoleForm" onsubmit="createRole(event)">
+                @Html.AntiForgeryToken()
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--ink);">Mã vai trò (tối đa 2 ký tự) *</label>
+                    <input type="text" id="createRoleId" required maxlength="2" 
+                           style="width: 100%; padding: 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px;"
+                           placeholder="VD: SP">
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--ink);">Tên vai trò *</label>
+                    <input type="text" id="createRoleName" required maxlength="50" 
+                           style="width: 100%; padding: 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px;"
+                           placeholder="VD: Supplier Partner">
+                </div>
+                <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                    <button type="button" onclick="closeCreateRoleModal()" 
+                            style="padding: 10px 20px; background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; font-weight: 500; cursor: pointer;">
+                        Hủy
+                    </button>
+                    <button type="submit" 
+                            style="padding: 10px 20px; background: var(--admin-primary); color: white; border: none; border-radius: 8px; font-weight: 500; cursor: pointer;">
+                        Tạo
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @* Modal sửa vai trò *@
+    <div id="editRoleModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+        <div style="background: white; border-radius: 12px; padding: 24px; width: 90%; max-width: 500px; position: relative;">
+            <button onclick="closeEditRoleModal()" style="position: absolute; top: 16px; right: 16px; background: none; border: none; font-size: 24px; cursor: pointer; color: var(--muted);">&times;</button>
+            <h3 style="font-size: 20px; font-weight: 600; color: var(--ink); margin-bottom: 20px;">Sửa vai trò</h3>
+            <form id="editRoleForm" onsubmit="updateRole(event)">
+                @Html.AntiForgeryToken()
+                <input type="hidden" id="editRoleId">
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--ink);">Mã vai trò</label>
+                    <input type="text" id="editRoleIdDisplay" disabled 
+                           style="width: 100%; padding: 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px; background: var(--bg);">
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--ink);">Tên vai trò *</label>
+                    <input type="text" id="editRoleName" required maxlength="50" 
+                           style="width: 100%; padding: 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px;"
+                           placeholder="VD: Supplier Partner">
+                </div>
+                <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                    <button type="button" onclick="closeEditRoleModal()" 
+                            style="padding: 10px 20px; background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; font-weight: 500; cursor: pointer;">
+                        Hủy
+                    </button>
+                    <button type="submit" 
+                            style="padding: 10px 20px; background: var(--admin-primary); color: white; border: none; border-radius: 8px; font-weight: 500; cursor: pointer;">
+                        Cập nhật
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Mở modal tạo vai trò
+        function openCreateRoleModal() {
+            document.getElementById('createRoleModal').style.display = 'flex';
+            document.getElementById('createRoleId').value = '';
+            document.getElementById('createRoleName').value = '';
+        }
+
+        // Đóng modal tạo vai trò
+        function closeCreateRoleModal() {
+            document.getElementById('createRoleModal').style.display = 'none';
+        }
+
+        // Mở modal sửa vai trò
+        function openEditRoleModal(roleId, roleName) {
+            document.getElementById('editRoleModal').style.display = 'flex';
+            document.getElementById('editRoleId').value = roleId;
+            document.getElementById('editRoleIdDisplay').value = roleId;
+            document.getElementById('editRoleName').value = roleName;
+        }
+
+        // Đóng modal sửa vai trò
+        function closeEditRoleModal() {
+            document.getElementById('editRoleModal').style.display = 'none';
+        }
+
+        // Tạo vai trò mới
+        function createRole(event) {
+            event.preventDefault();
+            const roleId = document.getElementById('createRoleId').value.trim().toUpperCase();
+            const roleName = document.getElementById('createRoleName').value.trim();
+            const form = document.getElementById('createRoleForm');
+            const token = form.querySelector('input[name="__RequestVerificationToken"]').value;
+
+            fetch('@Url.Action("CreateRole", "Admin")', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'RequestVerificationToken': token
+                },
+                body: `roleId=${encodeURIComponent(roleId)}&roleName=${encodeURIComponent(roleName)}&__RequestVerificationToken=${encodeURIComponent(token)}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    window.location.reload();
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Có lỗi xảy ra khi tạo vai trò.');
+            });
+        }
+
+        // Cập nhật vai trò
+        function updateRole(event) {
+            event.preventDefault();
+            const roleId = document.getElementById('editRoleId').value.trim().toUpperCase();
+            const roleName = document.getElementById('editRoleName').value.trim();
+            const form = document.getElementById('editRoleForm');
+            const token = form.querySelector('input[name="__RequestVerificationToken"]').value;
+
+            fetch('@Url.Action("UpdateRole", "Admin")', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'RequestVerificationToken': token
+                },
+                body: `roleId=${encodeURIComponent(roleId)}&roleName=${encodeURIComponent(roleName)}&__RequestVerificationToken=${encodeURIComponent(token)}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    window.location.reload();
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Có lỗi xảy ra khi cập nhật vai trò.');
+            });
+        }
+
+        // Xóa vai trò
+        function deleteRole(roleId, employeeCount) {
+            var message = 'Bạn có chắc chắn muốn xóa vai trò này không?';
+            if (employeeCount > 0) {
+                message = 'Cảnh báo: Vai trò này có ' + employeeCount + ' nhân viên. Xóa vai trò sẽ xóa luôn tất cả nhân viên có vai trò này.\n\nBạn có chắc chắn muốn tiếp tục?';
+            }
+            if (!confirm(message)) {
+                return;
+            }
+
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+
+            fetch('@Url.Action("DeleteRole", "Admin")', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'RequestVerificationToken': token
+                },
+                body: `roleId=${encodeURIComponent(roleId)}&__RequestVerificationToken=${encodeURIComponent(token)}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    window.location.reload();
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Có lỗi xảy ra khi xóa vai trò.');
+            });
+        }
+
+        // Đóng modal khi click bên ngoài
+        window.onclick = function(event) {
+            const createModal = document.getElementById('createRoleModal');
+            const editModal = document.getElementById('editRoleModal');
+            if (event.target == createModal) {
+                closeCreateRoleModal();
+            }
+            if (event.target == editModal) {
+                closeEditRoleModal();
+            }
+        }
+    </script>
+}
+
+@section Scripts {
+    <script>
+        // Tìm kiếm nhân viên (chỉ khi ở tab employees)
+        @if (activeTab == "employees")
+        {
+            <text>
+            document.getElementById('searchEmployee')?.addEventListener('input', function(e) {
+                const searchTerm = e.target.value.toLowerCase().trim();
+                const rows = document.querySelectorAll('#employeeTableBody tr');
+                
+                rows.forEach(row => {
+                    const name = row.getAttribute('data-name') || '';
+                    const email = row.getAttribute('data-email') || '';
+                    const phone = row.getAttribute('data-phone') || '';
+                    
+                    if (name.includes(searchTerm) || email.includes(searchTerm) || phone.includes(searchTerm)) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            });
+            </text>
+        }
+    </script>
+}

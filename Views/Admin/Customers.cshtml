@@ -1,0 +1,117 @@
+@model List<start.Models.Customer>
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Quản lý khách hàng";
+}
+
+<div style="padding: 24px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+        <h2 style="font-size: 24px; font-weight: 600; color: var(--ink); margin: 0;">
+            Danh sách khách hàng
+        </h2>
+        <div class="admin-filter-container">
+            <div class="admin-filter-search">
+                <input type="text" id="searchCustomer" placeholder="Tìm kiếm khách hàng...">
+            </div>
+        </div>
+    </div>
+
+    <div style="background: var(--card); border: 1px solid var(--line); border-radius: 12px; overflow: hidden;">
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background: var(--bg); border-bottom: 2px solid var(--line);">
+                    <th style="padding: 16px; text-align: left; font-weight: 600; color: var(--ink);">ID</th>
+                    <th style="padding: 16px; text-align: left; font-weight: 600; color: var(--ink);">Họ tên</th>
+                    <th style="padding: 16px; text-align: left; font-weight: 600; color: var(--ink);">Email</th>
+                    <th style="padding: 16px; text-align: left; font-weight: 600; color: var(--ink);">Số điện thoại</th>
+                    <th style="padding: 16px; text-align: left; font-weight: 600; color: var(--ink);">Ngày đăng ký</th>
+                    <th style="padding: 16px; text-align: center; font-weight: 600; color: var(--ink);">Số đơn hàng</th>
+                    <th style="padding: 16px; text-align: center; font-weight: 600; color: var(--ink);">Tổng chi tiêu</th>
+                    <th style="padding: 16px; text-align: center; font-weight: 600; color: var(--ink);">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody id="customerTableBody">
+                @{
+                    var statsDict = ViewBag.CustomerStats as System.Collections.Generic.Dictionary<int, System.Tuple<int, decimal>>;
+                }
+                @foreach (var customer in Model)
+                {
+                    var orderCount = 0;
+                    var totalSpent = 0m;
+                    
+                    if (statsDict != null && statsDict.ContainsKey(customer.CustomerID))
+                    {
+                        var stat = statsDict[customer.CustomerID];
+                        orderCount = stat.Item1;
+                        totalSpent = stat.Item2;
+                    }
+                    
+                    <tr style="border-bottom: 1px solid var(--line);" 
+                        data-name="@customer.Name?.ToLower()" 
+                        data-email="@customer.Email?.ToLower()" 
+                        data-phone="@customer.Phone">
+                        <td style="padding: 16px; color: var(--ink); font-weight: 500;">@customer.CustomerID</td>
+                        <td style="padding: 16px; color: var(--ink);">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                @if (!string.IsNullOrEmpty(customer.ProfileImagePath))
+                                {
+                                    <img src="@Url.Content(customer.ProfileImagePath)" alt="Avatar" 
+                                         style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                                }
+                                else
+                                {
+                                    <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--line); display: flex; align-items: center; justify-content: center; font-weight: 600; color: var(--muted);">
+                                        @(customer.Name?.Substring(0, 1).ToUpper() ?? "?")
+                                    </div>
+                                }
+                                <span>@customer.Name</span>
+                            </div>
+                        </td>
+                        <td style="padding: 16px; color: var(--muted);">@(customer.Email ?? "-")</td>
+                        <td style="padding: 16px; color: var(--muted);">@(customer.Phone ?? "-")</td>
+                        <td style="padding: 16px; color: var(--muted);">@customer.CreatedAt.ToString("dd/MM/yyyy")</td>
+                        <td style="padding: 16px; text-align: center; color: var(--ink); font-weight: 600;">@orderCount</td>
+                        <td style="padding: 16px; text-align: center; color: var(--ink); font-weight: 600;">@(((decimal)totalSpent).ToString("N0")) đ</td>
+                        <td style="padding: 16px; text-align: center;">
+                            <a href="@Url.Action("ViewCustomer", "Admin", new { id = customer.CustomerID })" 
+                               style="padding: 6px 12px; background: var(--admin-primary); color: white; border-radius: 6px; text-decoration: none; font-size: 13px; display: inline-block;">
+                                Xem chi tiết
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        @if (!Model.Any())
+        {
+            <div style="padding: 48px; text-align: center; color: var(--muted);">
+                <div style="font-size: 48px; margin-bottom: 16px; color: var(--admin-muted);"><i class="fas fa-user"></i></div>
+                <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">Chưa có khách hàng nào</h3>
+                <p>Danh sách khách hàng sẽ hiển thị tại đây.</p>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('searchCustomer')?.addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase().trim();
+            const rows = document.querySelectorAll('#customerTableBody tr');
+            
+            rows.forEach(row => {
+                const name = row.getAttribute('data-name') || '';
+                const email = row.getAttribute('data-email') || '';
+                const phone = row.getAttribute('data-phone') || '';
+                
+                if (name.includes(searchTerm) || email.includes(searchTerm) || phone.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+    </script>
+}
+

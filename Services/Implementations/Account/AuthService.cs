@@ -34,8 +34,12 @@ public class AuthService : IAuthService
 
     public Customer? LoginCustomer(string loginId, string password)
     {
+        // Kiểm tra null/empty - UTCID5-04, UTCID5-05
         if (string.IsNullOrWhiteSpace(loginId) || string.IsNullOrWhiteSpace(password))
+        {
+            System.Diagnostics.Debug.WriteLine("Please fill out this field");
             return null;
+        }
 
         var input = loginId.Trim().ToLowerInvariant();
         var hashedPassword = HashPassword(password);
@@ -50,10 +54,19 @@ public class AuthService : IAuthService
                 && c.Password == hashedPassword
             );
 
-        if (user == null) return null;
+        // Không tìm thấy user hoặc sai password - UTCID5-02, UTCID5-03
+        if (user == null)
+        {
+            System.Diagnostics.Debug.WriteLine("Sai Email/Username hoặc mật khẩu");
+            return null;
+        }
 
+        // Email chưa xác thực - UTCID5-06
         if (!user.IsEmailConfirmed)
+        {
+            System.Diagnostics.Debug.WriteLine("Email chưa xác thực");
             throw new Exception("Email chưa xác thực");
+        }
 
         return user;
     }
@@ -61,7 +74,10 @@ public class AuthService : IAuthService
     public Employee? LoginEmployee(string loginId, string password)
     {
         if (string.IsNullOrWhiteSpace(loginId) || string.IsNullOrWhiteSpace(password))
+        {
+            System.Diagnostics.Debug.WriteLine("Please fill out this field");
             return null;
+        }
 
         var input = loginId.Trim().ToLowerInvariant();
 
@@ -72,14 +88,31 @@ public class AuthService : IAuthService
                 (e.EmployeeID != null && e.EmployeeID.ToLower() == input)
             );
 
-        if (emp == null) return null;
+        if (emp == null)
+        {
+            System.Diagnostics.Debug.WriteLine("Sai Email/EmployeeID hoặc mật khẩu");
+            return null;
+        }
 
         // So khớp mật khẩu (giữ nguyên cơ chế hiện tại)
         bool ok = emp.IsHashed
             ? emp.Password == HashPassword(password)
             : emp.Password == password;
 
-        return ok ? emp : null;
+        if (!ok)
+        {
+            System.Diagnostics.Debug.WriteLine("Sai Email/EmployeeID hoặc mật khẩu");
+            return null;
+        }
+
+        // Kiểm tra IsActive - chỉ employee active mới được login
+        if (!emp.IsActive)
+        {
+            System.Diagnostics.Debug.WriteLine("Sai Email/Username hoặc mật khẩu");
+            return null;
+        }
+
+        return emp;
     }
 
     public Customer HandleGoogleLogin(string email, string name)

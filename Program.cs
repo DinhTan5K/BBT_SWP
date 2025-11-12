@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using start.Data;
@@ -37,6 +38,8 @@ builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<IContractService, ContractService>();
 builder.Services.AddScoped<IEmployeeManagementService, EmployeeManagementService>();
 builder.Services.AddScoped<IAttendanceService, AttendanceService>();
+builder.Services.AddScoped<IMarketingKPIService, MarketingKPIService>();
+builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
 
 builder.Logging.ClearProviders();
 builder.Logging.AddSimpleConsole(options =>
@@ -51,6 +54,9 @@ builder.Services.AddSession(options =>
     options.IdleTimeout = TimeSpan.FromMinutes(30);
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
+    // Đảm bảo session cookie name là unique để tránh conflict
+    options.Cookie.Name = ".AspNetCore.Session";
+    options.Cookie.SameSite = SameSiteMode.Lax;
 });
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddTransient<EmailService>();
@@ -59,9 +65,11 @@ builder.Services.AddControllersWithViews();
 // THÊM VÀO: Cấu hình chính sách cookie toàn cục để xử lý SameSite
 builder.Services.Configure<CookiePolicyOptions>(options =>
 {
-    options.MinimumSameSitePolicy = SameSiteMode.None;
-    // Bắt buộc tất cả cookie phải là Secure, chỉ gửi qua HTTPS
-    options.Secure = CookieSecurePolicy.Always; 
+    options.MinimumSameSitePolicy = SameSiteMode.Lax;
+    // Chỉ bắt buộc Secure trong production (HTTPS), cho phép HTTP trong development
+    options.Secure = builder.Environment.IsDevelopment() 
+        ? CookieSecurePolicy.None 
+        : CookieSecurePolicy.Always; 
 });
 
 
@@ -70,24 +78,48 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 builder.Services.AddAuthentication(options =>
 {
-    options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+    options.DefaultScheme = "CustomerScheme";
     options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
 })
-.AddCookie(options =>
+.AddCookie("AdminScheme", options =>
 {
-    // Cấu hình cookie này có thể để mặc định hoặc Lax, 
-    // vì CookiePolicy ở trên đã thiết lập mức tối thiểu.
-    // Để an toàn, bạn có thể chỉnh lại cho nhất quán.
-    options.Cookie.SameSite = SameSiteMode.Lax; 
+    options.LoginPath = "/Account/Login";
+    options.Cookie.Name = "AdminAuth";
+    options.Cookie.SameSite = SameSiteMode.Lax;
+    options.ExpireTimeSpan = TimeSpan.FromHours(8);
+})
+.AddCookie("EmployeeScheme", options =>
+{
+    options.LoginPath = "/Account/Login";
+    options.Cookie.Name = "EmployeeAuth";
+    options.Cookie.SameSite = SameSiteMode.Lax;
+    options.ExpireTimeSpan = TimeSpan.FromHours(8);
+})
+.AddCookie("CustomerScheme", options =>
+{
+    options.LoginPath = "/Account/Login";
+    options.Cookie.Name = "CustomerAuth";
+    options.Cookie.SameSite = SameSiteMode.Lax;
+    options.ExpireTimeSpan = TimeSpan.FromHours(8);
 })
 .AddGoogle(googleOptions =>
 {
     googleOptions.ClientId = builder.Configuration["Authentication:Google:ClientId"]!;
     googleOptions.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"]!;
     googleOptions.CallbackPath = "/signin-google";
-    googleOptions.Events.OnTicketReceived = ctx =>
+    googleOptions.Events.OnRemoteFailure = ctx =>
     {
-        // ... (Phần code xử lý logic sau khi đăng nhập của bạn giữ nguyên)
+        // Log lỗi kết nối Google OAuth
+        var logger = ctx.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ctx.Failure, "Lỗi khi kết nối với Google OAuth: {Error}", ctx.Failure?.Message);
+        
+        // Redirect về trang login với thông báo lỗi
+        ctx.Response.Redirect("/Account/Login?error=google_connection_failed");
+        ctx.HandleResponse();
+        return Task.CompletedTask;
+    };
+    googleOptions.Events.OnTicketReceived = async ctx =>
+    {
         var db = ctx.HttpContext.RequestServices.GetRequiredService<ApplicationDbContext>();
         var email = ctx.Principal?.FindFirst(ClaimTypes.Email)?.Value;
         if (!string.IsNullOrEmpty(email))
@@ -95,18 +127,22 @@ builder.Services.AddAuthentication(options =>
             var customer = db.Customers.FirstOrDefault(c => c.Email == email);
             if (customer != null)
             {
-                ctx.HttpContext.Session.SetInt32("CustomerID", customer.CustomerID);
-                ctx.HttpContext.Session.SetString("CustomerName", customer.Name ?? "");
-                var identity = (ClaimsIdentity)ctx.Principal?.Identity!;
-                var existingName = identity.FindFirst(ClaimTypes.Name);
-                if (existingName != null)
+                // Tạo Claims cho Customer
+                // Role: CU (Customer)
+                var claims = new List<Claim>
                 {
-                    identity.RemoveClaim(existingName);
-                }
-                identity.AddClaim(new Claim(ClaimTypes.Name, customer.Name ?? ""));
+                    new Claim(ClaimTypes.NameIdentifier, customer.CustomerID.ToString()),
+                    new Claim(ClaimTypes.Name, customer.Name ?? ""),
+                    new Claim(ClaimTypes.Email, customer.Email ?? ""),
+                    new Claim("Role", "CU")
+                };
+
+                var claimsIdentity = new ClaimsIdentity(claims, "CustomerScheme");
+                var principal = new ClaimsPrincipal(claimsIdentity);
+
+                await ctx.HttpContext.SignInAsync("CustomerScheme", principal);
             }
         }
-        return Task.CompletedTask;
     };
 });
 
@@ -119,19 +155,21 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-// SỬA LẠI: Luôn bật HTTPS cho cả dev và production
-app.UseHttpsRedirection();
+// SỬA LẠI: Chỉ bật HTTPS trong production
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 
 app.UseRouting();
 
-// THÊM VÀO: Sử dụng Cookie Policy
+// THÊM VÀO: Sử dụng Cookie Policy (phải đặt trước UseAuthentication và UseSession)
 app.UseCookiePolicy(); 
 
-app.UseSession();
-
-// app.UseAntiforgery(); // Dòng này thường không cần thiết ở đây nếu bạn dùng [ValidateAntiForgeryToken]
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.UseSession();
 
 app.MapStaticAssets();
 app.UseStaticFiles();
@@ -141,6 +179,11 @@ app.UseStaticFiles(new StaticFileOptions
         Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/uploads")),
     RequestPath = "/uploads"
 });
+
+app.MapControllerRoute(
+    name: "admin",
+    pattern: "Admin/{action=Dashboard}/{id?}",
+    defaults: new { controller = "Admin" });
 
 app.MapControllerRoute(
     name: "employee",

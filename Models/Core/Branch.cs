@@ -34,6 +34,9 @@ public class Branch
     public int TargetOrders { get; set; }
     public decimal TargetRevenue { get; set; }
     public ICollection<Order>? Orders { get; set; }
+    
+    [ForeignKey(nameof(RegionID))]
+    public Region? Region { get; set; }
 }
 
  

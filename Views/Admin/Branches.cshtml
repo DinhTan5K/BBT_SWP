@@ -1,0 +1,284 @@
+@model List<Branch>
+@using start.Models
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Quản lý chi nhánh";
+    var regions = ViewBag.Regions as List<Region> ?? new List<Region>();
+}
+
+@* Đảm bảo model được nhận diện *@
+
+<div style="padding: 24px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+        <h2 style="font-size: 24px; font-weight: 600; color: var(--ink); margin: 0;">
+            Danh sách chi nhánh
+        </h2>
+        <div style="display: flex; gap: 12px; align-items: center;">
+            <a href="@Url.Action("Approvals", "Admin", new { requestType = "branch" })" 
+               style="padding: 10px 20px; background: var(--admin-primary); color: white; border: none; border-radius: 8px; font-weight: 500; text-decoration: none; display: inline-block;">
+                <i class="fas fa-check-circle"></i> Duyệt yêu cầu chi nhánh
+            </a>
+            <div class="admin-filter-container">
+                <div class="admin-filter-select">
+                    <select id="regionFilter" onchange="filterByRegion()">
+                        @{
+                            var currentRegionId = ViewBag.CurrentRegionId as int?;
+                        }
+                        @if (currentRegionId == null || currentRegionId == 0)
+                        {
+                            <option value="0" selected>Tất cả vùng</option>
+                        }
+                        else
+                        {
+                            <option value="0">Tất cả vùng</option>
+                        }
+                        @foreach (var region in regions)
+                        {
+                            if (currentRegionId == region.RegionID)
+                            {
+                                <option value="@region.RegionID" selected>@region.RegionName</option>
+                            }
+                            else
+                            {
+                                <option value="@region.RegionID">@region.RegionName</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="admin-filter-search">
+                    <input type="text" id="searchBranch" placeholder="Tìm kiếm chi nhánh...">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div style="background: var(--card); border: 1px solid var(--line); border-radius: 12px; overflow: hidden;">
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background: var(--bg); border-bottom: 2px solid var(--line);">
+                    <th style="padding: 16px; text-align: left; font-weight: 600; color: var(--ink);">Tên chi nhánh</th>
+                    <th style="padding: 16px; text-align: left; font-weight: 600; color: var(--ink);">Địa chỉ</th>
+                    <th style="padding: 16px; text-align: left; font-weight: 600; color: var(--ink);">Thành phố</th>
+                    <th style="padding: 16px; text-align: left; font-weight: 600; color: var(--ink);">Số điện thoại</th>
+                    <th style="padding: 16px; text-align: left; font-weight: 600; color: var(--ink);">Tọa độ</th>
+                    <th style="padding: 16px; text-align: center; font-weight: 600; color: var(--ink);">Nhân viên</th>
+                    <th style="padding: 16px; text-align: center; font-weight: 600; color: var(--ink);">Đơn hàng</th>
+                </tr>
+            </thead>
+            <tbody id="branchTableBody">
+                @foreach (var branch in Model)
+                {
+                    var region = branch.Region ?? regions.FirstOrDefault(r => r.RegionID == branch.RegionID);
+                    var orderCount = branch.Orders?.Count ?? 0;
+                    var employeeCounts = ViewBag.BranchEmployeeCounts as Dictionary<int, int> ?? new Dictionary<int, int>();
+                    var employeeCount = employeeCounts.ContainsKey(branch.BranchID) ? employeeCounts[branch.BranchID] : 0;
+                    
+                    <tr style="border-bottom: 1px solid var(--line);" 
+                        data-name="@branch.Name?.ToLower()" 
+                        data-city="@branch.City?.ToLower()"
+                        data-address="@branch.Address?.ToLower()"
+                        data-region-id="@branch.RegionID">
+                        <td style="padding: 16px; color: var(--ink); font-weight: 500;">
+                            <div>@branch.Name</div>
+                            @if (region != null)
+                            {
+                                <div style="font-size: 12px; color: var(--muted); margin-top: 4px;">Khu vực: @region.RegionName</div>
+                            }
+                        </td>
+                        <td style="padding: 16px; color: var(--muted);">
+                            @(branch.Address ?? "-")
+                        </td>
+                        <td style="padding: 16px; color: var(--muted);">
+                            @(branch.City ?? "-")
+                        </td>
+                        <td style="padding: 16px; color: var(--ink);">
+                            @(branch.Phone ?? "-")
+                        </td>
+                        <td style="padding: 16px; color: var(--muted); font-size: 12px;">
+                            @if (branch.Latitude != 0 && branch.Longitude != 0)
+                            {
+                                <div>Lat: @branch.Latitude.ToString("F6")</div>
+                                <div>Lng: @branch.Longitude.ToString("F6")</div>
+                                var lat = branch.Latitude.ToString("F6", System.Globalization.CultureInfo.InvariantCulture);
+                                var lng = branch.Longitude.ToString("F6", System.Globalization.CultureInfo.InvariantCulture);
+                                var mapsUrl = $"https://www.google.com/maps?q={lat},{lng}";
+                                <a href="@mapsUrl" 
+                                   target="_blank" 
+                                   style="color: #2563eb; text-decoration: none; font-size: 11px; margin-top: 4px; display: inline-block;">
+                                    <i class="fas fa-map-marker-alt"></i> Maps
+                                </a>
+                            }
+                            else
+                            {
+                                <span style="color: var(--muted);">-</span>
+                            }
+                        </td>
+                        <td style="padding: 16px; text-align: center; color: var(--ink); font-weight: 600;">
+                            @employeeCount
+                        </td>
+                        <td style="padding: 16px; text-align: center; color: var(--ink); font-weight: 600;">
+                            @orderCount
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        @if (!Model.Any())
+        {
+            <div style="padding: 48px; text-align: center; color: var(--muted);">
+                <div style="font-size: 48px; margin-bottom: 16px; color: var(--admin-muted);"><i class="fas fa-store"></i></div>
+                <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">Chưa có chi nhánh nào</h3>
+                <p>Danh sách chi nhánh sẽ hiển thị tại đây.</p>
+            </div>
+        }
+    </div>
+
+    @* Pagination *@
+    @{
+        var currentPage = ViewBag.CurrentPage ?? 1;
+        var totalPages = ViewBag.TotalPages ?? 1;
+        var totalItems = ViewBag.TotalItems ?? 0;
+        var pageSize = ViewBag.PageSize ?? 10;
+    }
+    
+    @if (totalPages > 1)
+    {
+        <div style="display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 24px; padding: 20px;">
+            @{
+                var currentRegionIdParam = ViewBag.CurrentRegionId as int?;
+            }
+            @if (currentPage > 1)
+            {
+                @if (currentRegionIdParam.HasValue && currentRegionIdParam.Value > 0)
+                {
+                    <a href="@Url.Action("Branches", "Admin", new { page = currentPage - 1, regionId = currentRegionIdParam.Value })" 
+                       style="padding: 8px 16px; background: var(--card); border: 1px solid var(--line); border-radius: 6px; color: var(--ink); text-decoration: none; font-weight: 500; transition: all 0.2s;">
+                        <i class="fas fa-chevron-left"></i> Trước
+                    </a>
+                }
+                else
+                {
+                    <a href="@Url.Action("Branches", "Admin", new { page = currentPage - 1 })" 
+                       style="padding: 8px 16px; background: var(--card); border: 1px solid var(--line); border-radius: 6px; color: var(--ink); text-decoration: none; font-weight: 500; transition: all 0.2s;">
+                        <i class="fas fa-chevron-left"></i> Trước
+                    </a>
+                }
+            }
+
+            @for (int i = Math.Max(1, currentPage - 2); i <= Math.Min(totalPages, currentPage + 2); i++)
+            {
+                if (i == currentPage)
+                {
+                    <span style="padding: 8px 16px; background: var(--admin-primary); color: white; border-radius: 6px; font-weight: 600;">
+                        @i
+                    </span>
+                }
+                else
+                {
+                    @if (currentRegionIdParam.HasValue && currentRegionIdParam.Value > 0)
+                    {
+                        <a href="@Url.Action("Branches", "Admin", new { page = i, regionId = currentRegionIdParam.Value })" 
+                           style="padding: 8px 16px; background: var(--card); border: 1px solid var(--line); border-radius: 6px; color: var(--ink); text-decoration: none; font-weight: 500; transition: all 0.2s;">
+                            @i
+                        </a>
+                    }
+                    else
+                    {
+                        <a href="@Url.Action("Branches", "Admin", new { page = i })" 
+                           style="padding: 8px 16px; background: var(--card); border: 1px solid var(--line); border-radius: 6px; color: var(--ink); text-decoration: none; font-weight: 500; transition: all 0.2s;">
+                            @i
+                        </a>
+                    }
+                }
+            }
+
+            @if (currentPage < totalPages)
+            {
+                @if (currentRegionIdParam.HasValue && currentRegionIdParam.Value > 0)
+                {
+                    <a href="@Url.Action("Branches", "Admin", new { page = currentPage + 1, regionId = currentRegionIdParam.Value })" 
+                       style="padding: 8px 16px; background: var(--card); border: 1px solid var(--line); border-radius: 6px; color: var(--ink); text-decoration: none; font-weight: 500; transition: all 0.2s;">
+                        Sau <i class="fas fa-chevron-right"></i>
+                    </a>
+                }
+                else
+                {
+                    <a href="@Url.Action("Branches", "Admin", new { page = currentPage + 1 })" 
+                       style="padding: 8px 16px; background: var(--card); border: 1px solid var(--line); border-radius: 6px; color: var(--ink); text-decoration: none; font-weight: 500; transition: all 0.2s;">
+                        Sau <i class="fas fa-chevron-right"></i>
+                    </a>
+                }
+            }
+        </div>
+        <div style="text-align: center; color: var(--muted); font-size: 14px; margin-top: 8px;">
+            Hiển thị @((currentPage - 1) * pageSize + 1)-@(Math.Min(currentPage * pageSize, totalItems)) trong tổng số @totalItems chi nhánh
+        </div>
+    }
+</div>
+
+<div style="display: none;">@Html.AntiForgeryToken()</div>
+
+@section Scripts {
+    <script>
+        // Hàm chuẩn hóa text tiếng Việt (bỏ dấu)
+        function normalizeText(str) {
+            if (!str) return '';
+            return str
+                .toLowerCase()
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "")
+                .replace(/đ/g, "d")
+                .replace(/Đ/g, "d")
+                .trim();
+        }
+
+        // Filter theo vùng
+        function filterByRegion() {
+            const regionId = document.getElementById('regionFilter').value;
+            const url = new URL(window.location.href);
+            if (regionId && regionId !== '0') {
+                url.searchParams.set('regionId', regionId);
+            } else {
+                url.searchParams.delete('regionId');
+            }
+            url.searchParams.set('page', '1'); // Reset về trang 1 khi filter
+            window.location.href = url.toString();
+        }
+
+        // Tìm kiếm chi nhánh (client-side filter)
+        document.getElementById('searchBranch')?.addEventListener('input', function(e) {
+            const searchTerm = normalizeText(e.target.value);
+            const selectedRegionId = document.getElementById('regionFilter')?.value || '0';
+            const rows = document.querySelectorAll('#branchTableBody tr');
+            
+            rows.forEach(row => {
+                const name = row.getAttribute('data-name') || '';
+                const city = row.getAttribute('data-city') || '';
+                const address = row.getAttribute('data-address') || '';
+                const regionId = row.getAttribute('data-region-id') || '';
+                
+                // Chuẩn hóa để so sánh
+                const normalizedName = normalizeText(name);
+                const normalizedCity = normalizeText(city);
+                const normalizedAddress = normalizeText(address);
+                
+                // Check search term
+                const matchesSearch = normalizedName.includes(searchTerm) || normalizedCity.includes(searchTerm) || normalizedAddress.includes(searchTerm);
+                
+                // Check region filter (nếu đang filter theo region từ server thì không cần check client-side)
+                const matchesRegion = selectedRegionId === '0' || regionId === selectedRegionId;
+                
+                if (matchesSearch && matchesRegion) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+
+        // Admin chỉ xem danh sách branch, không có quyền CRUD
+        // CRUD branch chỉ thông qua BranchRequest (RM tạo request, Admin duyệt)
+    </script>
+}
+

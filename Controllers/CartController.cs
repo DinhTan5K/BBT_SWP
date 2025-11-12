@@ -1,5 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
+[Authorize(AuthenticationSchemes = "CustomerScheme")]
 public class CartController : Controller
 {
     private readonly ICartService _cartService;
@@ -8,13 +11,22 @@ public class CartController : Controller
     {
         _cartService = cartService;
     }
+
+    // Helper method để lấy CustomerID từ Claims (CustomerScheme)
+    private int? GetCustomerId()
+    {
+        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (int.TryParse(userIdClaim, out int customerId))
+            return customerId;
+        return null;
+    }
     #region Items
 
 
     [HttpGet]
     public IActionResult Items()
     {
-        int? customerId = HttpContext.Session.GetInt32("CustomerID");
+        int? customerId = GetCustomerId();
         if (customerId == null)
             return Json(new { success = false, message = "Chưa đăng nhập" });
 
@@ -28,7 +40,7 @@ public class CartController : Controller
     [HttpPost]
     public IActionResult Add([FromBody] AddToCartRequest request)
     {
-        int? customerId = HttpContext.Session.GetInt32("CustomerID");
+        int? customerId = GetCustomerId();
         if (customerId == null)
             return Json(new { success = false, redirectUrl = Url.Action("Login", "Account")  });
 
@@ -46,7 +58,7 @@ public class CartController : Controller
     [HttpPost]
     public IActionResult Update([FromBody] UpdateCartRequest request)
     {
-        int? customerId = HttpContext.Session.GetInt32("CustomerID");
+        int? customerId = GetCustomerId();
         if (customerId == null)
             return Json(new { success = false, message = "Bạn chưa đăng nhập" });
 
@@ -62,7 +74,7 @@ public class CartController : Controller
     [HttpGet]
     public IActionResult CheckCart()
     {
-        int? customerId = HttpContext.Session.GetInt32("CustomerID");
+        int? customerId = GetCustomerId();
         if (customerId == null)
             return Json(new { hasItems = false, message = "Bạn chưa đăng nhập" });
 

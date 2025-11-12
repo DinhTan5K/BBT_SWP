@@ -1,0 +1,360 @@
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Báo cáo & Thống kê";
+}
+
+<div style="padding: 24px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+        <h2 style="font-size: 24px; font-weight: 600; color: var(--ink); margin: 0;">
+            Báo cáo & Thống kê
+        </h2>
+        <div style="display: flex; gap: 12px;">
+            <button onclick="exportReports()" 
+                    style="padding: 10px 20px; background: #10b981; color: white; border: none; border-radius: 8px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-file-excel"></i> Xuất Excel
+            </button>
+        </div>
+    </div>
+
+    <!-- Doanh thu theo tháng -->
+    <div style="background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+        <h3 style="font-size: 20px; font-weight: 600; margin-bottom: 8px; color: var(--ink);">Doanh thu 6 tháng gần nhất</h3>
+        @{
+            var monthlyRevenue = ViewBag.MonthlyRevenue as System.Collections.IEnumerable;
+        }
+        @if (monthlyRevenue != null)
+        {
+            var monthList = monthlyRevenue.Cast<dynamic>().ToList();
+            @if (monthList.Count > 0)
+            {
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px;">
+                    @foreach (var monthObj in monthList)
+                    {
+                        dynamic month = monthObj;
+                        var monthName = "";
+                        var revenue = 0m;
+                        var orderCount = 0;
+                        var deliveredOrderCount = 0;
+                        
+                        try {
+                            monthName = month.Month?.ToString() ?? "";
+                            revenue = Convert.ToDecimal(month.Revenue ?? 0);
+                            orderCount = Convert.ToInt32(month.OrderCount ?? 0);
+                            deliveredOrderCount = Convert.ToInt32(month.DeliveredOrderCount ?? 0);
+                        } catch {
+                            monthName = "N/A";
+                            revenue = 0m;
+                            orderCount = 0;
+                            deliveredOrderCount = 0;
+                        }
+                        
+                        <div style="background: var(--bg); border: 1px solid var(--line); padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); text-align: center;">
+                            <div style="font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 12px;">@monthName</div>
+                            <div style="font-size: 20px; font-weight: 700; color: var(--ink); margin-bottom: 8px;">
+                                @revenue.ToString("N0") đ
+                            </div>
+                            <div style="font-size: 12px; color: var(--muted); margin-bottom: 4px;">
+                                <span style="font-weight: 600;">@deliveredOrderCount</span> đơn đã giao
+                            </div>
+                            <div style="font-size: 11px; color: var(--muted);">
+                                Tổng: @orderCount đơn
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div style="padding: 48px; text-align: center; color: var(--muted);">
+                    <div style="font-size: 48px; margin-bottom: 16px; color: var(--admin-muted);"><i class="fas fa-chart-line"></i></div>
+                    <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">Chưa có dữ liệu doanh thu</h3>
+                    <p>Dữ liệu doanh thu sẽ hiển thị tại đây khi có đơn hàng.</p>
+                </div>
+            }
+        }
+        else
+        {
+            <div style="padding: 48px; text-align: center; color: var(--muted);">
+                <div style="font-size: 48px; margin-bottom: 16px; color: var(--admin-muted);"><i class="fas fa-chart-line"></i></div>
+                <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">Chưa có dữ liệu doanh thu</h3>
+                <p>Dữ liệu doanh thu sẽ hiển thị tại đây khi có đơn hàng.</p>
+            </div>
+        }
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 24px; margin-bottom: 24px;">
+        <!-- Top 5 sản phẩm bán chạy -->
+        <div style="background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 24px;">
+            <h3 style="font-size: 20px; font-weight: 600; margin-bottom: 8px; color: var(--ink);">Top 5 sản phẩm bán chạy</h3>
+            @{
+                var topProducts = ViewBag.TopProducts as System.Collections.IEnumerable;
+            }
+            @if (topProducts != null)
+            {
+                var productList = topProducts.Cast<dynamic>().ToList();
+                @if (productList.Count > 0)
+                {
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                        @foreach (var productObj in productList)
+                        {
+                            dynamic product = productObj;
+                            var productName = "Không xác định";
+                            var totalSold = 0;
+                            var totalRevenue = 0m;
+                            
+                            try {
+                                productName = product.ProductName?.ToString() ?? "Không xác định";
+                                totalSold = Convert.ToInt32(product.TotalSold ?? 0);
+                                totalRevenue = Convert.ToDecimal(product.TotalRevenue ?? 0);
+                            } catch {
+                                productName = "Không xác định";
+                                totalSold = 0;
+                                totalRevenue = 0m;
+                            }
+                            
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                                <div style="flex: 1;">
+                                    <div style="font-weight: 600; color: var(--ink); margin-bottom: 6px;">@productName</div>
+                                    <div style="font-size: 13px; color: var(--muted);">Đã bán: <span style="font-weight: 600;">@totalSold</span> sản phẩm</div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div style="font-size: 18px; font-weight: 700; color: var(--ink);">@totalRevenue.ToString("N0") đ</div>
+                                    <div style="font-size: 11px; color: var(--muted); margin-top: 2px;">Doanh thu</div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div style="padding: 48px; text-align: center; color: var(--muted);">
+                        <div style="font-size: 48px; margin-bottom: 16px; color: var(--admin-muted);"><i class="fas fa-box"></i></div>
+                        <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">Chưa có dữ liệu sản phẩm</h3>
+                        <p>Dữ liệu sản phẩm bán chạy sẽ hiển thị tại đây.</p>
+                    </div>
+                }
+            }
+            else
+            {
+                <div style="padding: 48px; text-align: center; color: var(--muted);">
+                    <div style="font-size: 48px; margin-bottom: 16px; color: var(--admin-muted);"><i class="fas fa-box"></i></div>
+                    <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">Chưa có dữ liệu sản phẩm</h3>
+                    <p>Dữ liệu sản phẩm bán chạy sẽ hiển thị tại đây.</p>
+                </div>
+            }
+        </div>
+
+        <!-- Thống kê đơn hàng theo trạng thái -->
+        <div style="background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 24px;">
+            <h3 style="font-size: 20px; font-weight: 600; margin-bottom: 20px; color: var(--ink);">Đơn hàng theo trạng thái</h3>
+            @{
+                var orderStatusStats = ViewBag.OrderStatusStats as System.Collections.IEnumerable;
+            }
+            @if (orderStatusStats != null)
+            {
+                var statusList = orderStatusStats.Cast<dynamic>().ToList();
+                @if (statusList.Count > 0)
+                {
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                        @foreach (var statObj in statusList)
+                        {
+                            dynamic stat = statObj;
+                            var status = "Chưa xác định";
+                            var count = 0;
+                            
+                            try {
+                                status = stat.Status?.ToString() ?? "Chưa xác định";
+                                count = Convert.ToInt32(stat.Count ?? 0);
+                            } catch {
+                                status = "Chưa xác định";
+                                count = 0;
+                            }
+                            
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                                <span style="color: var(--ink); font-weight: 600; font-size: 14px;">@status</span>
+                                <span style="font-weight: 700; color: var(--ink); font-size: 16px;">@count đơn</span>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div style="padding: 48px; text-align: center; color: var(--muted);">
+                        <div style="font-size: 48px; margin-bottom: 16px; color: var(--admin-muted);"><i class="fas fa-shopping-cart"></i></div>
+                        <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">Chưa có dữ liệu đơn hàng</h3>
+                        <p>Dữ liệu đơn hàng sẽ hiển thị tại đây.</p>
+                    </div>
+                }
+            }
+            else
+            {
+                <div style="padding: 48px; text-align: center; color: var(--muted);">
+                    <div style="font-size: 48px; margin-bottom: 16px; color: var(--admin-muted);"><i class="fas fa-shopping-cart"></i></div>
+                    <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">Chưa có dữ liệu đơn hàng</h3>
+                    <p>Dữ liệu đơn hàng sẽ hiển thị tại đây.</p>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Thống kê theo chi nhánh -->
+    <div style="background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 24px;">
+        <h3 style="font-size: 20px; font-weight: 600; margin-bottom: 20px; color: var(--ink);">Thống kê theo chi nhánh</h3>
+        @{
+            var branchStats = ViewBag.BranchStats as System.Collections.IEnumerable;
+        }
+        @if (branchStats != null)
+        {
+            var branchList = branchStats.Cast<dynamic>().ToList();
+            @if (branchList.Count > 0)
+            {
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: var(--bg); border-bottom: 2px solid var(--line);">
+                                <th style="padding: 12px; text-align: left; font-weight: 600; color: var(--ink);">Chi nhánh</th>
+                                <th style="padding: 12px; text-align: center; font-weight: 600; color: var(--ink);">Số đơn hàng</th>
+                                <th style="padding: 12px; text-align: right; font-weight: 600; color: var(--ink);">Doanh thu</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var branchObj in branchList)
+                            {
+                                dynamic branch = branchObj;
+                                var branchName = "Không xác định";
+                                var orderCount = 0;
+                                var revenue = 0m;
+                                
+                                try {
+                                    branchName = branch.BranchName?.ToString() ?? "Không xác định";
+                                    orderCount = Convert.ToInt32(branch.OrderCount ?? 0);
+                                    revenue = Convert.ToDecimal(branch.Revenue ?? 0);
+                                } catch {
+                                    branchName = "Không xác định";
+                                    orderCount = 0;
+                                    revenue = 0m;
+                                }
+                                
+                                <tr style="border-bottom: 1px solid var(--line);">
+                                    <td style="padding: 12px; color: var(--ink); font-weight: 500;">@branchName</td>
+                                    <td style="padding: 12px; text-align: center; color: var(--ink);">@orderCount</td>
+                                    <td style="padding: 12px; text-align: right; color: var(--ink); font-weight: 600;">@revenue.ToString("N0") đ</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div style="padding: 48px; text-align: center; color: var(--muted);">
+                    <div style="font-size: 48px; margin-bottom: 16px; color: var(--admin-muted);"><i class="fas fa-store"></i></div>
+                    <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">Chưa có dữ liệu chi nhánh</h3>
+                    <p>Dữ liệu thống kê chi nhánh sẽ hiển thị tại đây.</p>
+                </div>
+            }
+        }
+        else
+        {
+            <div style="padding: 48px; text-align: center; color: var(--muted);">
+                <div style="font-size: 48px; margin-bottom: 16px; color: var(--admin-muted);"><i class="fas fa-store"></i></div>
+                <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">Chưa có dữ liệu chi nhánh</h3>
+                <p>Dữ liệu thống kê chi nhánh sẽ hiển thị tại đây.</p>
+            </div>
+        }
+    </div>
+
+    <!-- Danh sách đơn hàng đã giao gần đây -->
+    <div style="background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 24px; margin-top: 24px;">
+        <h3 style="font-size: 20px; font-weight: 600; margin-bottom: 8px; color: var(--ink);">Đơn hàng đã giao gần đây</h3>
+        <p style="font-size: 13px; color: var(--muted); margin-bottom: 20px;">Danh sách 10 đơn hàng đã giao mới nhất (chỉ các đơn này được tính vào doanh thu)</p>
+        @{
+            var recentOrders = ViewBag.RecentDeliveredOrders as System.Collections.IEnumerable;
+        }
+        @if (recentOrders != null)
+        {
+            var orderList = recentOrders.Cast<dynamic>().ToList();
+            @if (orderList.Count > 0)
+            {
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: var(--bg); border-bottom: 2px solid var(--line);">
+                                <th style="padding: 12px; text-align: left; font-weight: 600; color: var(--ink);">Mã đơn</th>
+                                <th style="padding: 12px; text-align: left; font-weight: 600; color: var(--ink);">Khách hàng</th>
+                                <th style="padding: 12px; text-align: left; font-weight: 600; color: var(--ink);">Chi nhánh</th>
+                                <th style="padding: 12px; text-align: right; font-weight: 600; color: var(--ink);">Tổng tiền</th>
+                                <th style="padding: 12px; text-align: center; font-weight: 600; color: var(--ink);">Ngày tạo</th>
+                                <th style="padding: 12px; text-align: center; font-weight: 600; color: var(--ink);">Trạng thái</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var orderObj in orderList)
+                            {
+                                dynamic order = orderObj;
+                                var orderCode = "N/A";
+                                var customerName = "Không xác định";
+                                var branchName = "Không xác định";
+                                var total = 0m;
+                                var createdAt = DateTime.Now;
+                                var status = "Đã giao";
+                                
+                                try {
+                                    orderCode = order.OrderCode?.ToString() ?? order.OrderID?.ToString() ?? "N/A";
+                                    customerName = order.CustomerName?.ToString() ?? "Không xác định";
+                                    branchName = order.BranchName?.ToString() ?? "Không xác định";
+                                    total = Convert.ToDecimal(order.Total ?? 0);
+                                    createdAt = order.CreatedAt is DateTime dt ? dt : DateTime.Parse(order.CreatedAt?.ToString() ?? DateTime.Now.ToString());
+                                    status = order.Status?.ToString() ?? "Đã giao";
+                                } catch {
+                                    orderCode = "N/A";
+                                    customerName = "Không xác định";
+                                    branchName = "Không xác định";
+                                    total = 0m;
+                                    createdAt = DateTime.Now;
+                                    status = "Đã giao";
+                                }
+                                
+                                <tr style="border-bottom: 1px solid var(--line);">
+                                    <td style="padding: 12px; color: var(--ink); font-weight: 600;">@orderCode</td>
+                                    <td style="padding: 12px; color: var(--ink);">@customerName</td>
+                                    <td style="padding: 12px; color: var(--ink);">@branchName</td>
+                                    <td style="padding: 12px; text-align: right; color: var(--ink); font-weight: 600;">@total.ToString("N0") đ</td>
+                                    <td style="padding: 12px; text-align: center; color: var(--ink);">@createdAt.ToString("dd/MM/yyyy HH:mm")</td>
+                                    <td style="padding: 12px; text-align: center;">
+                                        <span style="display: inline-block; padding: 4px 12px; background: #d1fae5; color: #065f46; border-radius: 6px; font-size: 12px; font-weight: 600;">@status</span>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div style="padding: 48px; text-align: center; color: var(--muted);">
+                    <div style="font-size: 48px; margin-bottom: 16px; color: var(--admin-muted);"><i class="fas fa-shopping-cart"></i></div>
+                    <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">Chưa có đơn hàng đã giao</h3>
+                    <p>Danh sách đơn hàng đã giao sẽ hiển thị tại đây.</p>
+                </div>
+            }
+        }
+        else
+        {
+            <div style="padding: 48px; text-align: center; color: var(--muted);">
+                <div style="font-size: 48px; margin-bottom: 16px; color: var(--admin-muted);"><i class="fas fa-shopping-cart"></i></div>
+                <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">Chưa có đơn hàng đã giao</h3>
+                <p>Danh sách đơn hàng đã giao sẽ hiển thị tại đây.</p>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function exportReports() {
+            const url = '@Url.Action("ExportReports", "Admin")?reportType=orders';
+            window.location.href = url;
+        }
+    </script>
+}

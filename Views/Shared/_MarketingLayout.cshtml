@@ -1,0 +1,379 @@
+@{
+    Layout = null;
+    var active = (string?)ViewBag.ActiveMenu ?? "";
+
+    // Đọc role từ Session
+    var roleRaw = Context?.Session?.GetString("RoleID") ?? Context?.Session?.GetString("Role");
+    var role = roleRaw?.Trim().ToUpperInvariant();
+
+    // Lấy thông tin employee từ session
+    var empId = Context?.Session?.GetString("EmployeeID");
+    var empName = Context?.Session?.GetString("EmployeeName");
+}
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Marketing</title>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- CSS chung -->
+    <link rel="stylesheet" href="~/css/employee/profile.css" />
+    
+    @* Cho phép view con chèn thêm CSS *@
+    @RenderSection("Styles", required: false)
+    
+    <style>
+        /* ============================================
+           MARKETING LAYOUT - Designer Style
+           ============================================ */
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --mk-primary: #f59e0b;
+            --mk-primary-dark: #d97706;
+            --mk-primary-light: #fbbf24;
+            --mk-gradient: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            --mk-gradient-hover: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            
+            --mk-bg: #f8fafc;
+            --mk-card: #ffffff;
+            --mk-sidebar: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+            --mk-sidebar-hover: rgba(245, 158, 11, 0.15);
+            --mk-sidebar-active: rgba(245, 158, 11, 0.25);
+            
+            --mk-text: #0f172a;
+            --mk-text-light: #64748b;
+            --mk-text-muted: #94a3b8;
+            --mk-text-on-dark: #f1f5f9;
+            
+            --mk-border: #e2e8f0;
+            --mk-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --mk-shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            
+            --mk-radius: 16px;
+            --mk-radius-sm: 12px;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--mk-bg);
+            color: var(--mk-text);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .mk-layout {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            min-height: 100vh;
+            background: var(--mk-bg);
+        }
+
+        /* ===== SIDEBAR ===== */
+        .mk-sidebar {
+            background: var(--mk-sidebar);
+            color: var(--mk-text-on-dark);
+            padding: 0;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow-y: auto;
+            overflow-x: hidden;
+            box-shadow: var(--mk-shadow-lg);
+            z-index: 100;
+        }
+
+        .mk-sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .mk-sidebar::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .mk-sidebar::-webkit-scrollbar-thumb {
+            background: rgba(245, 158, 11, 0.3);
+            border-radius: 3px;
+        }
+
+        .mk-sidebar::-webkit-scrollbar-thumb:hover {
+            background: rgba(245, 158, 11, 0.5);
+        }
+
+        .mk-sidebar-header {
+            padding: 24px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(245, 158, 11, 0.1);
+        }
+
+        .mk-sidebar-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .mk-sidebar-logo i {
+            font-size: 28px;
+            color: var(--mk-primary-light);
+            background: var(--mk-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .mk-sidebar-title {
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            background: var(--mk-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .mk-sidebar-nav {
+            padding: 20px 0;
+        }
+
+        .mk-nav-section {
+            margin-bottom: 8px;
+        }
+
+        .mk-nav-section-title {
+            padding: 12px 20px 8px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: rgba(255, 255, 255, 0.5);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .mk-nav-section-title i {
+            font-size: 10px;
+        }
+
+        .mk-nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 20px;
+            color: var(--mk-text-on-dark);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            position: relative;
+            margin: 2px 12px;
+            border-radius: var(--mk-radius-sm);
+        }
+
+        .mk-nav-item i {
+            font-size: 16px;
+            width: 20px;
+            text-align: center;
+            opacity: 0.8;
+        }
+
+        .mk-nav-item:hover {
+            background: var(--mk-sidebar-hover);
+            color: var(--mk-primary-light);
+            transform: translateX(4px);
+        }
+
+        .mk-nav-item:hover i {
+            opacity: 1;
+            color: var(--mk-primary-light);
+        }
+
+        .mk-nav-item.active {
+            background: var(--mk-sidebar-active);
+            color: var(--mk-primary-light);
+            font-weight: 600;
+        }
+
+        .mk-nav-item.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 3px;
+            height: 60%;
+            background: var(--mk-gradient);
+            border-radius: 0 3px 3px 0;
+        }
+
+        .mk-nav-item.active i {
+            opacity: 1;
+            color: var(--mk-primary-light);
+        }
+
+        /* ===== MAIN CONTENT ===== */
+        .mk-main {
+            padding: 32px;
+            overflow-y: auto;
+            background: var(--mk-bg);
+        }
+
+        .mk-content {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .mk-card {
+            background: var(--mk-card);
+            border-radius: var(--mk-radius);
+            box-shadow: var(--mk-shadow);
+            padding: 32px;
+            margin-bottom: 24px;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @@media (max-width: 1024px) {
+            .mk-layout {
+                grid-template-columns: 240px 1fr;
+            }
+        }
+
+        @@media (max-width: 768px) {
+            .mk-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .mk-sidebar {
+                position: fixed;
+                left: -280px;
+                transition: left 0.3s ease;
+                z-index: 1000;
+            }
+
+            .mk-sidebar.open {
+                left: 0;
+            }
+
+            .mk-main {
+                padding: 20px;
+            }
+        }
+
+        /* ===== ANIMATIONS ===== */
+        @@keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .mk-card {
+            animation: slideIn 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="mk-layout">
+        <!-- SIDEBAR -->
+        <aside class="mk-sidebar">
+            <div class="mk-sidebar-header">
+                <div class="mk-sidebar-logo">
+                    <i class="fas fa-bullhorn"></i>
+                    <span class="mk-sidebar-title">Marketing</span>
+                </div>
+            </div>
+
+            <nav class="mk-sidebar-nav">
+                <!-- Main Menu -->
+                <div class="mk-nav-section">
+                    <a class="mk-nav-item @(active=="Profile" ? "active" : "")"
+                       href="@Url.Action("Profile","Employee")">
+                        <i class="fas fa-user"></i>
+                        <span>Hồ sơ của tôi</span>
+                    </a>
+
+                    <a class="mk-nav-item @(active=="EditProfile" ? "active" : "")"
+                       href="@Url.Action("EditProfile","Employee")">
+                        <i class="fas fa-edit"></i>
+                        <span>Chỉnh sửa thông tin</span>
+                    </a>
+                </div>
+
+                <!-- Marketing Section -->
+                <div class="mk-nav-section">
+                    <div class="mk-nav-section-title">
+                        <i class="fas fa-bullhorn"></i>
+                        <span>Marketing</span>
+                    </div>
+
+                    <a class="mk-nav-item @(active=="MarketingDashboard" ? "active" : "")"
+                       href="@Url.Action("MarketingDashboard","Employee")">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Dashboard yêu cầu</span>
+                    </a>
+
+                    <a class="mk-nav-item @(active=="MarketingKPI" ? "active" : "")"
+                       href="@Url.Action("MarketingKPI","Employee")">
+                        <i class="fas fa-trophy"></i>
+                        <span>KPI & Lương</span>
+                    </a>
+
+                    <a class="mk-nav-item @(active=="CreateNewsRequest" ? "active" : "")"
+                       href="@Url.Action("CreateNewsRequest","Employee")">
+                        <i class="fas fa-newspaper"></i>
+                        <span>Tạo yêu cầu tin tức</span>
+                    </a>
+
+                    <a class="mk-nav-item @(active=="CreateDiscountRequest" ? "active" : "")"
+                       href="@Url.Action("CreateDiscountRequest","Employee")">
+                        <i class="fas fa-tag"></i>
+                        <span>Tạo yêu cầu mã giảm giá</span>
+                    </a>
+                </div>
+
+                <!-- Other -->
+                <div class="mk-nav-section">
+                    <a class="mk-nav-item"
+                       href="@Url.Action("Index","Home")">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>Đăng xuất</span>
+                    </a>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- MAIN CONTENT -->
+        <main class="mk-main">
+            <div class="mk-content">
+                <div class="mk-card">
+                    @RenderBody()
+                </div>
+            </div>
+        </main>
+    </div>
+
+    @* Cho phép view con chèn script riêng *@
+    @RenderSection("Scripts", required: false)
+</body>
+</html>
+
