@@ -1,0 +1,508 @@
+@model IEnumerable<start.Models.Employee>
+@{
+    ViewData["Title"] = "Quản lý nhân viên";
+    Layout = "_BManagerLayout";
+    
+    var topEmployees = Model.Take(3).ToList(); 
+}
+
+@Html.AntiForgeryToken()
+
+<div class="widget-card">
+    <div class="widget-header">
+        <div>
+            <h5 class="widget-title">Danh sách nhân viên</h5>
+            <div class="widget-subtitle">Quản lý và theo dõi thông tin nhân viên</div>
+        </div>
+        <button class="btn btn-brand" id="addEmployeeBtnHeader">
+            <i class="fas fa-plus me-2"></i> Thêm nhân viên
+        </button>
+    </div>
+
+    <div class="search-bar-container">
+        <i class="fas fa-search search-icon"></i>
+        <input type="text" id="employeeSearch" class="form-control" placeholder="Tìm kiếm theo tên, email, số điện thoại...">
+    </div>
+
+    <div class="employee-list">
+        <div class="employee-list-header d-none d-lg-grid">
+            <div>Tên nhân viên</div>
+            <div>Số điện thoại</div>
+            <div>Email</div>
+            <div>Thành phố</div>
+            <div>Vai trò</div>
+            <div class="text-center">Hành động</div>
+        </div>
+
+        <div id="employee-list-body">
+            @if (Model == null || !Model.Any())
+            {
+                <div class="text-center p-4 text-muted">Không tìm thấy nhân viên nào.</div>
+            }
+            else
+            {
+                @foreach (var emp in Model)
+                {
+                    // Lấy 2 chữ cái đầu của tên
+                    string initials = emp.FullName.Length >= 2 ? emp.FullName.Substring(0, 2).ToUpper() : emp.FullName.ToUpper();
+                    
+                    <div class="employee-card @(emp.IsActive ? "" : "inactive")" data-emp-id="@emp.EmployeeID">
+                        <div class="employee-info">
+                            <div class="employee-avatar">@initials</div>
+                            <div class="employee-info-text">
+                                <strong>@emp.FullName</strong>
+                                <span class="d-lg-none">@emp.Email</span>
+                            </div>
+                        </div>
+                        <div class="d-none d-lg-block">@emp.PhoneNumber</div>
+                        <div class="d-none d-lg-block">@emp.Email</div>
+                        <div class="d-none d-lg-block">@emp.City</div>
+                        <div class="employee-status">
+                            <span class="badge bg-secondary">@emp.RoleID</span>
+                            @if (emp.IsActive)
+                            {
+                                <span class="badge bg-success">Active</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-danger">Inactive</span>
+                            }
+                        </div>
+                        <div class="employee-actions text-center">
+                            <div class="dropdown">
+                                <button class="btn btn-icon" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                                <ul class="dropdown-menu action-dropdown-menu">
+                                    <li>
+                                        <a class="dropdown-item" asp-action="EditEmp" asp-route-id="@emp.EmployeeID">
+                                            <i class="fas fa-pencil-alt me-2"></i> Chỉnh sửa
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <button class="dropdown-item btn-contracts" data-id="@emp.EmployeeID" data-name="@emp.FullName">
+                                            <i class="fas fa-file-contract me-2"></i> Hợp đồng
+                                        </button>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    @if (emp.IsActive)
+                                    {
+                                        <li>
+                                            <button class="dropdown-item text-danger btn-hide" data-id="@emp.EmployeeID">
+                                                <i class="fas fa-eye-slash me-2"></i> Ẩn
+                                            </button>
+                                        </li>
+                                    }
+                                    else
+                                    {
+                                        <li>
+                                            <button class="dropdown-item text-success btn-restore" data-id="@emp.EmployeeID">
+                                                <i class="fas fa-eye me-2"></i> Hiện
+                                            </button>
+                                        </li>
+                                    }
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+</div>
+
+@* --- MODAL TẠO/SỬA NHÂN VIÊN --- *@
+<div class="modal fade" id="employeeModal" tabindex="-1" aria-labelledby="employeeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="employeeModalLabel">Create New Employee</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="employeeModalBody">
+                </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="saveEmployeeBtn">Create Employee</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* --- MODAL HỢP ĐỒNG --- *@
+<div class="modal fade" id="contractModal" tabindex="-1" aria-labelledby="contractModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="contractModalLabel">Contracts</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="contractModalBody">
+                </div>
+            <div class="modal-footer" id="contractModalFooter">
+                </div>
+        </div>
+    </div>
+</div>
+
+@* --- MODAL THÔNG BÁO CHUNG (Thay thế Alert) --- *@
+<div class="modal fade" id="infoModal" tabindex="-1" aria-labelledby="infoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="infoModalLabel">Notification</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <i id="infoModalIcon" class="fas fa-check-circle fa-3x mb-3" style="color: #198754;"></i>
+                <p id="infoModalMessage"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/BManager/ViewEmp.css" asp-append-version="true" />
+    @* Cần nhúng SweetAlert2 CSS *@
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+}
+
+@section Scripts {
+    @* Cần nhúng SweetAlert2 JS *@
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        $(function () {
+            // --- KHAI BÁO BIẾN & MODAL INSTANCES ---
+            const employeeModalEl = document.getElementById('employeeModal');
+            const employeeModal = new bootstrap.Modal(employeeModalEl);
+            const contractModalEl = document.getElementById('contractModal');
+            const contractModal = new bootstrap.Modal(contractModalEl);
+            const infoModalEl = document.getElementById('infoModal');
+            const infoModal = new bootstrap.Modal(infoModalEl);
+
+            const employeeModalBody = $('#employeeModalBody');
+            const contractModalBody = $('#contractModalBody');
+            const contractModalFooter = $('#contractModalFooter');
+            const token = $('input[name="__RequestVerificationToken"]').val();
+            var currentEmployeeIdForContract = null; 
+
+            // --- INFO POPUP FUNCTION (Thay thế Alert) ---
+            function showInfoPopup(title, message, isSuccess = true, reloadOnClose = false) {
+                $('#infoModalLabel').text(title);
+                $('#infoModalMessage').text(message);
+                
+                if (isSuccess) {
+                    $('#infoModalIcon').removeClass('fa-exclamation-circle text-danger').addClass('fa-check-circle text-success').css('color', '#198754');
+                } else {
+                    $('#infoModalIcon').removeClass('fa-check-circle text-success').addClass('fa-exclamation-circle text-danger').css('color', '#dc3545');
+                }
+
+                if (reloadOnClose) {
+                    $(infoModalEl).one('hidden.bs.modal', function () {
+                        location.reload();
+                    });
+                }
+                
+                infoModal.show();
+            }
+
+           
+            function loadCreateForm() {
+                employeeModalBody.html('<div class="text-center p-3"><div class="spinner-border" role="status"></div></div>');
+                employeeModalBody.load('@Url.Action("CreateEmpPartial")', function () {
+                    $('#employeeModalLabel').text('Create New Employee');
+                    $('#saveEmployeeBtn').text('Create Employee');
+                    $.validator.unobtrusive.parse(employeeModalBody.find('form'));
+                });
+                employeeModal.show();
+            }
+            // Gắn sự kiện cho nút thêm nhân viên
+           $(document).on('click', '#addEmployeeBtnHeader, #addEmployeeBtn', function (e) {
+    e.preventDefault();
+    loadCreateForm();
+});
+            
+            // --- XỬ LÝ LƯU (TẠO MỚI) NHÂN VIÊN ---
+            $('#saveEmployeeBtn').on('click', function () {
+                var form = employeeModalBody.find('form');
+
+                if (!form.valid()) return;
+
+                const saveBtn = $(this);
+                saveBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...');
+
+                $.ajax({
+                    url: '@Url.Action("CreateEmp")',
+                    method: 'POST',
+                    data: form.serialize(),
+                    headers: { 'RequestVerificationToken': token },
+                    success: function (response) {
+                        if (response.success) {
+                            employeeModal.hide();
+                            showInfoPopup('Thành công!', 'Tạo nhân viên mới thành công.', true, true); 
+                        } else {
+                            employeeModalBody.html(response);
+                            $.validator.unobtrusive.parse(employeeModalBody.find('form'));
+                        }
+                    },
+                    error: function (xhr) {
+                        employeeModal.hide();
+                        showInfoPopup('Lỗi!', "Đã xảy ra lỗi hệ thống: " + xhr.statusText, false);
+                    },
+                    complete: function() {
+                        saveBtn.prop('disabled', false).text('Create Employee');
+                    }
+                });
+            });
+
+            // --- 2. XỬ LÝ ẨN/KHÔI PHỤC NHÂN VIÊN ---
+            $('#employee-list-body').on('click', '.btn-hide', function (e) {
+                e.preventDefault(); 
+                var id = $(this).data('id');
+
+                Swal.fire({
+                    title: 'Xác nhận Ẩn nhân viên?',
+                    html: "Bạn có chắc muốn ẩn nhân viên này? Việc này sẽ **vô hiệu hóa tài khoản và hợp đồng** của họ.",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33', 
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Đồng ý, Ẩn nhân viên',
+                    cancelButtonText: 'Hủy bỏ'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        Swal.fire({ title: 'Đang xử lý...', allowOutsideClick: false, didOpen: () => { Swal.showLoading() } });
+
+                        $.post('@Url.Action("HideEmp")', { id: id, __RequestVerificationToken: token })
+                            .done(() => {
+                                Swal.fire({ title: 'Thành công!', text: 'Nhân viên đã được ẩn (Inactive).', icon: 'success' }).then(() => { location.reload(); });
+                            })
+                            .fail(() => { Swal.fire('Lỗi!', "Đã xảy ra lỗi khi ẩn nhân viên.", 'error'); });
+                    }
+                });
+            });
+            
+            $('#employee-list-body').on('click', '.btn-restore', function () {
+                var id = $(this).data('id');
+
+                Swal.fire({
+                    title: 'Xác nhận Khôi phục?',
+                    text: "Bạn có muốn khôi phục lại nhân viên này?",
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#28a745', 
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Đồng ý, Khôi phục',
+                    cancelButtonText: 'Hủy bỏ'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        Swal.fire({ title: 'Đang xử lý...', allowOutsideClick: false, didOpen: () => { Swal.showLoading() } });
+                        
+                        $.post('@Url.Action("RestoreEmp")', { id: id, __RequestVerificationToken: token })
+                            .done(() => {
+                                Swal.fire({ title: 'Thành công!', text: 'Nhân viên đã được khôi phục (Active).', icon: 'success' }).then(() => { location.reload(); });
+                            })
+                            .fail(() => { Swal.fire('Lỗi!', "Đã xảy ra lỗi khi khôi phục nhân viên.", 'error'); });
+                    }
+                });
+            });
+            
+            // --- 3. CHỨC NĂNG HỢP ĐỒNG ---
+            window.loadContracts = function(employeeId) {
+                if (!employeeId) return;
+                currentEmployeeIdForContract = employeeId; 
+
+                var employeeName = $(`[data-emp-id="${employeeId}"]`).find('strong').text();
+                $('#contractModalLabel').text('Contracts for ' + (employeeName || employeeId));
+                contractModalBody.html('<div class="text-center p-3"><div class="spinner-border" role="status"></div></div>');
+                contractModalFooter.html('<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>'); 
+
+                contractModalBody.load('@Url.Action("GetEmployeeContractsPartial")?employeeId=' + employeeId, function () {
+                    var nameInModal = contractModalBody.find('[data-employee-name-modal]').data('employee-name-modal');
+                    if (nameInModal) {
+                         $('#contractModalLabel').text('Contracts for ' + nameInModal);
+                    }
+                    
+                    var addBtn = contractModalBody.find('#showCreateContractFormBtn');
+                    if (addBtn.length) {
+                        contractModalFooter.append(addBtn);
+                        addBtn.on('click', loadCreateContractForm);
+                    }
+                });
+                contractModal.show();
+            }
+
+            $('#employee-list-body').on('click', '.btn-contracts', function () {
+                var id = $(this).data('id');
+                loadContracts(id);
+            });
+
+            // --- HỢP ĐỒNG: Tải form Tạo mới ---
+            function loadCreateContractForm() {
+                if (!currentEmployeeIdForContract) return;
+
+                var employeeId = currentEmployeeIdForContract;
+                var employeeName = $('#contractModalLabel').text().replace('Contracts for ', 'Add New Contract for ');
+
+                $('#contractModalLabel').text(employeeName);
+                contractModalBody.html('<div class="text-center p-3">Đang tải form...</div>');
+
+                contractModalBody.load('@Url.Action("CreateContractPartial")?employeeId=' + employeeId, function () {
+                    $.validator.unobtrusive.parse(contractModalBody.find('form'));
+                    
+                    // GẮN LOGIC VALIDATION CUSTOM (THAY THẾ CONFIRM/ALERT CŨ)
+                    $('#createContractForm').on('submit', function(e) {
+                        e.preventDefault();
+                        
+                        var startDateVal = $('#StartDate').val();
+                        var endDateVal = $('#EndDate').val();
+                        var contractType = $('#ContractType').val();
+                        
+                        var startDate = new Date(startDateVal);
+                        var endDate = endDateVal ? new Date(endDateVal) : null;
+                        var today = new Date().setHours(0,0,0,0);
+                        
+                        let validationMessage = null;
+
+                        if (startDate < today) {
+                            validationMessage = 'Ngày bắt đầu hợp đồng không thể là ngày trong quá khứ.';
+                        } else if (contractType === 'Vô thời hạn' && endDate) {
+                            validationMessage = 'Hợp đồng vô thời hạn không nên có ngày kết thúc.';
+                        } else if (contractType !== 'Vô thời hạn' && !endDateVal) {
+                            validationMessage = 'Hợp đồng có thời hạn phải có ngày kết thúc.';
+                        } else if (endDate && endDate <= startDate) {
+                            validationMessage = 'Ngày kết thúc phải sau ngày bắt đầu.';
+                        }
+                        
+                        if (validationMessage) {
+                            Swal.fire({ title: 'Lỗi Validation', text: validationMessage, icon: 'error', confirmButtonColor: '#dc3545' });
+                            return;
+                        }
+                        
+                        // Kích hoạt nút lưu hợp đồng nếu validation OK
+                        $('#saveContractBtn').trigger('click');
+                    });
+                    
+                    contractModalFooter.html(`
+                    <button type="button" class="btn btn-secondary" id="backToContractListBtn">Back to List</button>
+                    <button type="button" class="btn btn-success" id="saveContractBtn">Save Contract</button>
+                    `);
+                });
+            }
+
+            // --- HỢP ĐỒNG: Lưu Hợp Đồng ---
+            $(contractModalFooter).on('click', '#saveContractBtn', function () {
+                var form = contractModalBody.find('form');
+                
+         
+                if (form.length && form.attr('id') === 'createContractForm') {
+                    
+                    form.submit(); 
+                    return; 
+                }
+
+                if (!form.valid()) return; 
+                
+                const saveContractBtn = $(this);
+                saveContractBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...');
+
+                $.ajax({
+                    url: '@Url.Action("CreateContract")',
+                    method: 'POST',
+                    data: form.serialize(),
+                    headers: { 'RequestVerificationToken': token },
+                    success: function (response) {
+                        if (response.success) {
+                            showInfoPopup('Thành công!', "Tạo hợp đồng thành công!", true); 
+                            loadContracts(response.employeeId); 
+                        } else {
+                            contractModalBody.html(response);
+                            $.validator.unobtrusive.parse(contractModalBody.find('form'));
+                            var errorMessage = contractModalBody.find('.text-danger:first').text() || 'Lỗi: Vui lòng kiểm tra lại dữ liệu hợp đồng.';
+                            showInfoPopup('Lỗi Validation', errorMessage, false);
+                        }
+                    },
+                    error: function () { 
+                        showInfoPopup('Lỗi Server', "Lỗi khi lưu hợp đồng. Vui lòng kiểm tra console.", false); 
+                    },
+                    complete: function() {
+                        saveContractBtn.prop('disabled', false).text('Save Contract');
+                    }
+                });
+            });
+            
+            // --- HỢP ĐỒNG: Hủy Hợp Đồng ---
+            $(contractModalBody).on('click', '#cancelContractBtn', function () {
+                var contractId = $(this).data('contract-id');
+                var employeeName = $(this).data('employee-name') || 'nhân viên này'; 
+
+                Swal.fire({
+                    title: 'Xác nhận Chấm dứt Hợp Đồng?',
+                    html: `Bạn có chắc chắn muốn chấm dứt hợp đồng của **${employeeName}** không? Thao tác này không thể hoàn tác.`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33', 
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Đồng ý, Chấm dứt',
+                    cancelButtonText: 'Hủy bỏ'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        Swal.fire({ title: 'Đang hủy...', allowOutsideClick: false, didOpen: () => { Swal.showLoading() } });
+                        var token = $('input[name="__RequestVerificationToken"]').val(); 
+                        
+                        $.ajax({
+                            url: '@Url.Action("CancelContract", "BManager")', 
+                            type: 'POST',
+                            data: { 
+                                contractId: contractId,
+                                __RequestVerificationToken: token 
+                            },
+                            success: function(response) {
+                                Swal.close(); 
+                                if (response.success) {
+                                    showInfoPopup('Thành công!', response.message, true);
+                                    loadContracts(currentEmployeeIdForContract); 
+                                } else {
+                                    showInfoPopup('Lỗi!', response.message, false);
+                                }
+                            },
+                            error: function() {
+                                Swal.close(); 
+                                showInfoPopup('Lỗi Server', "Đã xảy ra lỗi trong quá trình hủy hợp đồng.", false);
+                            }
+                        });
+                    }
+                });
+            });
+
+
+            // --- HỢP ĐỒNG: Quay lại Danh sách ---
+            $(contractModalFooter).on('click', '#backToContractListBtn', function () {
+                loadContracts(currentEmployeeIdForContract); 
+            });
+
+            // --- XỬ LÝ TÌM KIẾM ---
+            $('#employeeSearch').on('keyup', function () {
+                var value = $(this).val().toLowerCase();
+                $('#employee-list-body .employee-card').filter(function () {
+                    $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+                });
+            });
+
+            // --- RESET MODAL KHI ĐÓNG ---
+            $(employeeModalEl).on('hidden.bs.modal', function (event) {
+                employeeModalBody.html('<div class="text-center p-3"><div class="spinner-border" role="status"></div></div>');
+                $('#employeeModalLabel').text('Create New Employee');
+            });
+
+            $(contractModalEl).on('hidden.bs.modal', function (event) {
+                contractModalBody.html('<div class="text-center p-3"><div class="spinner-border" role="status"></div></div>');
+                contractModalFooter.html('');
+                currentEmployeeIdForContract = null; 
+            });
+        });
+    </script>
+}

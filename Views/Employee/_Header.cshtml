@@ -2,16 +2,16 @@
 @{
     var avatar = string.IsNullOrWhiteSpace(Model.AvatarUrl) ? Url.Content("https://res.cloudinary.com/do48qpmut/image/upload/v1761645429/uploads/tdppvgyas8bhvfs7lton.png")
                                                             : Url.Content(Model.AvatarUrl);
-    string roleText = Model.RoleID switch {
-        "AD" => "Quản trị", "SL" => "Trưởng ca", "BM" => "Quản lý chi nhánh",
-        "RM" => "Quản lý vùng", _ => "Nhân viên"
-    };
+  string roleText = Model.RoleID switch {
+    "AD" => "Quản trị", "SL" => "Trưởng ca", "BM" => "Quản lý chi nhánh",
+    "RM" => "Quản lý vùng", "SP" => "Shipper", _ => "Nhân viên"
+  };
 }
    <div class="profile-head">
           <div class="avatar"><img src="@avatar" alt="avatar"></div>
           <div>
             <h3 class="name">@Model.FullName</h3>
-            <div class="position">@((Model.RoleID=="AD")?"Quản trị":(Model.RoleID=="EM"?"Nhân viên":Model.RoleID))</div>
+            <div class="position">@((Model.RoleID=="AD")?"Quản trị":(Model.RoleID=="EM"?"Nhân viên":(Model.RoleID=="SP"?"Shipper":Model.RoleID)))</div>
 
             <div class="grid-mini">
               <div class="kv"><div class="k">Mã nhân viên</div><div>@Model.EmployeeID</div></div>

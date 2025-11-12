@@ -24,10 +24,16 @@ builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<AiService>();
 builder.Services.AddScoped<IEmployeeProfileService, EmployeeProfileService>();
 builder.Services.AddScoped<IScheduleService, ScheduleService>();
-builder.Services.AddScoped<IPayrollService, PayrollService >();
+builder.Services.AddScoped<IPayrollService, PayrollService>();
 builder.Services.AddScoped<IDayOffService, DayOffService>();
 builder.Services.AddScoped<INewsService, NewsService>();
 builder.Services.AddScoped<IStoreService, StoreService>();
+builder.Services.AddScoped<IRegisterScheduleService, RegisterScheduleService>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddScoped<IScheduleForManagerService, ScheduleForManagerService>();
+builder.Services.AddScoped<IReportService, ReportService>();
+builder.Services.AddScoped<IContractService, ContractService>();
+builder.Services.AddScoped<IEmployeeManagementService, EmployeeManagementService>();
 
 builder.Logging.ClearProviders();
 builder.Logging.AddSimpleConsole(options =>

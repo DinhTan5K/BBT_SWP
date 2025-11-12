@@ -1,0 +1,223 @@
+@model IEnumerable<SalaryReport>
+
+@{
+    Layout = "_BManagerLayout";
+    ViewData["Title"] = "Salary Report";
+    var currentMonth = (int)ViewBag.Month;
+    var currentYear = (int)ViewBag.Year;
+    const int MaxFinalizations = 3;
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/bmanager/salary-report.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" />
+    
+}
+
+<div class="salary-report-container">
+    <div class="report-header">
+        <div class="title-group">
+            <h2><i class="fas fa-money-check-alt me-2"></i> Báo cáo lương nhân viên</h2>
+            <p>Theo dõi bảng lương nhân viên tháng @currentMonth/@currentYear</p>
+        </div>
+
+        <a asp-action="ExportSalaryToExcel"
+           asp-route-name="@ViewBag.Name"
+           asp-route-month="@currentMonth"
+           asp-route-year="@currentYear"
+           class="export-button">
+            <i class="fas fa-file-excel"></i> Xuất Excel
+        </a>
+    </div>
+
+    <!-- Bộ lọc -->
+    <form method="get" class="filter-bar shadow-sm">
+        <div class="input-group" style="flex-basis: 40%;">
+            <i class="fas fa-search"></i>
+            <input type="text" name="name" class="form-control"
+                   value="@ViewBag.Name"
+                   placeholder="Nhập tên nhân viên..." />
+        </div>
+        <div class="input-group" style="flex-basis: 20%;">
+            <input type="number" name="month" class="form-control"
+                   value="@currentMonth" min="1" max="12" />
+        </div>
+        <div class="input-group" style="flex-basis: 20%;">
+            <input type="number" name="year" class="form-control"
+                   value="@currentYear" placeholder="2025" />
+        </div>
+        <button type="submit" class="filter-button">
+            <i class="fas fa-filter me-1"></i> Lọc
+        </button>
+    </form>
+
+    <!-- Bảng dữ liệu -->
+    <div class="table-responsive mt-3">
+        <table class="table table-sm table-striped table-hover salary-report-table align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>#</th>
+                    <th>Tên nhân viên</th>
+                    <th>Ca làm</th>
+                    <th>Tổng giờ</th>
+                    <th>Tổng lương</th>
+                    <th>Trạng thái</th>
+                    <th>Lần chốt</th>
+                    <th class="text-center">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Any())
+                {
+                    <tr>
+                        <td colspan="8" class="text-center py-4">
+                            <div class="no-result">
+                                <i class="fas fa-search-minus me-2"></i>Không tìm thấy kết quả nào.
+                            </div>
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    int index = 1;
+                    foreach (var item in Model)
+                    {
+                        bool isFinalized = item.IsFinalized;
+
+                        <tr class="@(isFinalized ? "table-success-soft" : "")" data-employee-id="@item.EmployeeID">
+                            <td>@(index++)</td>
+                            <td><strong>@item.FullName</strong></td>
+                            <td>@item.TotalShifts ca</td>
+                            <td>@item.TotalHours.ToString("0.##") giờ</td>
+                            <td><strong class="text-success">@item.TotalSalary.ToString("N0") đ</strong></td>
+                            <td>
+                                @if (isFinalized)
+                                {
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-lock"></i> Đã chốt
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-warning text-dark">
+                                        <i class="fas fa-unlock"></i> Chưa chốt
+                                    </span>
+                                }
+                            </td>
+                            <td>@(item.FinalizationCount)/@MaxFinalizations</td>
+
+                            <td class="text-center d-flex justify-content-center gap-2">
+                                @if (item.FinalizationCount < MaxFinalizations)
+                                {
+                                    <form asp-action="FinalizeSalary"
+                                          method="post"
+                                          class="finalize-form d-inline-block">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="employeeId" value="@item.EmployeeID" />
+                                        <input type="hidden" name="month" value="@currentMonth" />
+                                        <input type="hidden" name="year" value="@currentYear" />
+                                        <button type="submit"
+                                                class="btn btn-sm btn-success finalize-btn"
+                                                data-employee-name="@item.FullName"
+                                                title="Chốt lương">
+                                            <i class="fas fa-check-circle me-1"></i> Chốt
+                                        </button>
+                                    </form>
+                                }
+                                else if (!isFinalized)
+                                {
+                                    <span class="badge bg-danger">Hết lượt chốt</span>
+                                }
+
+                                <button type="button"
+                                        class="btn btn-sm btn-outline-secondary detail-row-toggle"
+                                        data-bs-toggle="collapse"
+                                        data-bs-target=".detail-@item.EmployeeID"
+                                        data-employee-id="@item.EmployeeID"
+                                        title="Xem chi tiết ca làm việc">
+                                    <i class="fas fa-chevron-down"></i> Chi tiết
+                                </button>
+                            </td>
+                        </tr>
+
+                        <!-- Hàng chi tiết -->
+                        <tr class="collapse detail-@item.EmployeeID detail-content-row">
+                            <td colspan="8" class="p-0">
+                                <div class="detail-content-container">
+                                    <div id="shifts-@item.EmployeeID" class="shift-detail-content p-3 text-center text-muted">
+                                        <div class="text-center"><i class="fas fa-spinner fa-spin me-2"></i> Bấm “Chi tiết” để tải dữ liệu...</div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        $(function () {
+            const currentMonth = @Html.Raw(Json.Serialize(ViewBag.Month));
+            const currentYear = @Html.Raw(Json.Serialize(ViewBag.Year));
+
+            // 1️⃣ Xác nhận chốt lương
+            $('.finalize-form').on('submit', function (e) {
+                e.preventDefault();
+                const form = $(this);
+                const employeeName = form.find('.finalize-btn').data('employee-name');
+
+                Swal.fire({
+                    title: 'Xác nhận chốt lương?',
+                    html: `Bạn có chắc chắn muốn <b>chốt lương</b> cho <strong>${employeeName}</strong>?<br>Thao tác này sẽ khóa dữ liệu.`,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: '<i class="fas fa-check"></i> Đồng ý',
+                    cancelButtonText: 'Hủy',
+                    confirmButtonColor: '#16a34a',
+                    backdrop: true
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        Swal.fire({
+                            title: 'Đang xử lý...',
+                            text: 'Vui lòng chờ trong giây lát',
+                            allowOutsideClick: false,
+                            didOpen: () => Swal.showLoading()
+                        });
+                        form.off('submit').submit();
+                    }
+                });
+            });
+
+            // 2️⃣ Hiển thị chi tiết ca làm
+            $(document).on('click', '.detail-row-toggle', function () {
+                const btn = $(this);
+                btn.toggleClass('active');
+            });
+
+            $(document).on('shown.bs.collapse', '.detail-content-row', function () {
+                const employeeId = $(this).prev('tr').data('employee-id');
+                const detailContent = $('#shifts-' + employeeId);
+
+                if (!detailContent.data('loaded')) {
+                    detailContent.html('<div class="p-4 text-center"><div class="spinner-border text-primary"></div> Đang tải...</div>');
+
+                    $.get('@Url.Action("GetEmployeeShiftsPartial", "BManager")', {
+                        employeeId: employeeId,
+                        month: currentMonth,
+                        year: currentYear
+                    }).done(function (html) {
+                        detailContent.hide().html(html).fadeIn(200);
+                        detailContent.data('loaded', true);
+                    }).fail(function () {
+                        detailContent.html('<div class="alert alert-danger mt-3"><i class="fas fa-exclamation-triangle me-2"></i>Lỗi tải dữ liệu, vui lòng thử lại.</div>');
+                    });
+                }
+            });
+        });
+    </script>
+}

@@ -6,11 +6,12 @@
          ? Url.Content(Model.AvatarUrl) 
         : Url.Content("https://res.cloudinary.com/do48qpmut/image/upload/v1761645429/uploads/tdppvgyas8bhvfs7lton.png");
 
-    string roleText = (Model.RoleID == "AD" ? "Quản trị"
-                       : Model.RoleID == "SL" ? "Trưởng ca"
-                       : Model.RoleID == "BM" ? "Quản lý chi nhánh"
-                       : Model.RoleID == "RM" ? "Quản lý vùng"
-                       : "Nhân viên");
+  string roleText = (Model.RoleID == "AD" ? "Quản trị"
+             : Model.RoleID == "SL" ? "Trưởng ca"
+             : Model.RoleID == "BM" ? "Quản lý chi nhánh"
+             : Model.RoleID == "RM" ? "Quản lý vùng"
+             : Model.RoleID == "SP" ? "Shipper"
+             : "Nhân viên");
 
      var role = (Model?.RoleID ?? "").Trim().ToUpperInvariant();
 
@@ -22,23 +23,11 @@
   <aside class="sidebar">
     <div class="sb-title">Menu</div>
     <a class="sb-item active" href="#">Hồ sơ của tôi</a>
-
-   @if (role=="EM" || role=="SL")
-{
-  <a class="sb-item @(ViewBag.ActiveMenu=="DayOff" ? "active" : "")"
-     href="@Url.Action("DayOff","Employee")">Quản lý ngày nghỉ</a>
-}
-
-     <a class="sb-item @(ViewBag.ActiveMenu=="Schedule" ? "active" : "")"
-   href="@Url.Action("Schedule","Employee")">
-  Lịch làm
-</a>
-
     <a class="sb-item @(ViewBag.ActiveMenu=="EditProfile" ? "active" : "")"
    href="@Url.Action("EditProfile","Employee")">
   Chỉnh sửa thông tin cá nhân
 </a>
- <a class="sb-item @(ViewBag.ActiveMenu=="EditProfile" ? "active" : "")"
+ <a class="sb-item"
    href="@Url.Action("Index","Home")">
   Đăng xuất
 </a>
@@ -52,7 +41,7 @@
           <div class="avatar"><img src="@avatar" alt="avatar"></div>
           <div>
             <h3 class="name">@Model.FullName</h3>
-            <div class="position">@((Model.RoleID=="AD")?"Quản trị":(Model.RoleID=="EM"?"Nhân viên":Model.RoleID))</div>
+            <div class="position">@((Model.RoleID=="AD")?"Quản trị":(Model.RoleID=="EM"?"Nhân viên":(Model.RoleID=="SP"?"Shipper":Model.RoleID)))</div>
 
             <div class="grid-mini">
               <div class="kv"><div class="k">Mã nhân viên</div><div>@Model.EmployeeID</div></div>

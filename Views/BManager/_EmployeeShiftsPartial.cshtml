@@ -1,0 +1,34 @@
+@model List<DetailedShiftReport>
+
+@if (!Model.Any())
+{
+    <p class="text-muted text-center">Không có ca làm việc nào được ghi nhận trong tháng này.</p>
+}
+else
+{
+    <table class="table table-sm table-bordered table-striped shift-detail-table">
+        <thead class="table-light">
+            <tr>
+                <th>Ngày</th>
+                <th>Giờ In</th>
+                <th>Giờ Out</th>
+                <th>Tổng giờ</th>
+                <th>Lương cơ bản</th>
+                <th>Tổng tiền ca</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var shift in Model)
+            {
+                <tr>
+                    <td>@shift.Date.ToString("dd/MM (ddd)")</td>
+                    <td>@shift.CheckInTime?.ToString("HH:mm")</td>
+                    <td>@shift.CheckOutTime?.ToString("HH:mm")</td>
+                    <td>@shift.DurationHours.ToString("0.##")</td>
+                    <td>@shift.BaseRate.ToString("N0") đ</td>                    
+                    <td><strong>@shift.TotalShiftPay.ToString("N0") đ</strong></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

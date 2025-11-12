@@ -1,0 +1,76 @@
+@model List<Contract>
+
+<span data-employee-name-modal="@ViewBag.EmployeeNameForModal" class="d-none"></span>
+
+@{
+    var activeContract = Model.FirstOrDefault(c => c.Status == "Hiệu lực");
+    var employeeName = ViewBag.EmployeeNameForModal;
+}
+
+@* --- BUTTON ACTIONS --- *@
+<div class="mb-3 d-flex justify-content-end">
+    @if (activeContract != null)
+    {
+        @* Đảm bảo không có onclick=confirm() *@
+        <button type="button" class="btn btn-danger" id="cancelContractBtn" 
+                data-contract-id="@activeContract.ContractId" 
+                data-employee-name="@employeeName">
+            <i class="fas fa-ban me-2"></i> Chấm dứt hợp đồng
+        </button>
+    }
+    else
+    {
+        <button type="button" class="btn btn-success" id="showCreateContractFormBtn">
+            <i class="fas fa-plus me-2"></i> Tạo hợp đồng mới
+        </button>
+    }
+</div>
+
+@* --- CONTRACTS LIST --- *@
+@if (!Model.Any())
+{
+    <p class="text-muted">Không tìm thấy hợp đồng nào cho nhân viên này.</p>
+}
+else
+{
+    <table class="table table-sm table-striped">
+        <thead>
+            <tr>
+                <th>Số HĐ</th>
+                <th>Loại</th>
+                <th>Ngày hiệu lực</th>
+                <th>Mức lương</th>
+                <th>Trạng thái</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var contract in Model.OrderByDescending(c => c.CreatedAt))
+            {
+                <tr>
+                    <td>@contract.ContractNumber</td>
+                    <td>@contract.ContractType</td>
+                    <td>@contract.StartDate.ToString("dd/MM/yy") - @(contract.EndDate?.ToString("dd/MM/yy") ?? "Vô thời hạn")</td>
+                    <td>@contract.BaseRate.ToString("N0") (@contract.PaymentType)</td>
+                    <td>
+                        @if (contract.Status == "Hiệu lực")
+                        { 
+                            <span class="badge bg-success">@contract.Status</span> 
+                        }
+                        else if (contract.Status == "Hết hạn")
+                        { 
+                            <span class="badge bg-secondary">@contract.Status</span> 
+                        }
+                        else if (contract.Status == "Đã hủy") 
+                        {
+                            <span class="badge bg-danger">@contract.Status</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-info">@contract.Status</span>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

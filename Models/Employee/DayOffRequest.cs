@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace start.Models;
 
-[Table("DayOffRequests")]
+[Table("DayOffRequest")]
 public class DayOffRequest
 {
     [Key] public int Id { get; set; }

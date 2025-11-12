@@ -483,33 +483,33 @@ public class OrderService : IOrderService
     }
 
     public async Task<object?> GetOrderByCodeAsync(string orderCode)
-{
-    var order = await _context.Orders
-        .Where(o => o.OrderCode == orderCode)
-        .Select(o => new
-        {
-            o.OrderID,
-            o.CustomerID,
-            o.CreatedAt,
-            o.OrderCode,
-            o.Status,
-            o.Total,
-            o.DetailAddress,
-            o.NoteOrder,
-            o.ShippingFee,
-            o.PromoCode,
-            o.Address,
-            o.ReceiverName,
-            o.ReceiverPhone,
-            o.PaymentMethod,
-            o.TransId,
-            o.CancelledAt,
-            o.CancelReason
-        })
-        .FirstOrDefaultAsync();
+    {
+        var order = await _context.Orders
+            .Where(o => o.OrderCode == orderCode)
+            .Select(o => new
+            {
+                o.OrderID,
+                o.CustomerID,
+                o.CreatedAt,
+                o.OrderCode,
+                o.Status,
+                o.Total,
+                o.DetailAddress,
+                o.NoteOrder,
+                o.ShippingFee,
+                o.PromoCode,
+                o.Address,
+                o.ReceiverName,
+                o.ReceiverPhone,
+                o.PaymentMethod,
+                o.TransId,
+                o.CancelledAt,
+                o.CancelReason
+            })
+            .FirstOrDefaultAsync();
 
-    return order;
-}
+        return order;
+    }
 
     public async Task<(bool success, string message)> CancelByCustomerAsync(int orderId, int customerId, string? reason)
     {
@@ -604,12 +604,23 @@ public class OrderService : IOrderService
     }
 
     public async Task UpdateTransIdAsync(int orderId, string transId)
-{
-    var order = await _context.Orders.FindAsync(orderId);
-    if (order == null) return;
+    {
+        var order = await _context.Orders.FindAsync(orderId);
+        if (order == null) return;
 
-    order.TransId = transId;
-    await _context.SaveChangesAsync();
-}
+        order.TransId = transId;
+        await _context.SaveChangesAsync();
+    }
+
+public async Task MarkOrderAsDelivered(int orderId)
+    {
+        var order = await _context.Orders.FindAsync(orderId);
+        if (order != null)
+        {
+            order.Status = "Đã giao";
+            order.UpdatedAt = DateTime.Now; 
+            await _context.SaveChangesAsync();
+        }
+    }
 
 }

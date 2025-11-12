@@ -1,50 +1,51 @@
 @{
     Layout = null;
     var active = (string?)ViewBag.ActiveMenu ?? "";
-
-    // đọc role từ Session (RoleID ưu tiên, fallback Role), chuẩn hóa in hoa
     var roleRaw = Context?.Session?.GetString("RoleID") ?? Context?.Session?.GetString("Role");
     var role    = roleRaw?.Trim().ToUpperInvariant();
 }
-
 
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8" />
     <title>@ViewData["Title"] - Employee</title>
+    
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
+    <link rel="stylesheet" href="~/css/employee/profile.css" asp-append-version="true" />
 
-    <!-- CSS chung cho khu vực nhân viên -->
-    <link rel="stylesheet" href="~/css/employee/profile.css" />
-
-    @* Cho phép view con chèn thêm CSS *@
-    @RenderSection("Styles", required: false)
+    @await RenderSectionAsync("Styles", required: false)
 </head>
 <body>
 <div class="layout">
-
   <aside class="sidebar">
     <div class="sb-title">Menu</div>
-
-    <a class="sb-item @(active=="Profile" ? "active" : "")"
-       href="@Url.Action("Profile","Employee")">Hồ sơ của tôi</a>
-
+    <a class="sb-item @(active=="Profile" ? "active" : "")" href="@Url.Action("Profile","Employee")">Hồ sơ của tôi</a>
+    
     @if (role is "EM" or "SL" or "NV")
     {
-      <a class="sb-item @(ViewBag.ActiveMenu=="DayOff" ? "active" : "")"
-         href="@Url.Action("DayOff","Employee")">
-        Quản lý ngày nghỉ
-      </a>
+      <a class="sb-item @(active=="DayOff" ? "active" : "")" href="@Url.Action("DayOff","Employee")">Quản lý ngày nghỉ</a>
+    }                          
+
+    @if (role != "BM")
+    {
+        <a class="sb-item @(active=="Schedule" ? "active" : "")"
+           href="@Url.Action("Schedule","Employee")">Lịch làm</a>
+        <a class="sb-item @(active=="RegisterSchedule" ? "active" : "")"
+           href="@Url.Action("RegisterSchedule","Employee")">Đăng ký lịch làm</a>
     }
-
-    <a class="sb-item @(active=="Schedule" ? "active" : "")"
-       href="@Url.Action("Schedule","Employee")">Lịch làm</a>
-
-
+    
+    @if (role == "BM")
+    {
+        <a class="sb-item" href="@Url.Action("Index", "BManager")">
+            <i class="fas fa-arrow-left me-2"></i> Quay lại Dashboard
+        </a>
+    }
     <a class="sb-item @(active=="EditProfile" ? "active" : "")"
        href="@Url.Action("EditProfile","Employee")">Chỉnh sửa thông tin cá nhân</a>
-        <a class="sb-item @(active=="" ? "active" : "")"
-       href="@Url.Action("Index","Home")">Đăng xuất</a>
+       
+    <a class="sb-item" href="@Url.Action("Logout","Account")">Đăng xuất</a>
   </aside>
 
   <main>
@@ -56,7 +57,11 @@
   </main>
 </div>
 
-@* Cho phép view con chèn script riêng *@
-@RenderSection("Scripts", required: false)
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
+<script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+<script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
+
+@await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

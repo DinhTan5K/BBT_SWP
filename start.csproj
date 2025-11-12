@@ -25,6 +25,7 @@
     <Folder Include="DTOs\" />
     <Folder Include="Repository\" />
     <Folder Include="Services\" />
+    <Folder Include="Services\HumanResources\" />
     <Folder Include="Temp\" />
   </ItemGroup>
 

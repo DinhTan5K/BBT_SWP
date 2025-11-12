@@ -37,6 +37,7 @@ namespace start.Models
 
         public string? RefundTransId { get; set; }
         public DateTime? RefundAt { get; set; }
+        public DateTime? UpdatedAt { get; set; }
 
         public ICollection<OrderDetail>? OrderDetails
         { get; set; }

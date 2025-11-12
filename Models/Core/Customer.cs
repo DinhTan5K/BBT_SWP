@@ -42,8 +42,8 @@ public class Customer
     [StringLength(255)]
     public string? ProfileImagePath { get; set; }
     
-    public DateTime? OtpExpired { get; set; }
-
+        public DateTime? OtpExpired { get; set; }
+    [NotMapped]
     public string Role { get; set; } = "CU";
 
 }

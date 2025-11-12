@@ -10,6 +10,7 @@ public interface IOrderService
     Task<PromoCodeResponse> CalculateDiscountAsync(string promoCodes, decimal itemsTotal, decimal shippingFee, int branchID);
      Task<PromoValidationResult> ValidateAndApplyPromoCodesAsync(PromoValidationRequest request);
     Task<(bool success, string message)> CancelByCustomerAsync(int orderId, int customerId, string? reason);
-  bool Reorder(int customerId, int orderId, out string message);  
-    Task UpdateTransIdAsync(int orderId, string transId);
+  bool Reorder(int customerId, int orderId, out string message);
+  Task UpdateTransIdAsync(int orderId, string transId);
+    Task MarkOrderAsDelivered(int orderId);
 }

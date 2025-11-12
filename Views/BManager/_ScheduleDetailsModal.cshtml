@@ -1,0 +1,48 @@
+@model List<start.Models.WorkSchedule>
+
+@if (!Model.Any())
+{
+    <div class="text-center p-4">
+        <p class="text-muted mb-0">Không có ca làm việc nào trong ngày này.</p>
+    </div>
+}
+else
+{
+    <ul class="list-group list-group-flush">
+        @foreach (var schedule in Model.OrderBy(s => s.Shift))
+        {
+            <li class="list-group-item d-flex justify-content-between align-items-center" data-id="@schedule.WorkScheduleID">
+                <div>
+                    <div class="fw-bold">@schedule.Employee?.FullName</div>
+                    <small class="text-muted">
+                        Ca @schedule.Shift -
+                        @if (schedule.Status == "Đã duyệt")
+                        {
+                            <span class="text-success">@schedule.Status</span>
+                        }
+                        else
+                        {
+                            <span class="text-warning">@schedule.Status</span>
+                        }
+                    </small>
+                </div>
+                <div class="action-buttons">
+                    @if (schedule.Status == "Chưa duyệt")
+                    {
+                        <button class="btn btn-sm btn-outline-success btn-modal-approve" title="Duyệt ca">
+                            <i class="fas fa-check"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger btn-modal-reject" title="Từ chối ca">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    }
+                    
+                    @* NÚT SỬA MỚI *@
+                    <button class="btn btn-sm btn-outline-primary btn-modal-edit" title="Chỉnh sửa ca">
+                        <i class="fas fa-pencil-alt"></i>
+                    </button>
+                </div>
+            </li>
+        }
+    </ul>
+}

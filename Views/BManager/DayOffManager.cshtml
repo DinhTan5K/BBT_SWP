@@ -1,0 +1,120 @@
+@model List<start.Models.ViewModels.DayOffManagerVm>
+
+@{
+    ViewData["Title"] = "Duyệt Đơn Nghỉ Phép";
+    Layout = "_BManagerLayout";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/BManager/DayOffManager.css" asp-append-version="true" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+}
+
+<div class="dayoff-container">
+    <div class="dayoff-header">
+        <h2>Duyệt Đơn Nghỉ Phép (@Model.Count)</h2>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info">Không có đơn xin nghỉ phép nào đang chờ duyệt.</div>
+    }
+    else
+    {
+        <div class="dayoff-grid">
+            @foreach (var item in Model)
+            {
+                // Logic lấy 2 chữ cái đầu
+                string initials = new string(item.FullName.Split(' ').Where(s => !string.IsNullOrEmpty(s)).Select(s => s[0]).Take(2).ToArray()).ToUpper();
+
+                <div class="request-card">
+                    <div class="card-main-content">
+                        <div class="card-header">
+                            <div class="employee-avatar">@initials</div>
+                            <div class="employee-info">
+                                <div class="name">@item.FullName</div>
+                                <div class="id">Mã NV: @item.EmployeeID</div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="request-date">
+                                <i class="fas fa-calendar-alt"></i>
+                                <span>@item.OffDate.ToString("dddd, dd/MM/yyyy")</span>
+                            </div>
+                            @* Dùng thẻ p và class request-reason để giới hạn text/hiển thị đẹp hơn *@
+                            <p class="request-reason" title="@item.Reason">Lý do: @item.Reason</p> 
+                        </div>
+                    </div>
+                    <div class="card-actions">
+                        <form asp-action="HandleDayOff" method="post" class="day-off-form d-flex gap-2" data-request-id="@item.Id">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="requestId" value="@item.Id" />
+                            <input type="hidden" name="employeeName" value="@item.FullName" /> 
+                            
+                            <button type="button"
+                                    data-action-type="reject"
+                                    data-date="@item.OffDate.ToString("dd/MM")"
+                                    class="btn btn-danger btn-action">
+                                Từ chối
+                            </button>
+                            <button type="button"
+                                    data-action-type="approve"
+                                    data-date="@item.OffDate.ToString("dd/MM")"
+                                    class="btn btn-success btn-action">
+                                Duyệt
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> 
+
+    <script>
+        $(document).ready(function () {
+            // ... (Logic SweetAlert2 giữ nguyên) ...
+            $('.btn-action').on('click', function () {
+                var button = $(this);
+                var actionType = button.data('action-type');
+                var offDate = button.data('date');
+                var form = button.closest('form');
+                
+                var employeeName = form.find('input[name="employeeName"]').val(); 
+                
+                var isApprove = actionType === 'approve';
+                var titleText = isApprove ? 'Xác nhận Duyệt Đơn' : 'Xác nhận Từ Chối Đơn';
+                var confirmButtonText = isApprove ? 'Duyệt' : 'Từ Chối';
+                var iconType = isApprove ? 'question' : 'warning';
+                var color = isApprove ? '#10b981' : '#dc3545'; 
+
+                Swal.fire({
+                    title: titleText,
+                    html: `Bạn có chắc chắn muốn ${isApprove ? 'duyệt' : 'TỪ CHỐI'} đơn nghỉ phép của <strong>${employeeName}</strong> vào ngày <strong>${offDate}</strong> không?`,
+                    icon: iconType,
+                    showCancelButton: true,
+                    confirmButtonColor: color,
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: confirmButtonText,
+                    cancelButtonText: 'Hủy bỏ'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        Swal.fire({ title: 'Đang xử lý...', text: 'Vui lòng chờ...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+
+                        var actionInput = $('<input>').attr({
+                            type: 'hidden',
+                            name: 'action',
+                            value: actionType 
+                        });
+                        form.append(actionInput);
+                        form.submit();
+                    }
+                });
+            });
+        });
+    </script>
+}

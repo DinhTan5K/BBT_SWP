@@ -4,18 +4,32 @@ using System.ComponentModel.DataAnnotations.Schema;
 using start.Models;
 
 
-
-public class WorkSchedule
+namespace start.Models
+{
+    [Table("WorkSchedule")]
+    public class WorkSchedule
     {
         public int WorkScheduleID { get; set; }
         [ForeignKey("Employee")]
         public string? EmployeeID { get; set; }
         public Employee? Employee { get; set; }
 
-        [Display(Name = "Work Date")]
+        [Display(Name = "Date")]
         [DisplayFormat(DataFormatString = "{0:dd/MM/yyyy}", ApplyFormatInEditMode = true)]
-        public DateTime WorkDate { get; set; }
+        public DateTime Date { get; set; }
         public string? Shift { get; set; }
         public bool IsActive { get; set; } = true;
-    }
+        [Display(Name = "Check-In")]
+        public DateTime? CheckInTime { get; set; }
 
+        [Display(Name = "Check-Out")]
+        public DateTime? CheckOutTime { get; set; }
+        [Required]
+        [StringLength(20)]
+        public string? Status { get; set; }
+        
+        [ForeignKey("Branch")]
+        public int BranchId { get; set; }
+        public Branch? Branch { get; set; }
+    }
+}

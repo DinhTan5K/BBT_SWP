@@ -19,8 +19,9 @@
     int ToIsoDow(DayOfWeek d) => d == DayOfWeek.Sunday ? 7 : (int)d;
     var startIsoDow = ToIsoDow(firstOfMonth.DayOfWeek); // 1..7 (Mon..Sun)
     // Map nhanh các ngày có ca làm
-    var workByDate = Model.Items
-        .GroupBy(x => x.WorkDate.Date)
+    var workByDate = Model.Items // Lọc bỏ các ca "Chưa duyệt"
+        .Where(s => s.Status != "Chưa duyệt")
+        .GroupBy(x => x.Date.Date)
         .ToDictionary(g => g.Key, g => g.ToList());
 
     string[] dowHeaders = new[] { "T2", "T3", "T4", "T5", "T6", "T7", "CN" };
@@ -92,9 +93,20 @@
                       var entries = workByDate[d.Date];
                       foreach (var w in entries)
                       {
-                          var badgeClass = w.IsActive ? "badge-done" : "badge-plan";
-                          var statusText = w.IsActive ? "Đã làm" : "Dự kiến";
-                          var shiftText  = string.IsNullOrWhiteSpace(w.Shift) ? "—" : w.Shift;
+                          // --- SỬA LOGIC XÁC ĐỊNH TRẠNG THÁI ---
+                          string badgeClass;
+                          string statusText;
+                          if (w.CheckInTime.HasValue && w.CheckOutTime.HasValue)
+                          {
+                              badgeClass = "badge-done";
+                              statusText = "Đã làm";
+                          }
+                          else // Mặc định là "Dự kiến" vì đã lọc "Chưa duyệt" ở trên
+                          {
+                              badgeClass = "badge-plan";
+                              statusText = "Dự kiến";
+                          }
+                          var shiftText = string.IsNullOrWhiteSpace(w.Shift) ? "—" : w.Shift;
 
                           <div class="cal-note @badgeClass">
                             <div class="note-row">

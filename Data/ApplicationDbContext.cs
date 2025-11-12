@@ -37,5 +37,7 @@ namespace start.Data
         public DbSet<Wishlist> Wishlist { get; set; }
         public DbSet<ChatHistory> ChatHistories { get; set; }
 
+        public DbSet<EmployeeBranchRequest> EmployeeBranchRequests { get; set; }
+
     }
 }

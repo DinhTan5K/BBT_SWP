@@ -9,7 +9,7 @@ using start.Services;               // IEmployeeProfileService
 using start.Models.ViewModels;
 namespace start.Controllers
 {
-    
+
     [Route("Employee")] // /Employee/...
     public class EmployeeController : Controller
     {
@@ -19,26 +19,28 @@ namespace start.Controllers
         private readonly ApplicationDbContext _db;
 
         private readonly IDayOffService _dayoff;
+        private readonly IRegisterScheduleService _registerService;
         // Controllers/EmployeeController.cs (thêm ngay sau CurrentEmpId)
-// CHỈNH
-private string? CurrentRole =>
-    (HttpContext.Session.GetString("RoleID") ??   // ưu tiên RoleID
-     HttpContext.Session.GetString("Role"))       // fallback Role
-    ?.Trim().ToUpperInvariant();
+        // CHỈNH
+        private string? CurrentRole =>
+            (HttpContext.Session.GetString("RoleID") ??   // ưu tiên RoleID
+             HttpContext.Session.GetString("Role"))       // fallback Role
+            ?.Trim().ToUpperInvariant();
 
-// CHO PHÉP: NV | EM | SL
-private bool CanAccessDayOff() =>
-    CurrentRole is "NV" or "EM" or "SL";
+        // CHO PHÉP: NV | EM | SL
+        private bool CanAccessDayOff() =>
+            CurrentRole is "NV" or "EM" or "SL";
 
-        public EmployeeController(ApplicationDbContext db, IEmployeeProfileService svc, IScheduleService s, IPayrollService p, IDayOffService dayoff)
+        public EmployeeController(ApplicationDbContext db, IEmployeeProfileService svc, IScheduleService s, IPayrollService p, IDayOffService dayoff, IRegisterScheduleService registerService)
         {
             _db = db;
             _svc = svc;
             _s = s;
             _p = p;
             _dayoff = dayoff;
+            _registerService = registerService;
         }
-       
+
 
         // Lấy EmployeeID từ session
         private string? CurrentEmpId => HttpContext.Session.GetString("EmployeeID");
@@ -186,98 +188,188 @@ private bool CanAccessDayOff() =>
             ViewBag.ActiveTab = "schedule";
             return View("Schedule", dto); // Views/Employee/Schedule.cshtml @model MonthScheduleDto
         }
- [HttpGet("salary")]
-    public async Task<IActionResult> Salary(string id, int? month, int? year)
-    {
-        ViewBag.ActiveMenu = "Profile";
-        ViewBag.ActiveTab  = "salary";
+        [HttpGet("salary")]
+        public async Task<IActionResult> Salary(string id, int? month, int? year)
+        {
+            ViewBag.ActiveMenu = "Profile";
+            ViewBag.ActiveTab = "salary";
 
-        var now = DateTime.Today;
-        int m = (month is >= 1 and <= 12) ? month.Value : now.Month;
-        int y = (year  is >= 2000)        ? year.Value  : now.Year;
+            var now = DateTime.Today;
+            int m = (month is >= 1 and <= 12) ? month.Value : now.Month;
+            int y = (year is >= 2000) ? year.Value : now.Year;
 
-        // >>> LẤY EMPLOYEE KÈM BRANCH (và Role nếu cần)
-        var emp = await _db.Employees
-            .Include(e => e.Branch)
-            .Include(e => e.Role)          // (tuỳ)
-            .FirstOrDefaultAsync(e => e.EmployeeID == id);
+            // >>> LẤY EMPLOYEE KÈM BRANCH (và Role nếu cần)
+            var emp = await _db.Employees
+                .Include(e => e.Branch)
+                .Include(e => e.Role)          // (tuỳ)
+                .FirstOrDefaultAsync(e => e.EmployeeID == id);
 
-        // Bảng lương
-        var vm = await _p.GetMonthlySalaryAsync(id, y, m);
+            // Bảng lương
+            var vm = await _p.GetMonthlySalaryAsync(id, y, m);
 
-        // Truyền cho view/partials
-        ViewBag.Employee = emp;
-        ViewData["EmployeeID"] = id;
-        ViewData["Month"] = m;
-        ViewData["Year"]  = y;
+            // Truyền cho view/partials
+            ViewBag.Employee = emp;
+            ViewData["EmployeeID"] = id;
+            ViewData["Month"] = m;
+            ViewData["Year"] = y;
 
-        return View(vm); // Views/Employee/Salary.cshtml (model: MonthlySalaryVm?)
+            return View(vm); // Views/Employee/Salary.cshtml (model: MonthlySalaryVm?)
+        }
+        [HttpGet("DayOff/{id?}")]
+        public async Task<IActionResult> DayOff(string? id)
+        {
+            // THÊM kiểm tra đăng nhập trước
+            id ??= CurrentEmpId;
+            if (string.IsNullOrEmpty(id))
+                return RedirectToAction("Login", "Account");
+
+            // THÊM CHẶN QUYỀN
+            if (!CanAccessDayOff())
+                return Forbid(); // hoặc RedirectToAction("Profile")
+
+            // GỘP thành 1 lần query emp (xóa dòng query trùng ngay bên dưới của bạn)
+            var emp = await _db.Employees
+                .Include(e => e.Branch)
+                .Include(e => e.Role) // nếu cần
+                .FirstOrDefaultAsync(e => e.EmployeeID == id);
+
+            if (emp == null) return NotFound();
+
+            ViewBag.ActiveMenu = "DayOff";
+            ViewBag.Employee = emp;
+            ViewBag.Requests = await _dayoff.GetMyAsync(id);
+
+            var vm = new DayOffOneDayVm
+            {
+                EmployeeID = id,
+                BranchID = emp.BranchID,
+                OffDate = DateTime.Today.AddDays(3)
+            };
+            return View("DayOff", vm);
+        }
+
+        [HttpPost("DayOff")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DayOffSubmit(DayOffOneDayVm vm)
+        {
+            // THÊM CHẶN QUYỀN NGAY ĐẦU
+            if (!CanAccessDayOff())
+                return Forbid();
+
+            if (vm.OffDate.Date < DateTime.Today.AddDays(3))
+                ModelState.AddModelError(nameof(vm.OffDate), "Ngày nghỉ phải sau hôm nay ít nhất 3 ngày.");
+
+            if (!ModelState.IsValid)
+            {
+                var emp = await _db.Employees.FindAsync(vm.EmployeeID);
+                ViewBag.Employee = emp;
+                ViewBag.Requests = await _dayoff.GetMyAsync(vm.EmployeeID);
+                return View("DayOff", vm);
+            }
+
+            try
+            {
+                await _dayoff.CreateOneDayAsync(vm);
+                TempData["ok"] = "Đã gửi yêu cầu nghỉ 1 ngày tới quản lý.";
+            }
+            catch (Exception ex)
+            {
+                TempData["err"] = ex.Message;
+            }
+
+            return RedirectToAction("DayOff", new { id = vm.EmployeeID });
+        }
+
+ [HttpGet("RegisterSchedule")]
+        public IActionResult RegisterSchedule()
+        {
+            ViewBag.ActiveMenu = "RegisterSchedule";
+
+            if (DateTime.Today.DayOfWeek == DayOfWeek.Sunday)
+            {
+                TempData["ScheduleWarning"] = "Hệ thống đã đóng đăng ký cho tuần sau. Vui lòng quay lại vào Thứ Hai.";
+            }
+
+            return View();
+        }
+
+        
+        [HttpPost("RegisterSelfForShift")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RegisterSelfForShift([FromBody] ScheduleRequest request)
+        {
+            var employeeId = CurrentEmpId;
+            if (string.IsNullOrEmpty(employeeId))
+            {
+                return Unauthorized("Bạn cần đăng nhập để thực hiện.");
+            }
+
+            // GỌI SERVICE MỚI
+            var (success, message) = await _registerService.RegisterSelfForShiftAsync(employeeId, request);
+
+
+            if (success)
+            {
+                return Ok(new { success = true, message = message });
+            }
+
+            return BadRequest(message ?? "Lỗi khi đăng ký ca.");
+        }
+
+        // === 3. ACTION CUNG CẤP DỮ LIỆU LỊCH CHO FULLCALENDAR ===
+        [HttpGet("GetMySchedules")]
+        public async Task<IActionResult> GetMySchedules(DateTime start, DateTime end)
+        {
+            var employeeId = CurrentEmpId;
+            if (string.IsNullOrEmpty(employeeId))
+            {
+                return Json(new List<object>());
+            }
+
+            // var schedules = await _bManagerService.GetSchedulesForEmployeeAsync(employeeId, start, end);
+            var schedules = await _registerService.GetMySchedulesAsync(employeeId, start, end);
+
+            var events = schedules.Select(s => new
+            {
+                id = s.WorkScheduleID, // ID của ca làm việc
+                title = s.Shift,       // Tên ca ("Sáng" hoặc "Tối")
+                start = s.Date.ToString("yyyy-MM-dd") + (s.Shift == "Sáng" ? "T08:00:00" : "T15:00:00"), // Thời gian bắt đầu
+                end = s.Date.ToString("yyyy-MM-dd") + (s.Shift == "Sáng" ? "T15:00:00" : "T22:00:00"),   // Thời gian kết thúc
+                
+                // extendedProps để truyền trạng thái tùy chỉnh cho FullCalendar
+                extendedProps = new {
+                    status = (s.CheckInTime.HasValue && s.CheckOutTime.HasValue)
+                                ? "Đã làm" // Đã check-in VÀ check-out -> Đã làm
+                                : (s.Status == "Đã duyệt" 
+                                    ? "Đã duyệt" // Nếu chưa đủ điều kiện "Đã làm" và status là "Đã duyệt" -> Đã duyệt
+                                    : "Chưa duyệt") // Còn lại là "Chưa duyệt"
+                },
+                // Loại bỏ backgroundColor và borderColor cứng, để CSS xử lý qua extendedProps.status
+                // backgroundColor = (s.Shift == "Sáng" ? "#3b82f6" : "#f59e0b"),
+                // borderColor = (s.Shift == "Sáng" ? "#3b82f6" : "#f59e0b")
+            });
+            return Json(events);
+        }
+
+
+        [HttpPost("CancelShift")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CancelShift([FromBody] ScheduleIdRequest request)
+        {
+            var employeeId = CurrentEmpId;
+            if (string.IsNullOrEmpty(employeeId)) return Unauthorized();
+
+            // GỌI SERVICE MỚI
+            var (success, message) = await _registerService.CancelShiftAsync(employeeId, request.Id);
+
+            if (success)
+                return Ok(new { success = true, message = message });
+
+            return BadRequest(message ?? "Lỗi khi hủy ca.");
+        }
     }
-[HttpGet("DayOff/{id?}")]
-public async Task<IActionResult> DayOff(string? id)
-{
-    // THÊM kiểm tra đăng nhập trước
-    id ??= CurrentEmpId;
-    if (string.IsNullOrEmpty(id))
-        return RedirectToAction("Login", "Account");
-
-    // THÊM CHẶN QUYỀN
-    if (!CanAccessDayOff())
-        return Forbid(); // hoặc RedirectToAction("Profile")
-
-    // GỘP thành 1 lần query emp (xóa dòng query trùng ngay bên dưới của bạn)
-    var emp = await _db.Employees
-        .Include(e => e.Branch)
-        .Include(e => e.Role) // nếu cần
-        .FirstOrDefaultAsync(e => e.EmployeeID == id);
-
-    if (emp == null) return NotFound();
-
-    ViewBag.ActiveMenu = "DayOff";
-    ViewBag.Employee = emp;
-    ViewBag.Requests = await _dayoff.GetMyAsync(id);
-
-    var vm = new DayOffOneDayVm {
-        EmployeeID = id,
-        BranchID   = emp.BranchID,
-        OffDate    = DateTime.Today.AddDays(3)
-    };
-    return View("DayOff", vm);
-}
-
-  [HttpPost("DayOff")]
-[ValidateAntiForgeryToken]
-public async Task<IActionResult> DayOffSubmit(DayOffOneDayVm vm)
-{
-    // THÊM CHẶN QUYỀN NGAY ĐẦU
-    if (!CanAccessDayOff())
-        return Forbid();
-
-    if (vm.OffDate.Date < DateTime.Today.AddDays(3))
-        ModelState.AddModelError(nameof(vm.OffDate), "Ngày nghỉ phải sau hôm nay ít nhất 3 ngày.");
-
-    if (!ModelState.IsValid)
-    {
-        var emp = await _db.Employees.FindAsync(vm.EmployeeID);
-        ViewBag.Employee = emp;
-        ViewBag.Requests = await _dayoff.GetMyAsync(vm.EmployeeID);
-        return View("DayOff", vm);
-    }
-
-    try
-    {
-        await _dayoff.CreateOneDayAsync(vm);
-        TempData["ok"] = "Đã gửi yêu cầu nghỉ 1 ngày tới quản lý.";
-    }
-    catch (Exception ex)
-    {
-        TempData["err"] = ex.Message;
-    }
-
-    return RedirectToAction("DayOff", new { id = vm.EmployeeID });
-}
 
 
 
-    }
+    
 }

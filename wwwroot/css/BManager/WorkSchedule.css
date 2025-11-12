@@ -1,0 +1,267 @@
+/* Using variables from bmanager.css for consistency */
+
+/* --- Bộ chọn tháng --- */
+.month-navigator h5 {
+    color: var(--text-color); /* Đảm bảo màu chữ tiêu đề tháng */
+}
+
+.month-navigator {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem;
+    background-color: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+}
+
+/* --- Chú thích ca làm việc --- */
+.schedule-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    padding: 0.5rem 0;
+    margin-bottom: 1rem;
+}
+.legend-item {
+    display: flex;
+    align-items: center;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-muted-color);
+}
+.legend-dot {
+    width: 15px;
+    height: 15px;
+    border-radius: 4px;
+    margin-right: 8px;
+    border: 1px solid var(--border-color);
+}
+/* Màu cho các chấm chú thích trạng thái */
+.legend-dot.shift-status-done { background-color: var(--green-color); }
+.legend-dot.shift-status-approved { background-color: var(--blue-color); }
+.legend-dot.shift-status-pending { background-color: var(--brand-color); }
+
+/* --- Chấm chỉ báo trên lịch --- */
+.pending-dot, .approved-dot {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    box-shadow: 0 0 5px rgba(0,0,0,0.2);
+}
+.pending-dot { background-color: var(--brand-color); } /* Màu cam cho chờ duyệt */
+.approved-dot { background-color: var(--blue-color); } /* Màu xanh dương cho đã duyệt */
+
+
+/* --- Tùy chỉnh Lịch --- */
+.calendar {
+    border: 1px solid var(--border-color);
+    overflow: hidden; 
+    border-radius: 12px;
+    background-color: var(--surface-color);
+    box-shadow: 0 4px 16px var(--shadow-color);
+}
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+}
+.cal-cell {
+    border-right: 1px solid var(--border-color);
+    border-top: 1px solid var(--border-color);
+    padding: 8px;
+    position: relative;
+}
+.cal-cell:nth-child(7n) { border-right: 0; }
+.cal-cell.cal-head {
+    background-color: var(--bg-color);
+    text-align: center;
+    font-weight: 600;
+    padding: 10px 8px;
+    color: var(--text-muted-color);
+}
+.cal-cell.cal-day {
+    min-height: 120px; 
+    background-color: var(--surface-color);
+    transition: background-color 0.2s;
+    cursor: pointer;
+}
+.cal-cell.cal-empty {
+    background-color: var(--bg-color);
+    min-height: 120px;
+    cursor: default;
+}
+.cal-cell.today {
+    background-color: var(--bg-color); 
+}
+.cal-date .date-number {
+    font-weight: 600;
+    font-size: 0.9rem;
+    padding: 4px 6px;
+    border-radius: 50%;
+    color: var(--text-muted-color);
+}
+.cal-cell.today .date-number {
+    background-color: var(--blue-color);
+    color: #fff;
+}
+.cal-cell.cal-day:hover {
+    background-color: var(--bg-color);
+}
+
+/* --- Kiểu cho các ca làm việc --- */
+.schedule-items {
+    margin-top: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.schedule-item {
+    display: block;
+    padding: 5px 8px;
+    border-radius: 4px;
+    color: var(--text-color);
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+.schedule-item:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 5px var(--shadow-color);
+}
+.schedule-item-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.schedule-item-time {
+    font-size: 0.75rem;
+}
+/* Trạng thái chờ duyệt */
+.schedule-item.pending {
+    border: 2px dashed var(--brand-color);
+    background-color: var(--surface-color) !important; 
+    color: var(--text-color) !important;
+}
+
+
+.legend-dot.shift-morning, 
+.schedule-item.shift-morning,
+.upcoming-item-shift.shift-morning,
+.upcoming-item-avatar.shift-morning {
+    background-color: #e0f2fe; /* light-blue-100 */
+    color: #0c4a6e; /* light-blue-900 */
+}
+
+/* (ĐÃ XÓA .shift-afternoon MÀU VÀNG) */
+
+.legend-dot.shift-evening, 
+.schedule-item.shift-evening,
+.upcoming-item-shift.shift-evening,
+.upcoming-item-avatar.shift-evening {
+    background-color: #f3e8ff; /* purple-100 */
+    color: #581c87; /* purple-900 */
+}
+.legend-dot.shift-other, 
+.schedule-item.shift-other {
+    background-color: #f1f5f9; /* slate-100 */
+    color: #334155; /* slate-700 */
+}
+
+
+/* --- Sidebar Ca Sắp Tới --- */
+.upcoming-schedules-widget {
+    background-color: var(--surface-color);
+    border: 1px solid var(--border-color);
+}
+.upcoming-schedules-widget .card-header {
+    background-color: var(--bg-color);
+}
+.upcoming-schedules-widget .card-body {
+    padding: 0.75rem;
+}
+.upcoming-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px;
+    border-bottom: 1px solid var(--border-color);
+}
+.upcoming-item:last-child { border-bottom: none; }
+
+.upcoming-item-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+}
+.upcoming-item-content {
+    flex-grow: 1;
+}
+.upcoming-item-content .name {
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+.upcoming-item-content .date {
+    font-size: 0.8rem;
+    color: var(--text-muted-color);
+}
+.upcoming-item-shift {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 3px 6px;
+    border-radius: 4px;
+    text-transform: capitalize;
+}
+
+/* --- Màu sắc cho các trạng thái ca làm trong Sidebar --- */
+.upcoming-item-avatar.shift-status-done,
+.upcoming-item-shift.shift-status-done {
+    background-color: var(--green-color);
+    color: white;
+}
+.upcoming-item-avatar.shift-status-approved,
+.upcoming-item-shift.shift-status-approved {
+    background-color: var(--blue-color);
+    color: white;
+}
+.upcoming-item-avatar.shift-status-pending,
+.upcoming-item-shift.shift-status-pending {
+    background-color: var(--brand-color);
+    color: white;
+}
+
+/* --- Nút FAB (Floating Action Button) --- */
+.fab {
+    position: fixed;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    border: none;
+    color: white;
+    font-size: 22px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+    z-index: 1050;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+.fab:hover {
+    transform: translateY(-2px) scale(1.05);
+    color: white;
+}
+.fab.fab-primary { background-color: var(--blue-color); bottom: 30px; right: 30px; }
+.fab.fab-primary:hover { background-color: #2563eb; }
+.fab.fab-warning { background-color: var(--brand-color); bottom: 30px; right: 100px; }
+.fab.fab-warning:hover { background-color: var(--brand-dark-color); }
+

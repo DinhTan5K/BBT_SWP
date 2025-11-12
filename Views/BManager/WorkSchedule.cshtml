@@ -1,0 +1,433 @@
+@model List<start.Models.WorkSchedule>
+@{
+    Layout = "_BManagerLayout";
+    ViewData["Title"] = "Lịch Làm Việc";
+    
+    // --- Logic tính toán lịch  ---
+    var viewDate = (DateTime)ViewBag.CurrentDate;
+    var year = viewDate.Year;
+    var month = viewDate.Month;
+    var firstOfMonth = new DateTime(year, month, 1);
+    var daysInMonth = DateTime.DaysInMonth(year, month);
+    int ToIsoDow(DayOfWeek d) => d == DayOfWeek.Sunday ? 7 : (int)d;
+    var startIsoDow = ToIsoDow(firstOfMonth.DayOfWeek); 
+ 
+    // --- Nhóm các ca làm theo ngày  ---
+    var workByDate = Model
+        .GroupBy(x => x.Date.Date)
+        .ToDictionary(g => g.Key, g => g.ToList());
+
+    string[] dowHeaders = new[] { "T2", "T3", "T4", "T5", "T6", "T7", "CN" };
+    var prevMonthDate = viewDate.AddMonths(-1);
+    var nextMonthDate = viewDate.AddMonths(1);
+
+    // ---  Lấy 5 ca sắp tới cho Sidebar ---
+    // KHÔI PHỤC: Lấy ca đã duyệt và ĐÃ CHECK-IN
+    var upcomingSchedules = Model
+        .Where(s => s.Date.Date >= DateTime.Today && 
+                     s.Date.Date <= firstOfMonth.AddMonths(1).AddDays(-1) && 
+                     s.Status == "Đã duyệt" && 
+                     s.CheckInTime.HasValue)
+        .OrderBy(s => s.Date)
+        .ThenBy(s => s.CheckInTime)
+        .Take(5)
+        .ToList();
+        
+    // ---  Helper gán màu ca làm việc (cho Sidebar) ---
+    string GetShiftClass(DateTime? checkInTime)
+    {
+        if (!checkInTime.HasValue) return "shift-other";
+        var startTime = checkInTime.Value.TimeOfDay;
+        if (startTime.Hours >= 8 && startTime.Hours < 15) return "shift-morning"; // 8h-15h
+        if (startTime.Hours >= 15 && startTime.Hours < 22) return "shift-evening"; // 15h-22h
+        return "shift-other";
+    }
+    
+    // ---  Helper lấy chữ cái đầu (cho Sidebar) ---
+    string GetInitials(string fullName)
+    {
+        if (string.IsNullOrEmpty(fullName)) return "?";
+        var parts = fullName.Split(' ');
+        if (parts.Length > 1)
+        {
+            // Lấy chữ cái đầu của từ cuối cùng và từ áp chót
+            // Nếu chỉ có 1 từ, lấy 2 chữ cái đầu của từ đó
+            return $"{parts[0][0]}{parts[parts.Length - 1][0]}".ToUpper();
+        }
+        return fullName.Length > 1 ? fullName.Substring(0, 2).ToUpper() : fullName.ToUpper();
+    }
+}
+
+@Html.AntiForgeryToken()
+
+<div style="margin-top: 80px;">
+
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap">
+        <h2 class="mb-0">Lịch Làm Việc</h2>
+        
+        <div class="month-navigator">
+            <a asp-action="WorkSchedule" 
+            asp-route-startDate="@prevMonthDate.ToString("yyyy-MM-01")" 
+            class="btn btn-outline-secondary btn-sm">
+                <i class="fas fa-chevron-left"></i> Tháng trước
+            </a>
+            <h5 class="mb-0 mx-3" style="min-width: 150px; text-align: center;">Tháng @viewDate.Month / @viewDate.Year</h5>
+            <a asp-action="WorkSchedule" 
+            asp-route-startDate="@nextMonthDate.ToString("yyyy-MM-01")" 
+            class="btn btn-outline-secondary btn-sm">
+                Tháng sau <i class="fas fa-chevron-right"></i>
+            </a>
+        </div>
+    </div>
+    
+    <div class="schedule-legend mb-3">
+        <div class="legend-item"><span class="legend-dot shift-morning"></span> Ca Sáng (8h-15h)</div>
+        <div class="legend-item"><span class="legend-dot shift-evening"></span> Ca Tối (15h-22h)</div>
+    </div>
+
+    <div class="row g-4">
+    
+        <div class="col-lg-9">
+            <div class="calendar card shadow-sm">
+                <div class="calendar-grid">
+                    @foreach (var h in dowHeaders)
+                    {
+                        <div class="cal-cell cal-head">@h</div>
+                    }
+                    @{ for (int i = 1; i < startIsoDow; i++) { <div class="cal-cell cal-empty"></div> } }
+
+                    @for (int day = 1; day <= daysInMonth; day++)
+                    {
+                        var d = new DateTime(year, month, day);
+                        bool isToday = d.Date == DateTime.Today;
+                        bool hasWork = workByDate.ContainsKey(d.Date);
+                        
+                        // Đếm số ca theo trạng thái
+                        int pendingCount = hasWork ? workByDate[d.Date].Count(s => s.Status == "Chưa duyệt") : 0;
+                        int approvedCount = hasWork ? workByDate[d.Date].Count(s => s.Status == "Đã duyệt" && (s.Date.Date >= DateTime.Today.Date || !s.CheckInTime.HasValue)) : 0;
+                        int doneCount = hasWork ? workByDate[d.Date].Count(s => s.Date.Date < DateTime.Today.Date && s.CheckInTime.HasValue) : 0;
+                        int totalShifts = hasWork ? workByDate[d.Date].Count() : 0;
+                        
+                        var cellClass = "cal-cell cal-day" + (isToday ? " today" : "") + (hasWork ? " workday" : "");
+
+                        <div class="@cellClass" data-date="@d.ToString("yyyy-MM-dd")">
+                            <div class="cal-date"><span class="date-number">@day</span></div>
+                            
+                            @if (pendingCount > 0)
+                            {
+                                <span class="pending-dot" title="@pendingCount ca chờ duyệt"></span>
+                            } else if (approvedCount > 0 && d.Date >= DateTime.Today) {
+                                <span class="approved-dot" title="@approvedCount ca đã duyệt"></span>
+                            }
+                            
+                            @if (hasWork)
+                            {
+                                <div class="mt-2 small schedule-summary">
+                                    @if (pendingCount > 0) {
+                                        <div class="text-warning"><strong>@workByDate[d.Date].Count(s => s.Status == "Chưa duyệt") Chờ duyệt</strong></div>
+                                    } else if (doneCount > 0) {
+                                        <div class="text-success"><strong>@doneCount Đã làm</strong></div>
+                                    } 
+                                    <div class="text-primary">@workByDate[d.Date].Count(s => s.Status == "Đã duyệt") Đã duyệt</div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    
+                    @{
+                        int totalCells = (startIsoDow - 1) + daysInMonth;
+                        int pad = (7 - (totalCells % 7)) % 7;
+                        for (int i = 0; i < pad; i++) { <div class="cal-cell cal-empty"></div> }
+                    }
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3">
+            <div class="card shadow-sm upcoming-schedules-widget">
+                <div class="card-header">
+                    <h6 class="mb-0">Ca Làm Việc Sắp Tới</h6>
+                </div>
+                <div class="card-body">
+                    @if (upcomingSchedules.Any())
+                    {
+                        <ul class="list-unstyled mb-0">
+                            @foreach (var upcoming in upcomingSchedules)
+                            {
+                                var shiftClass = GetShiftClass(upcoming.CheckInTime);
+                                
+                                <li class="upcoming-item" data-id="@upcoming.WorkScheduleID"> @* Đã thêm data-id cho sidebar *@
+                                    <div class="upcoming-item-avatar @shiftClass">
+                                        @GetInitials(upcoming.Employee?.FullName)
+                                    </div>
+                                    <div class="upcoming-item-content">
+                                        <div class="name">@upcoming.Employee?.FullName</div>
+                                        <div class="date">
+                                            @upcoming.Date.ToString("dd/MM/yyyy") 
+                                            (@upcoming.CheckInTime?.ToString("HH:mm") - @upcoming.CheckOutTime?.ToString("HH:mm"))
+                                        </div>
+                                    </div>
+                                    <div class="upcoming-item-shift @shiftClass">
+                                        @(shiftClass == "shift-morning" ? "Ca Sáng" : (shiftClass == "shift-evening" ? "Ca Tối" : "Ca Khác"))
+                                    </div>
+                                </li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <p class="text-muted text-center mb-0">Không có ca làm việc nào sắp tới.</p>
+                    }
+                </div>
+            </div>
+        </div>
+        
+    </div>
+</div>
+
+<button id="addScheduleBtn" class="btn btn-primary rounded-circle shadow-lg d-flex align-items-center justify-content-center"
+        style="position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; z-index: 1050;">
+    <i class="fas fa-plus fs-3"></i>
+</button>
+
+<div class="modal fade" id="scheduleModal" tabindex="-1" aria-labelledby="scheduleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg"> 
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="scheduleModalLabel"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-primary" id="saveScheduleBtn">Tạo Lịch</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="editScheduleModal" tabindex="-1" aria-labelledby="editScheduleLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Chỉnh sửa lịch làm</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="editScheduleContent">
+                <div class="text-center text-muted">Đang tải nội dung...</div>
+            </div>
+            <div class="modal-footer">
+                @* Nút Lưu thay đổi nằm trong form của Partial View, không cần ở đây *@
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles{
+    <link rel="stylesheet" href="~/css/Bmanager/WorkSchedule.css" asp-append-version="true" />
+}
+
+@section Scripts {
+<script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+$(function () {
+    const scheduleModal = new bootstrap.Modal(document.getElementById('scheduleModal'));
+    const modalEl = document.getElementById('scheduleModal');
+    const modalTitle = $('#scheduleModalLabel');
+    const modalBody = $('#scheduleModal .modal-body');
+    const editModalEl = document.getElementById('editScheduleModal');
+    const saveBtn = $('#saveScheduleBtn');
+    const token = $('input[name="__RequestVerificationToken"]').val();
+
+    // -------------------- HÀM TẢI FORM TẠO LỊCH --------------------
+    function loadCreateScheduleForm(date = null) {
+        let reportDate = date ? date.toISOString().split('T')[0] : '';
+        modalTitle.text("Tạo lịch làm mới" + (date ? ' - ' + new Date(date).toLocaleDateString('vi-VN') : ''));
+        modalBody.html('<div class="text-center"><div class="spinner-border"></div></div>');
+        saveBtn.text('Tạo Lịch').show();
+        scheduleModal.show();
+
+        let url = '@Url.Action("CreateSchedulePartial")' + (reportDate ? '?date=' + reportDate : '');
+        $.ajax({
+            url: url,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            xhrFields: { withCredentials: true },
+            success: function (response) {
+                modalBody.html(response);
+                $.validator.unobtrusive.parse($('#createScheduleForm'));
+            },
+            error: function () {
+                modalBody.html('<div class="text-danger text-center">Không thể tải form tạo lịch.</div>');
+            }
+        });
+    }
+
+    // -------------------- NÚT TẠO LỊCH (+) --------------------
+    $('#addScheduleBtn').click(function () {
+        loadCreateScheduleForm();
+    });
+
+    // -------------------- LƯU LỊCH MỚI --------------------
+    $('#saveScheduleBtn').click(function () {
+        const form = $('#createScheduleForm');
+        if (form.length && form.valid()) {
+            $.ajax({
+                url: '@Url.Action("CreateSchedule")',
+                method: 'POST',
+                data: form.serialize(),
+                xhrFields: { withCredentials: true },
+                success: function (response) {
+                    if (response.success) {
+                        scheduleModal.hide();
+                        Swal.fire('Thành công!', 'Đã tạo lịch làm việc.', 'success')
+                            .then(() => location.reload());
+                    } else if (typeof response === "string") {
+                        modalBody.html(response);
+                        $.validator.unobtrusive.parse($('#createScheduleForm'));
+                    } else {
+                        Swal.fire('Lỗi', response.errorMessage || 'Không thể tạo lịch.', 'error');
+                    }
+                },
+                error: function (xhr) {
+                    let msg = xhr.responseJSON?.message || xhr.responseText || 'Lỗi không xác định.';
+                    Swal.fire('Lỗi', msg, 'error');
+                }
+            });
+        }
+    });
+
+    // -------------------- CLICK VÀO NGÀY --------------------
+    $('.cal-day').on('click', function () {
+        const reportDateStr = $(this).data('date');
+        const reportDate = new Date(reportDateStr);
+        if (!reportDateStr) return;
+
+        const hasWork = $(this).hasClass('workday');
+        if (hasWork) {
+            modalTitle.text("Chi tiết lịch làm ngày " + reportDateStr);
+            modalBody.html('<div class="text-center"><div class="spinner-border"></div></div>');
+            saveBtn.hide();
+
+            $.ajax({
+                url: '@Url.Action("GetScheduleDetailsForDate")',
+                data: { date: reportDateStr },
+                xhrFields: { withCredentials: true },
+                success: function (response) {
+                    modalBody.html(response);
+                },
+                error: function (xhr) {
+                    let msg = xhr.responseJSON?.message || 'Không thể tải dữ liệu.';
+                    modalBody.html('<div class="text-danger text-center">' + msg + '</div>');
+                }
+            });
+            scheduleModal.show();
+        } else {
+            loadCreateScheduleForm(reportDate);
+        }
+    });
+
+    // -------------------- HÀM TẢI FORM CHỈNH SỬA --------------------
+    function loadEditForm(scheduleId) {
+        const url = '@Url.Action("EditSchedulePartial", "BManager")' + '?id=' + scheduleId;
+        const $editModal = $(editModalEl);
+        const $editContent = $('#editScheduleContent');
+        
+        $editContent.html('<div class="text-center p-4"><div class="spinner-border"></div></div>');
+        
+        $.ajax({
+            url: url,
+            type: 'GET',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            success: function (response) {
+                $editContent.html(response);
+                if ($editContent.find('form').length) {
+                    $.validator.unobtrusive.parse($editContent.find('form'));
+                }
+                const editModalInstance = new bootstrap.Modal($editModal[0]);
+                editModalInstance.show();
+            },
+            error: function () { Swal.fire('Lỗi', 'Không thể tải form chỉnh sửa.', 'error'); }
+        });
+    }
+    // -------------------- DUYỆT / TỪ CHỐI / SỬA TRONG MODAL CHI TIẾT --------------------
+    $(modalBody).on('click', '.btn-modal-edit', function () {
+        const id = $(this).closest('li').data('id');
+        const mainModalInstance = bootstrap.Modal.getInstance(modalEl);
+        mainModalInstance.hide();
+
+        $(modalEl).one('hidden.bs.modal', function () {
+            loadEditForm(id);
+        });
+    });
+    // -------------------- DUYỆT / TỪ CHỐI --------------------
+    $(modalBody).on('click', '.btn-modal-approve', function () {
+        const id = $(this).closest('li').data('id');
+        $.post('@Url.Action("ApproveSchedule")', { id: id, __RequestVerificationToken: token })
+            .done(res => {
+                if (res.success) Swal.fire('Đã duyệt!', '', 'success').then(() => location.reload());
+                else Swal.fire('Lỗi', res.message, 'error');
+            })
+            .fail(xhr => Swal.fire('Lỗi Server', xhr.responseText, 'error'));
+    });
+
+    $(modalBody).on('click', '.btn-modal-reject', function () {
+        const id = $(this).closest('li').data('id');
+        Swal.fire({
+            title: 'Từ chối (xóa) yêu cầu này?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33'
+        }).then(result => {
+            if (result.isConfirmed) {
+                $.post('@Url.Action("RejectSchedule")', { id: id, __RequestVerificationToken: token })
+                    .done(res => {
+                        if (res.success) location.reload();
+                        else Swal.fire('Lỗi', res.message, 'error');
+                    })
+                    .fail(xhr => Swal.fire('Lỗi Server', xhr.responseText, 'error'));
+            }
+        });
+    });
+
+    // -------------------- LƯU THAY ĐỔI TRONG MODAL CHỈNH SỬA --------------------
+    $(document).on('submit', '#editScheduleForm', function (e) {
+        e.preventDefault();
+        const form = $(this);
+        if (!form.valid()) return;
+
+        const editModal = bootstrap.Modal.getInstance(document.getElementById('editScheduleModal'));
+        $.ajax({
+            url: form.attr('action') || form.attr('asp-action'),
+            method: 'POST',
+            data: form.serialize(),
+            xhrFields: { withCredentials: true },
+            success: function (response) {
+                if (response && response.success) {
+                    editModal.hide();
+                    Swal.fire('Thành công!', 'Đã cập nhật lịch làm việc.', 'success')
+                        .then(() => location.reload());
+                } else if (typeof response === "string" && response.includes("form")) {
+                    $('#editScheduleContent').html(response);
+                    $.validator.unobtrusive.parse(form);
+                } else {
+                    Swal.fire('Lỗi', response.errorMessage || 'Không thể cập nhật lịch.', 'error');
+                }
+            },
+            error: function (xhr) {
+                let msg = xhr.responseJSON?.message || xhr.responseText || 'Lỗi không xác định khi cập nhật.';
+                Swal.fire('Lỗi', msg, 'error');
+            }
+        });
+    });
+
+    // -------------------- RESET MODAL CHÍNH --------------------
+    modalEl.addEventListener('hidden.bs.modal', function () {
+        modalBody.html('<div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>');
+        saveBtn.show();
+        modalTitle.text('');
+    });
+});
+</script>
+}

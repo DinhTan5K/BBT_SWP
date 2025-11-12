@@ -27,7 +27,7 @@ namespace start.Controllers
         public IActionResult Login() => View();
 
                 [HttpPost]
-    public IActionResult Login(string loginId, string password)
+    public async Task <IActionResult> Login(string loginId, string password)
     {
         if (string.IsNullOrWhiteSpace(loginId) || string.IsNullOrWhiteSpace(password))
         {
@@ -57,8 +57,31 @@ namespace start.Controllers
         return RedirectToAction("Profile", "Employee"); // <-- đúng controller
                 else if (emp.RoleID == "SL")    // Shift Leader (nếu có)
                     return RedirectToAction("Profile", "Employee");
-                else if (emp.RoleID == "BM")    // Branch Manager (nếu có)
-                    return RedirectToAction("Index", "BManager");
+                else if (emp.RoleID == "BM")
+                        {
+
+                            var claims = new List<Claim>
+                            {
+                                new Claim(ClaimTypes.NameIdentifier, emp.EmployeeID),
+                                new Claim(ClaimTypes.Name, emp.FullName ?? "User"),
+                                new Claim(ClaimTypes.Role, emp.RoleID),
+                                new Claim(ClaimTypes.Email, emp.Email ?? "") // Layout BManager sẽ đọc cái này
+                            };
+                            if (emp.BranchID.HasValue)
+                            {
+                                claims.Add(new Claim("BranchId", emp.BranchID.Value.ToString()));
+                            }
+
+                            var claimsIdentity = new ClaimsIdentity(
+                                claims, CookieAuthenticationDefaults.AuthenticationScheme);
+
+                            // Đăng nhập BManager bằng Cookie (Claims)
+                            await HttpContext.SignInAsync(
+                                CookieAuthenticationDefaults.AuthenticationScheme,
+                                new ClaimsPrincipal(claimsIdentity));
+
+                            return RedirectToAction("Index", "BManager");
+                        }
                 else if (emp.RoleID == "RM")    // Region Manager (nếu có)
                     return RedirectToAction("Profile", "Employee");
             }

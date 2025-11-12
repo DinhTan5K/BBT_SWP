@@ -1,0 +1,163 @@
+/* ----------- Mặc định (Light Mode) ----------- */
+body {
+    background-color: var(--bg-color) !important;
+    color: var(--text-color);
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.salary-report-container {
+    background-color: transparent;
+    padding: 20px;
+    border-radius: 12px;
+}
+
+/* Header */
+.report-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.title-group h2 {
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.title-group p {
+    color: var(--text-muted-color);
+    margin-top: 4px;
+}
+
+/* Button xuất Excel */
+.export-button {
+    background-color: var(--green-color) !important;
+    color: #fff !important;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 16px;
+    transition: 0.2s;
+}
+.export-button:hover {
+    background-color: #15803d !important; /* Darker green */
+    transform: scale(1.05);
+}
+
+/* Filter bar */
+.filter-bar {
+    background-color: var(--surface-color);
+    padding: 12px 16px;
+    border-radius: 10px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+    box-shadow: 0 1px 3px var(--shadow-color);
+}
+
+.input-group {
+    display: flex;
+    align-items: center;
+    background-color: var(--bg-color);
+    border-radius: 6px;
+    padding: 5px 10px;
+}
+.input-group i {
+    color: var(--text-muted-color);
+    margin-right: 6px;
+}
+.input-group input {
+    border: none;
+    background: none;
+    outline: none;
+    width: 100%;
+    color: var(--text-color);
+}
+
+/* Nút lọc */
+.filter-button {
+    background-color: var(--accent-color) !important;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    transition: 0.2s;
+}
+.filter-button:hover {
+    background-color: var(--text-color) !important;
+    transform: scale(1.05);
+}
+
+/* Bảng lương */
+.salary-report-table {
+    background-color: var(--surface-color);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 6px var(--shadow-color);
+}
+
+.salary-report-table thead {
+    background-color: var(--bg-color);
+    font-weight: 600;
+    color: var(--text-muted-color); /* Sửa: Dùng màu chữ phụ cho header */
+}
+
+.salary-report-table tbody tr:hover td {
+    background-color: var(--bg-color);
+}
+
+.salary-report-table tbody td {
+    color: var(--text-color); /* Sửa: Đảm bảo màu chữ trong body đúng với theme */
+}
+
+/* Hiệu ứng mở chi tiết */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.collapse.show .shift-detail-content {
+    animation: fadeIn 0.4s ease-in-out;
+}
+
+/* Spinner */
+.spinner-border {
+    width: 1.8rem;
+    height: 1.8rem;
+    border-width: 3px;
+}
+
+/* Nút chốt */
+.finalize-btn {
+    transition: transform 0.2s ease, background-color 0.2s;
+}
+.finalize-btn:hover {
+    transform: scale(1.05);
+    background-color: var(--green-color) !important;
+}
+
+/* Nút xem chi tiết */
+.detail-row-toggle {
+    transition: all 0.25s ease;
+}
+.detail-row-toggle:hover {
+    background-color: var(--bg-color) !important;
+    transform: scale(1.05);
+}
+.detail-row-toggle.active i {
+    transform: rotate(180deg);
+    color: var(--accent-color);
+}
+
+/* Badge */
+.badge {
+    font-size: 0.9rem;
+    padding: 0.4em 0.7em;
+    border-radius: 6px;
+}
+
+/* Khi không có dữ liệu */
+.no-result {
+    font-size: 1rem;
+    color: var(--text-muted-color);
+    text-align: center;
+}
