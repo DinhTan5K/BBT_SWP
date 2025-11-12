@@ -1,0 +1,137 @@
+@model start.Models.Role
+@using start.Models
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Nhân viên theo vai trò";
+    var employees = ViewBag.Employees as List<Employee> ?? new List<Employee>();
+    var role = ViewBag.Role as Role ?? Model;
+}
+
+<div style="padding: 24px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+        <div>
+            <h2 style="font-size: 24px; font-weight: 600; color: var(--ink); margin: 0 0 8px 0;">
+                Nhân viên - Vai trò: @role.RoleName (@role.RoleID)
+            </h2>
+            <a href="@Url.Action("Employees", "Admin", new { tab = "roles" })" 
+               style="color: var(--admin-primary); text-decoration: none; font-size: 14px;">
+                <i class="fas fa-arrow-left"></i> Quay lại danh sách vai trò
+            </a>
+        </div>
+        <div style="display: flex; gap: 12px; align-items: center;">
+            <div class="admin-filter-container">
+                <div class="admin-filter-search">
+                    <input type="text" id="searchEmployee" placeholder="Tìm kiếm nhân viên...">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* Thống kê *@
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
+        <div style="background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 20px;">
+            <div style="font-size: 14px; color: var(--muted); margin-bottom: 4px;">Tổng số nhân viên</div>
+            <div style="font-size: 32px; font-weight: 600; color: var(--ink);">@employees.Count</div>
+        </div>
+        <div style="background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 20px;">
+            <div style="font-size: 14px; color: var(--muted); margin-bottom: 4px;">Đang làm việc</div>
+            <div style="font-size: 32px; font-weight: 600; color: #065f46;">@employees.Count(e => e.IsActive)</div>
+        </div>
+        <div style="background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 20px;">
+            <div style="font-size: 14px; color: var(--muted); margin-bottom: 4px;">Đã nghỉ việc</div>
+            <div style="font-size: 32px; font-weight: 600; color: #991b1b;">@employees.Count(e => !e.IsActive)</div>
+        </div>
+    </div>
+
+    @* Bảng danh sách nhân viên *@
+    <div style="background: var(--card); border: 1px solid var(--line); border-radius: 12px; overflow: hidden;">
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background: var(--bg); border-bottom: 2px solid var(--line);">
+                    <th style="padding: 16px; text-align: left; font-weight: 600; color: var(--ink);">Mã NV</th>
+                    <th style="padding: 16px; text-align: left; font-weight: 600; color: var(--ink);">Họ tên</th>
+                    <th style="padding: 16px; text-align: left; font-weight: 600; color: var(--ink);">Email</th>
+                    <th style="padding: 16px; text-align: left; font-weight: 600; color: var(--ink);">Số điện thoại</th>
+                    <th style="padding: 16px; text-align: left; font-weight: 600; color: var(--ink);">Chi nhánh</th>
+                    <th style="padding: 16px; text-align: center; font-weight: 600; color: var(--ink);">Trạng thái</th>
+                    <th style="padding: 16px; text-align: center; font-weight: 600; color: var(--ink);">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody id="employeeTableBody">
+                @foreach (var emp in employees)
+                {
+                    <tr style="border-bottom: 1px solid var(--line);" 
+                        data-name="@emp.FullName?.ToLower()" 
+                        data-email="@emp.Email?.ToLower()" 
+                        data-phone="@emp.PhoneNumber">
+                        <td style="padding: 16px; color: var(--ink); font-weight: 500;">@emp.EmployeeID</td>
+                        <td style="padding: 16px; color: var(--ink);">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                @{
+                                    var employeeAvatar = !string.IsNullOrEmpty(emp.AvatarUrl) 
+                                        ? emp.AvatarUrl 
+                                        : "https://res.cloudinary.com/do48qpmut/image/upload/v1761645429/uploads/tdppvgyas8bhvfs7lton.png";
+                                }
+                                <img src="@Url.Content(employeeAvatar)" alt="Avatar" 
+                                     style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                                <span>@emp.FullName</span>
+                            </div>
+                        </td>
+                        <td style="padding: 16px; color: var(--muted);">@(emp.Email ?? "-")</td>
+                        <td style="padding: 16px; color: var(--muted);">@(emp.PhoneNumber ?? "-")</td>
+                        <td style="padding: 16px; color: var(--muted);">@(emp.Branch?.Name ?? "-")</td>
+                        <td style="padding: 16px; text-align: center;">
+                            @if (emp.IsActive)
+                            {
+                                <span style="display: inline-block; padding: 4px 12px; background: #d1fae5; color: #065f46; border-radius: 999px; font-size: 13px; font-weight: 500;">
+                                    Đang làm việc
+                                </span>
+                            }
+                            else
+                            {
+                                <span style="display: inline-block; padding: 4px 12px; background: #fee2e2; color: #991b1b; border-radius: 999px; font-size: 13px; font-weight: 500;">
+                                    Đã nghỉ
+                                </span>
+                            }
+                        </td>
+                        <td style="padding: 16px; text-align: center;">
+                            <a href="@Url.Action("ViewEmployee", "Admin", new { id = emp.EmployeeID })" 
+                               style="padding: 6px 12px; background: var(--admin-primary); color: white; border-radius: 6px; text-decoration: none; font-size: 13px; display: inline-block;">
+                                Xem chi tiết
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        
+        @if (!employees.Any())
+        {
+            <div style="padding: 40px; text-align: center; color: var(--muted);">
+                <i class="fas fa-users" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
+                <p>Không có nhân viên nào với vai trò này.</p>
+            </div>
+        }
+    </div>
+</div>
+
+<script>
+    // Tìm kiếm nhân viên
+    document.getElementById('searchEmployee')?.addEventListener('input', function(e) {
+        const searchTerm = e.target.value.toLowerCase();
+        const rows = document.querySelectorAll('#employeeTableBody tr');
+        
+        rows.forEach(row => {
+            const name = row.getAttribute('data-name') || '';
+            const email = row.getAttribute('data-email') || '';
+            const phone = row.getAttribute('data-phone') || '';
+            
+            if (name.includes(searchTerm) || email.includes(searchTerm) || phone.includes(searchTerm)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    });
+</script>
+

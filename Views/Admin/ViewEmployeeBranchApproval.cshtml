@@ -1,0 +1,292 @@
+@model EmployeeBranchRequest
+@using start.Models
+
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Chi tiết yêu cầu nhân viên - chi nhánh";
+}
+
+<div style="padding: 24px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+        <h2 style="font-size: 24px; font-weight: 600; color: var(--ink); margin: 0;">
+            Chi tiết yêu cầu nhân viên - chi nhánh
+        </h2>
+        <a href="@Url.Action("Approvals", "Admin")" 
+           style="padding: 10px 20px; background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; font-weight: 500; text-decoration: none; display: inline-block;">
+            <i class="fas fa-arrow-left"></i> Quay lại
+        </a>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+        <!-- Thông tin yêu cầu -->
+        <div style="background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 24px;">
+            <h3 style="font-size: 18px; font-weight: 600; color: var(--ink); margin-bottom: 20px;">Thông tin yêu cầu</h3>
+            
+            <div style="margin-bottom: 16px;">
+                <label style="font-weight: 600; color: var(--muted); font-size: 13px;">Loại yêu cầu</label>
+                <div style="margin-top: 4px; font-size: 16px; color: var(--ink); font-weight: 500;">
+                    @(Model.RequestType switch
+                    {
+                        RequestType.Add => "Thêm vào chi nhánh",
+                        RequestType.Edit => "Chuyển chi nhánh",
+                        RequestType.Delete => "Xóa khỏi chi nhánh",
+                        _ => "Không xác định"
+                    })
+                </div>
+            </div>
+
+            <div style="margin-bottom: 16px;">
+                <label style="font-weight: 600; color: var(--muted); font-size: 13px;">Trạng thái</label>
+                <div style="margin-top: 4px;">
+                    @{
+                        var statusInfo = Model.Status switch
+                        {
+                            RequestStatus.Pending => ("#fef3c7", "#92400e", "Chờ duyệt"),
+                            RequestStatus.Approved => ("#d1fae5", "#065f46", "Đã duyệt"),
+                            RequestStatus.Rejected => ("#fee2e2", "#991b1b", "Đã từ chối"),
+                            _ => ("#e5e7eb", "#374151", "Không xác định")
+                        };
+                    }
+                    <span style="display: inline-block; padding: 6px 16px; background: @statusInfo.Item1; color: @statusInfo.Item2; border-radius: 6px; font-size: 14px; font-weight: 600;">
+                        @statusInfo.Item3
+                    </span>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 16px;">
+                <label style="font-weight: 600; color: var(--muted); font-size: 13px;">Người yêu cầu</label>
+                <div style="margin-top: 4px; font-size: 16px; color: var(--ink);">
+                    @(Model.RequestedByEmployee?.FullName ?? Model.RequestedBy)
+                </div>
+                <div style="font-size: 13px; color: var(--muted); margin-top: 2px;">@Model.RequestedBy</div>
+            </div>
+
+            <div style="margin-bottom: 16px;">
+                <label style="font-weight: 600; color: var(--muted); font-size: 13px;">Ngày yêu cầu</label>
+                <div style="margin-top: 4px; font-size: 16px; color: var(--ink);">
+                    @Model.RequestedAt.ToString("dd/MM/yyyy HH:mm")
+                </div>
+            </div>
+
+            @if (Model.ReviewedBy != null)
+            {
+                <div style="margin-bottom: 16px;">
+                    <label style="font-weight: 600; color: var(--muted); font-size: 13px;">Người duyệt</label>
+                    <div style="margin-top: 4px; font-size: 16px; color: var(--ink);">
+                        @(Model.ReviewedByEmployee?.FullName ?? Model.ReviewedBy)
+                    </div>
+                    <div style="font-size: 13px; color: var(--muted); margin-top: 2px;">@Model.ReviewedBy</div>
+                </div>
+
+                <div style="margin-bottom: 16px;">
+                    <label style="font-weight: 600; color: var(--muted); font-size: 13px;">Ngày duyệt</label>
+                    <div style="margin-top: 4px; font-size: 16px; color: var(--ink);">
+                        @(Model.ReviewedAt?.ToString("dd/MM/yyyy HH:mm") ?? "-")
+                    </div>
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(Model.RejectionReason))
+            {
+                <div style="margin-bottom: 16px;">
+                    <label style="font-weight: 600; color: var(--muted); font-size: 13px;">Lý do từ chối</label>
+                    <div style="margin-top: 4px; padding: 12px; background: var(--bg); border-radius: 8px; font-size: 14px; color: var(--ink);">
+                        @Model.RejectionReason
+                    </div>
+                </div>
+            }
+
+            @if (Model.Status == RequestStatus.Pending)
+            {
+                <div style="display: flex; gap: 12px; margin-top: 24px;">
+                    <button onclick="approveRequest(@Model.Id)" 
+                            style="flex: 1; padding: 12px; background: #10b981; color: white; border: none; border-radius: 8px; font-weight: 500; cursor: pointer;">
+                        Duyệt
+                    </button>
+                    <button onclick="rejectRequest(@Model.Id)" 
+                            style="flex: 1; padding: 12px; background: #dc2626; color: white; border: none; border-radius: 8px; font-weight: 500; cursor: pointer;">
+                        Từ chối
+                    </button>
+                </div>
+            }
+        </div>
+
+        <!-- Thông tin nhân viên và chi nhánh -->
+        <div style="background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 24px;">
+            <h3 style="font-size: 18px; font-weight: 600; color: var(--ink); margin-bottom: 20px;">Thông tin nhân viên và chi nhánh</h3>
+            
+            @if (Model.RequestType == RequestType.Edit)
+            {
+                <div style="margin-bottom: 20px; padding: 16px; background: var(--bg); border-radius: 8px;">
+                    <h4 style="font-size: 14px; font-weight: 600; color: var(--muted); margin-bottom: 12px;">Chi nhánh hiện tại</h4>
+                    <div style="font-size: 13px; color: var(--ink);">
+                        @if (Model.Employee != null && Model.Employee.BranchID.HasValue)
+                        {
+                            @if (Model.Employee.Branch != null)
+                            {
+                                <div><strong>Chi nhánh:</strong> @Model.Employee.Branch.Name</div>
+                                <div style="margin-top: 4px; color: var(--muted);">ID: @Model.Employee.BranchID</div>
+                            }
+                            else
+                            {
+                                <div><strong>Chi nhánh:</strong> Chi nhánh #@Model.Employee.BranchID</div>
+                            }
+                        }
+                        else
+                        {
+                            <div>Chưa có chi nhánh</div>
+                        }
+                    </div>
+                </div>
+            }
+
+            <div style="margin-bottom: 16px;">
+                <label style="font-weight: 600; color: var(--muted); font-size: 13px;">Nhân viên</label>
+                <div style="margin-top: 4px; font-size: 16px; color: var(--ink); font-weight: 500;">
+                    @(Model.Employee?.FullName ?? Model.EmployeeId ?? "N/A")
+                </div>
+                @if (!string.IsNullOrEmpty(Model.EmployeeId))
+                {
+                    <div style="font-size: 13px; color: var(--muted); margin-top: 2px;">ID: @Model.EmployeeId</div>
+                }
+            </div>
+
+            @if (Model.RequestType != RequestType.Delete)
+            {
+                <div style="margin-bottom: 16px;">
+                    <label style="font-weight: 600; color: var(--muted); font-size: 13px;">Chi nhánh đích</label>
+                    <div style="margin-top: 4px; font-size: 16px; color: var(--ink); font-weight: 500;">
+                        @(Model.Branch?.Name ?? $"Chi nhánh #{Model.BranchId}")
+                    </div>
+                    @if (Model.BranchId.HasValue)
+                    {
+                        <div style="font-size: 13px; color: var(--muted); margin-top: 2px;">ID: @Model.BranchId</div>
+                        @if (Model.Branch != null && !string.IsNullOrEmpty(Model.Branch.Address))
+                        {
+                            <div style="font-size: 13px; color: var(--muted); margin-top: 2px;">Địa chỉ: @Model.Branch.Address</div>
+                        }
+                    }
+                </div>
+            }
+            else
+            {
+                <div style="margin-bottom: 16px;">
+                    <label style="font-weight: 600; color: var(--muted); font-size: 13px;">Hành động</label>
+                    <div style="margin-top: 4px; padding: 12px; background: #fee2e2; border-radius: 8px; font-size: 14px; color: #991b1b; font-weight: 500;">
+                        Xóa nhân viên khỏi chi nhánh hiện tại
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<div style="display: none;">@Html.AntiForgeryToken()</div>
+
+<!-- Modal Từ chối -->
+<div id="rejectModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; overflow-y: auto;">
+    <div style="max-width: 500px; margin: 50px auto; background: var(--card); border-radius: 12px; padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.15);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+            <h3 style="font-size: 20px; font-weight: 600; color: var(--ink); margin: 0;">Từ chối yêu cầu</h3>
+            <button onclick="closeRejectModal()" style="background: none; border: none; font-size: 24px; color: var(--muted); cursor: pointer; padding: 0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">&times;</button>
+        </div>
+        
+        <form id="rejectForm">
+            <input type="hidden" id="rejectRequestId" />
+            
+            <div style="margin-bottom: 16px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600; color: var(--ink);">Lý do từ chối</label>
+                <textarea id="rejectReason" rows="4" 
+                          style="width: 100%; padding: 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px; resize: vertical;"
+                          placeholder="Nhập lý do từ chối (tùy chọn)"></textarea>
+            </div>
+
+            <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                <button type="button" onclick="closeRejectModal()" 
+                        style="padding: 10px 20px; background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; font-weight: 500; cursor: pointer;">
+                    Hủy
+                </button>
+                <button type="submit" 
+                        style="padding: 10px 20px; background: #dc2626; color: white; border: none; border-radius: 8px; font-weight: 500; cursor: pointer;">
+                    Từ chối
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        async function approveRequest(requestId) {
+            if (!confirm('Bạn có chắc muốn duyệt yêu cầu này?')) {
+                return;
+            }
+
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+            try {
+                const response = await fetch(`@Url.Action("ApproveEmployeeBranchRequest", "Admin")/${requestId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: `__RequestVerificationToken=${encodeURIComponent(token)}`
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    alert(data.message);
+                    location.reload();
+                } else {
+                    alert(data.message || 'Có lỗi xảy ra');
+                }
+            } catch (error) {
+                alert('Có lỗi xảy ra: ' + error.message);
+            }
+        }
+
+        function rejectRequest(requestId) {
+            document.getElementById('rejectRequestId').value = requestId;
+            document.getElementById('rejectModal').style.display = 'block';
+        }
+
+        function closeRejectModal() {
+            document.getElementById('rejectModal').style.display = 'none';
+            document.getElementById('rejectReason').value = '';
+        }
+
+        document.getElementById('rejectForm')?.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const requestId = document.getElementById('rejectRequestId').value;
+            const reason = document.getElementById('rejectReason').value || '';
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+            
+            try {
+                const response = await fetch(`@Url.Action("RejectEmployeeBranchRequest", "Admin")/${requestId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: `__RequestVerificationToken=${encodeURIComponent(token)}&rejectionReason=${encodeURIComponent(reason)}`
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    alert(data.message);
+                    location.reload();
+                } else {
+                    alert(data.message || 'Có lỗi xảy ra');
+                }
+            } catch (error) {
+                alert('Có lỗi xảy ra: ' + error.message);
+            }
+        });
+
+        document.getElementById('rejectModal')?.addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeRejectModal();
+            }
+        });
+    </script>
+}
+

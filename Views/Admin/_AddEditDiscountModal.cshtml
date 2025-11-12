@@ -1,0 +1,141 @@
+@model Discount
+@using start.Models
+
+<div id="discountModal" style="display: block; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; overflow-y: auto;">
+    <div style="max-width: 600px; margin: 50px auto; background: var(--card); border-radius: 12px; padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.15);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+            <h3 style="font-size: 20px; font-weight: 600; color: var(--ink); margin: 0;">
+                @(Model.Id > 0 ? "Sửa mã giảm giá" : "Thêm mã giảm giá")
+            </h3>
+            <button onclick="closeDiscountModal()" style="background: none; border: none; font-size: 24px; color: var(--muted); cursor: pointer; padding: 0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">&times;</button>
+        </div>
+
+        <form id="discountForm" method="post" enctype="multipart/form-data">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="Id" value="@Model.Id" />
+
+            <div style="margin-bottom: 16px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600; color: var(--ink);">Mã giảm giá <span style="color: #dc2626;">*</span></label>
+                <input type="text" name="Code" value="@Model.Code" required 
+                       style="width: 100%; padding: 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px;"
+                       placeholder="VD: SALE2024" />
+            </div>
+
+            <div style="margin-bottom: 16px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600; color: var(--ink);">Loại giảm giá <span style="color: #dc2626;">*</span></label>
+                <select name="Type" required 
+                        style="width: 100%; padding: 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px;">
+                    @if (Model.Type == DiscountType.Percentage)
+                    {
+                        <option value="@((int)DiscountType.Percentage)" selected>Phần trăm (%)</option>
+                    }
+                    else
+                    {
+                        <option value="@((int)DiscountType.Percentage)">Phần trăm (%)</option>
+                    }
+                    
+                    @if (Model.Type == DiscountType.FixedAmount)
+                    {
+                        <option value="@((int)DiscountType.FixedAmount)" selected>Số tiền cố định (VNĐ)</option>
+                    }
+                    else
+                    {
+                        <option value="@((int)DiscountType.FixedAmount)">Số tiền cố định (VNĐ)</option>
+                    }
+                    
+                    @if (Model.Type == DiscountType.FreeShipping)
+                    {
+                        <option value="@((int)DiscountType.FreeShipping)" selected>Miễn phí vận chuyển</option>
+                    }
+                    else
+                    {
+                        <option value="@((int)DiscountType.FreeShipping)">Miễn phí vận chuyển</option>
+                    }
+                    
+                    @if (Model.Type == DiscountType.FixedShippingDiscount)
+                    {
+                        <option value="@((int)DiscountType.FixedShippingDiscount)" selected>Giảm phí vận chuyển (số cố định)</option>
+                    }
+                    else
+                    {
+                        <option value="@((int)DiscountType.FixedShippingDiscount)">Giảm phí vận chuyển (số cố định)</option>
+                    }
+                    
+                    @if (Model.Type == DiscountType.PercentShippingDiscount)
+                    {
+                        <option value="@((int)DiscountType.PercentShippingDiscount)" selected>Giảm phí vận chuyển (phần trăm)</option>
+                    }
+                    else
+                    {
+                        <option value="@((int)DiscountType.PercentShippingDiscount)">Giảm phí vận chuyển (phần trăm)</option>
+                    }
+                </select>
+            </div>
+
+            <div style="margin-bottom: 16px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600; color: var(--ink);">Phần trăm giảm (%)</label>
+                <input type="number" name="Percent" value="@Model.Percent" min="0" max="100" step="0.01"
+                       style="width: 100%; padding: 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px;"
+                       placeholder="VD: 10" />
+            </div>
+
+            <div style="margin-bottom: 16px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600; color: var(--ink);">Số tiền giảm (VNĐ)</label>
+                <input type="number" name="Amount" value="@Model.Amount" min="0" step="1000"
+                       style="width: 100%; padding: 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px;"
+                       placeholder="VD: 50000" />
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600; color: var(--ink);">Ngày bắt đầu</label>
+                    <input type="datetime-local" name="StartAt" 
+                           value="@(Model.StartAt?.ToString("yyyy-MM-ddTHH:mm") ?? "")"
+                           style="width: 100%; padding: 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px;" />
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600; color: var(--ink);">Ngày kết thúc</label>
+                    <input type="datetime-local" name="EndAt" 
+                           value="@(Model.EndAt?.ToString("yyyy-MM-ddTHH:mm") ?? "")"
+                           style="width: 100%; padding: 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px;" />
+                </div>
+            </div>
+
+            <div style="margin-bottom: 16px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600; color: var(--ink);">Giới hạn sử dụng</label>
+                <input type="number" name="UsageLimit" value="@Model.UsageLimit" min="1" 
+                       style="width: 100%; padding: 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px;"
+                       placeholder="Để trống = không giới hạn" />
+            </div>
+
+            <div style="margin-bottom: 24px;">
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                    <input type="checkbox" name="IsActive" value="true" @(Model.IsActive ? "checked" : "") 
+                           style="width: 18px; height: 18px; cursor: pointer;" />
+                    <span style="font-weight: 600; color: var(--ink);">Kích hoạt</span>
+                </label>
+            </div>
+
+            <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                <button type="button" onclick="closeDiscountModal()" 
+                        style="padding: 10px 20px; background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; font-weight: 500; cursor: pointer;">
+                    Hủy
+                </button>
+                <button type="submit" 
+                        style="padding: 10px 20px; background: var(--admin-primary); color: white; border: none; border-radius: 8px; font-weight: 500; cursor: pointer;">
+                    @(Model.Id > 0 ? "Cập nhật" : "Thêm mới")
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function closeDiscountModal() {
+        const modal = document.getElementById('discountModal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+    }
+</script>
+

@@ -1,19 +1,28 @@
 ﻿@using System.Security.Claims
+@using Microsoft.AspNetCore.Authentication
 @inject start.Data.ApplicationDbContext _context
 @inject Microsoft.AspNetCore.Http.IHttpContextAccessor HttpContextAccessor
 <!DOCTYPE html>
 <html lang="en">
 
 @{
-    var customerId = HttpContextAccessor.HttpContext?.Session.GetInt32("CustomerID");
+    // Lấy CustomerID từ Claims (CustomerScheme) thay vì Session
+    int? customerId = null;
     string? customerName = null;
-
     string? customerAvatar = null;
-    if (customerId != null)
+
+    // Try to get CustomerID from CustomerScheme authentication
+    var authResult = HttpContextAccessor.HttpContext?.AuthenticateAsync("CustomerScheme").Result;
+    if (authResult?.Succeeded == true)
     {
-        var ctm = _context.Customers.Find(customerId.Value);
-        customerName = ctm?.Name;
-        customerAvatar = ctm?.ProfileImagePath;
+        var userIdClaim = authResult.Principal?.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (int.TryParse(userIdClaim, out int customerIdValue))
+        {
+            customerId = customerIdValue;
+            var ctm = _context.Customers.Find(customerId.Value);
+            customerName = ctm?.Name;
+            customerAvatar = ctm?.ProfileImagePath;
+        }
     }
 
     var avatarUrl = string.IsNullOrEmpty(customerAvatar)

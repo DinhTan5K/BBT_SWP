@@ -1,0 +1,327 @@
+Date : 2025-11-07 00:05:23
+Directory : d:\.net\start
+Total : 233 files,  91113 codes, 7014 comments, 12525 blanks, all 110652 lines
+
+Languages
++---------------+------------+------------+------------+------------+------------+
+| language      | files      | code       | comment    | blank      | total      |
++---------------+------------+------------+------------+------------+------------+
+| PostCSS       |         42 |     46,997 |        517 |      4,307 |     51,821 |
+| JavaScript    |         23 |     28,389 |      5,999 |      5,607 |     39,995 |
+| ASP.NET Razor |         61 |      8,862 |         68 |      1,109 |     10,039 |
+| C#            |         94 |      6,077 |        380 |      1,341 |      7,798 |
+| MS SQL        |          5 |        362 |         47 |         59 |        468 |
+| Markdown      |          4 |        323 |          3 |         94 |        420 |
+| JSON          |          3 |         75 |          0 |          3 |         78 |
+| XML           |          1 |         28 |          0 |          5 |         33 |
++---------------+------------+------------+------------+------------+------------+
+
+Directories
++-------------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| path                                                                                            | files      | code       | comment    | blank      | total      |
++-------------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| .                                                                                               |        233 |     91,113 |      7,014 |     12,525 |    110,652 |
+| . (Files)                                                                                       |          5 |        227 |          7 |         29 |        263 |
+| Controllers                                                                                     |         11 |      3,017 |        252 |        579 |      3,848 |
+| DTOs                                                                                            |         22 |        323 |          5 |         75 |        403 |
+| DTOs\Account                                                                                    |          6 |         73 |          0 |         30 |        103 |
+| DTOs\Cart                                                                                       |          2 |         12 |          0 |          6 |         18 |
+| DTOs\Employee                                                                                   |          4 |         91 |          0 |         15 |        106 |
+| DTOs\Order                                                                                      |          5 |         61 |          2 |          7 |         70 |
+| DTOs\Product                                                                                    |          1 |         39 |          0 |          8 |         47 |
+| DTOs\Promotion                                                                                  |          3 |         27 |          3 |          3 |         33 |
+| DTOs\Support                                                                                    |          1 |         20 |          0 |          6 |         26 |
+| Data                                                                                            |          1 |         35 |          0 |          9 |         44 |
+| Models                                                                                          |         25 |        647 |         19 |        230 |        896 |
+| Models\Configurations                                                                           |          1 |         12 |          0 |          1 |         13 |
+| Models\Core                                                                                     |          7 |        221 |         13 |         88 |        322 |
+| Models\Employee                                                                                 |          6 |        220 |          5 |         74 |        299 |
+| Models\Products                                                                                 |          4 |         59 |          0 |         31 |         90 |
+| Models\Sales                                                                                    |          4 |         93 |          0 |         13 |        106 |
+| Models\System                                                                                   |          3 |         42 |          1 |         23 |         66 |
+| Properties                                                                                      |          1 |         23 |          0 |          1 |         24 |
+| SQL                                                                                             |          4 |        340 |         45 |         43 |        428 |
+| Scripts                                                                                         |          1 |         22 |          2 |         16 |         40 |
+| Services                                                                                        |         33 |      1,903 |         96 |        426 |      2,425 |
+| Services\Employee                                                                               |          8 |        265 |         16 |         56 |        337 |
+| Services\Implementations                                                                        |         13 |      1,533 |         71 |        336 |      1,940 |
+| Services\Implementations\Account                                                                |          2 |        307 |         15 |         97 |        419 |
+| Services\Implementations\ECommerce                                                              |          6 |        940 |         49 |        185 |      1,174 |
+| Services\Implementations\Utility                                                                |          5 |        286 |          7 |         54 |        347 |
+| Services\Interfaces                                                                             |         12 |        105 |          9 |         34 |        148 |
+| Temp                                                                                            |          3 |        310 |          4 |         89 |        403 |
+| Temp (Files)                                                                                    |          2 |        304 |          3 |         88 |        395 |
+| Temp\tempcode                                                                                   |          1 |          6 |          1 |          1 |          8 |
+| Views                                                                                           |         62 |      8,900 |         70 |      1,118 |     10,088 |
+| Views (Files)                                                                                   |          2 |          6 |          0 |          2 |          8 |
+| Views\Account                                                                                   |          9 |        972 |          1 |        177 |      1,150 |
+| Views\Admin                                                                                     |         20 |      4,004 |         13 |        408 |      4,425 |
+| Views\Contact                                                                                   |          1 |        173 |          0 |         17 |        190 |
+| Views\Employee                                                                                  |          9 |        769 |         16 |        111 |        896 |
+| Views\Home                                                                                      |          7 |      1,161 |         28 |        161 |      1,350 |
+| Views\Order                                                                                     |          5 |        819 |          4 |         91 |        914 |
+| Views\Product                                                                                   |          2 |        183 |          0 |         14 |        197 |
+| Views\Shared                                                                                    |          7 |        813 |          8 |        137 |        958 |
+| wwwroot                                                                                         |         65 |     75,366 |      6,514 |      9,910 |     91,790 |
+| wwwroot\css                                                                                     |         25 |      6,077 |        407 |        998 |      7,482 |
+| wwwroot\css\Account                                                                             |          5 |        746 |         30 |        116 |        892 |
+| wwwroot\css\Admin                                                                               |          2 |      1,136 |         67 |        203 |      1,406 |
+| wwwroot\css\Layout                                                                              |          2 |        506 |          7 |         92 |        605 |
+| wwwroot\css\Order                                                                               |          4 |      1,032 |         86 |        191 |      1,309 |
+| wwwroot\css\Product                                                                             |          1 |        997 |         63 |        144 |      1,204 |
+| wwwroot\css\StaticContent                                                                       |          5 |      1,027 |         78 |        154 |      1,259 |
+| wwwroot\css\employee                                                                            |          6 |        633 |         76 |         98 |        807 |
+| wwwroot\js                                                                                      |          7 |      1,320 |        182 |        213 |      1,715 |
+| wwwroot\lib                                                                                     |         33 |     67,969 |      5,925 |      8,699 |     82,593 |
+| wwwroot\lib\bootstrap                                                                           |         22 |     53,121 |      1,943 |      4,505 |     59,569 |
+| wwwroot\lib\bootstrap\dist                                                                      |         22 |     53,121 |      1,943 |      4,505 |     59,569 |
+| wwwroot\lib\bootstrap\dist\css                                                                  |         16 |     40,882 |        108 |      3,300 |     44,290 |
+| wwwroot\lib\bootstrap\dist\js                                                                   |          6 |     12,239 |      1,835 |      1,205 |     15,279 |
+| wwwroot\lib\jquery                                                                              |          4 |     12,150 |      3,447 |      3,744 |     19,341 |
+| wwwroot\lib\jquery-validation                                                                   |          5 |      2,391 |        452 |        396 |      3,239 |
+| wwwroot\lib\jquery-validation (Files)                                                           |          1 |         18 |          0 |          5 |         23 |
+| wwwroot\lib\jquery-validation-unobtrusive                                                       |          2 |        307 |         83 |         54 |        444 |
+| wwwroot\lib\jquery-validation-unobtrusive\dist                                                  |          2 |        307 |         83 |         54 |        444 |
+| wwwroot\lib\jquery-validation\dist                                                              |          4 |      2,373 |        452 |        391 |      3,216 |
+| wwwroot\lib\jquery\dist                                                                         |          4 |     12,150 |      3,447 |      3,744 |     19,341 |
++-------------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+
+Files
++-------------------------------------------------------------------------------------------------+---------------+------------+------------+------------+------------+
+| filename                                                                                        | language      | code       | comment    | blank      | total      |
++-------------------------------------------------------------------------------------------------+---------------+------------+------------+------------+------------+
+| d:\.net\start\Controllers\AccountController.cs                                                  | C#            |        346 |         18 |         82 |        446 |
+| d:\.net\start\Controllers\AdminController.cs                                                    | C#            |      1,155 |        124 |        203 |      1,482 |
+| d:\.net\start\Controllers\AiController.cs                                                       | C#            |        685 |         70 |        121 |        876 |
+| d:\.net\start\Controllers\BranchController.cs                                                   | C#            |         39 |          0 |          5 |         44 |
+| d:\.net\start\Controllers\CartController.cs                                                     | C#            |         66 |          1 |         23 |         90 |
+| d:\.net\start\Controllers\ContactController.cs                                                  | C#            |        116 |          0 |         20 |        136 |
+| d:\.net\start\Controllers\EmployeeController.cs                                                 | C#            |        216 |         17 |         48 |        281 |
+| d:\.net\start\Controllers\HomeController.cs                                                     | C#            |         92 |          0 |         20 |        112 |
+| d:\.net\start\Controllers\OrderController.cs                                                    | C#            |        199 |         11 |         40 |        250 |
+| d:\.net\start\Controllers\ProductController.cs                                                  | C#            |         64 |         10 |         11 |         85 |
+| d:\.net\start\Controllers\WishlistController.cs                                                 | C#            |         39 |          1 |          6 |         46 |
+| d:\.net\start\DTOs\Account\ChangePasswordModel.cs                                               | C#            |         12 |          0 |          9 |         21 |
+| d:\.net\start\DTOs\Account\EditProfileModel.cs                                                  | C#            |         23 |          0 |         12 |         35 |
+| d:\.net\start\DTOs\Account\ResetPasswordViewModel.cs                                            | C#            |         12 |          0 |          1 |         13 |
+| d:\.net\start\DTOs\Account\SetPasswordModel.cs                                                  | C#            |         10 |          0 |          5 |         15 |
+| d:\.net\start\DTOs\Account\UserProfileViewModel.cs                                              | C#            |         11 |          0 |          1 |         12 |
+| d:\.net\start\DTOs\Account\VerifyEmailViewModel.cs                                              | C#            |          5 |          0 |          2 |          7 |
+| d:\.net\start\DTOs\Cart\AddToCartRequest.cs                                                     | C#            |          7 |          0 |          3 |         10 |
+| d:\.net\start\DTOs\Cart\UpdateCartRequest.cs                                                    | C#            |          5 |          0 |          3 |          8 |
+| d:\.net\start\DTOs\Employee\DayOffOneDayVm.cs                                                   | C#            |         18 |          0 |          5 |         23 |
+| d:\.net\start\DTOs\Employee\EditEmployeeProfile.cs                                              | C#            |         41 |          0 |          7 |         48 |
+| d:\.net\start\DTOs\Employee\MonthScheduleDto.cs                                                 | C#            |         12 |          0 |          1 |         13 |
+| d:\.net\start\DTOs\Employee\MonthlySalaryVm.cs                                                  | C#            |         20 |          0 |          2 |         22 |
+| d:\.net\start\DTOs\Order\MomoRefundResponse.cs                                                  | C#            |         14 |          0 |          0 |         14 |
+| d:\.net\start\DTOs\Order\OrderDetailItemViewModel.cs                                            | C#            |          9 |          0 |          0 |          9 |
+| d:\.net\start\DTOs\Order\OrderFormModel.cs                                                      | C#            |         12 |          0 |          3 |         15 |
+| d:\.net\start\DTOs\Order\OrderHistoryViewModel.cs                                               | C#            |          8 |          0 |          0 |          8 |
+| d:\.net\start\DTOs\Order\OrderSummaryViewModel.cs                                               | C#            |         18 |          2 |          4 |         24 |
+| d:\.net\start\DTOs\Product\ProductFilterRequest.cs                                              | C#            |         39 |          0 |          8 |         47 |
+| d:\.net\start\DTOs\Promotion\PromoCodeResponse.cs                                               | C#            |          9 |          0 |          0 |          9 |
+| d:\.net\start\DTOs\Promotion\PromoValidationRequest.cs                                          | C#            |          6 |          0 |          1 |          7 |
+| d:\.net\start\DTOs\Promotion\PromoValidationResult.cs                                           | C#            |         12 |          3 |          2 |         17 |
+| d:\.net\start\DTOs\Support\ContactFormModel.cs                                                  | C#            |         20 |          0 |          6 |         26 |
+| d:\.net\start\Data\ApplicationDbContext.cs                                                      | C#            |         35 |          0 |          9 |         44 |
+| d:\.net\start\Models\Configurations\EmailSettings.cs                                            | C#            |         12 |          0 |          1 |         13 |
+| d:\.net\start\Models\Core\Branch.cs                                                             | C#            |         26 |          0 |         11 |         37 |
+| d:\.net\start\Models\Core\Customer.cs                                                           | C#            |         34 |          0 |         16 |         50 |
+| d:\.net\start\Models\Core\Discount.cs                                                           | C#            |         34 |          2 |         11 |         47 |
+| d:\.net\start\Models\Core\DiscountRequest.cs                                                    | C#            |         58 |          5 |         22 |         85 |
+| d:\.net\start\Models\Core\News.cs                                                               | C#            |         13 |          0 |          7 |         20 |
+| d:\.net\start\Models\Core\NewsRequest.cs                                                        | C#            |         41 |          5 |         18 |         64 |
+| d:\.net\start\Models\Core\Region.cs                                                             | C#            |         15 |          1 |          3 |         19 |
+| d:\.net\start\Models\Employee\Contract.cs                                                       | C#            |         46 |          5 |         14 |         65 |
+| d:\.net\start\Models\Employee\DayOffRequest.cs                                                  | C#            |         23 |          0 |         10 |         33 |
+| d:\.net\start\Models\Employee\Employee.cs                                                       | C#            |         73 |          0 |         25 |         98 |
+| d:\.net\start\Models\Employee\Salary.cs                                                         | C#            |         39 |          0 |         13 |         52 |
+| d:\.net\start\Models\Employee\SalaryAdjustment.cs                                               | C#            |         23 |          0 |          6 |         29 |
+| d:\.net\start\Models\Employee\WorkSchedule.cs                                                   | C#            |         16 |          0 |          6 |         22 |
+| d:\.net\start\Models\Products\Product.cs                                                        | C#            |         20 |          0 |          5 |         25 |
+| d:\.net\start\Models\Products\ProductCategory.cs                                                | C#            |         11 |          0 |          6 |         17 |
+| d:\.net\start\Models\Products\ProductSize.cs                                                    | C#            |         12 |          0 |          5 |         17 |
+| d:\.net\start\Models\Products\Wishlist.cs                                                       | C#            |         16 |          0 |         15 |         31 |
+| d:\.net\start\Models\Sales\Cart.cs                                                              | C#            |         15 |          0 |          1 |         16 |
+| d:\.net\start\Models\Sales\CartDetail.cs                                                        | C#            |         21 |          0 |          4 |         25 |
+| d:\.net\start\Models\Sales\Order.cs                                                             | C#            |         38 |          0 |          7 |         45 |
+| d:\.net\start\Models\Sales\OrderDetail.cs                                                       | C#            |         19 |          0 |          1 |         20 |
+| d:\.net\start\Models\System\ChatHistory.cs                                                      | C#            |         22 |          1 |         18 |         41 |
+| d:\.net\start\Models\System\ErrorViewModel.cs                                                   | C#            |          6 |          0 |          3 |          9 |
+| d:\.net\start\Models\System\Role.cs                                                             | C#            |         14 |          0 |          2 |         16 |
+| d:\.net\start\Program.cs                                                                        | C#            |        146 |          7 |         21 |        174 |
+| d:\.net\start\Properties\launchSettings.json                                                    | JSON          |         23 |          0 |          1 |         24 |
+| d:\.net\start\README.md                                                                         | Markdown      |          1 |          0 |          1 |          2 |
+| d:\.net\start\SQL\Check_EmployeeID_DataType.sql                                                 | MS SQL        |          9 |          2 |          6 |         17 |
+| d:\.net\start\SQL\DiscountRequest_CreateTable.sql                                               | MS SQL        |         47 |          9 |         16 |         72 |
+| d:\.net\start\SQL\DiscountRequest_InsertSampleData.sql                                          | MS SQL        |        222 |         15 |         13 |        250 |
+| d:\.net\start\SQL\DiscountRequest_InsertTemplate.sql                                            | MS SQL        |         62 |         19 |          8 |         89 |
+| d:\.net\start\Scripts\CreateChatHistoryTable.sql                                                | MS SQL        |         22 |          2 |         16 |         40 |
+| d:\.net\start\Services\Employee\DayOffService.cs                                                | C#            |         77 |          4 |         13 |         94 |
+| d:\.net\start\Services\Employee\EmployeeProfileService.cs                                       | C#            |         67 |          8 |         22 |         97 |
+| d:\.net\start\Services\Employee\IDayOffService.cs                                               | C#            |          7 |          0 |          1 |          8 |
+| d:\.net\start\Services\Employee\IEmployeeProfileService.cs                                      | C#            |          8 |          0 |          1 |          9 |
+| d:\.net\start\Services\Employee\IPayrollService.cs                                              | C#            |          6 |          0 |          0 |          6 |
+| d:\.net\start\Services\Employee\IScheduleService.cs                                             | C#            |          6 |          0 |          0 |          6 |
+| d:\.net\start\Services\Employee\PayrollServive.cs                                               | C#            |         54 |          3 |         11 |         68 |
+| d:\.net\start\Services\Employee\ScheduleService.cs                                              | C#            |         40 |          1 |          8 |         49 |
+| d:\.net\start\Services\Implementations\Account\AuthService.cs                                   | C#            |        238 |          9 |         78 |        325 |
+| d:\.net\start\Services\Implementations\Account\ProfileService.cs                                | C#            |         69 |          6 |         19 |         94 |
+| d:\.net\start\Services\Implementations\ECommerce\CartService.cs                                 | C#            |        109 |          0 |         23 |        132 |
+| d:\.net\start\Services\Implementations\ECommerce\CheckoutService.cs                             | C#            |         62 |          1 |         17 |         80 |
+| d:\.net\start\Services\Implementations\ECommerce\OrderReadService.cs                            | C#            |         75 |          2 |         12 |         89 |
+| d:\.net\start\Services\Implementations\ECommerce\OrderService.cs                                | C#            |        488 |         36 |         92 |        616 |
+| d:\.net\start\Services\Implementations\ECommerce\PaymentService.cs                              | C#            |        102 |          3 |         25 |        130 |
+| d:\.net\start\Services\Implementations\ECommerce\ProductService.cs                              | C#            |        104 |          7 |         16 |        127 |
+| d:\.net\start\Services\Implementations\Utility\AiService.cs                                     | C#            |         63 |          3 |         13 |         79 |
+| d:\.net\start\Services\Implementations\Utility\CloudinaryService.cs                             | C#            |         57 |          0 |         11 |         68 |
+| d:\.net\start\Services\Implementations\Utility\EmailService.cs                                  | C#            |         78 |          4 |         14 |         96 |
+| d:\.net\start\Services\Implementations\Utility\NewsService.cs                                   | C#            |         44 |          0 |          7 |         51 |
+| d:\.net\start\Services\Implementations\Utility\StoreService.cs                                  | C#            |         44 |          0 |          9 |         53 |
+| d:\.net\start\Services\Interfaces\IAuthService.cs                                               | C#            |         15 |          7 |          7 |         29 |
+| d:\.net\start\Services\Interfaces\ICartService.cs                                               | C#            |          7 |          0 |          2 |          9 |
+| d:\.net\start\Services\Interfaces\ICheckoutService.cs                                           | C#            |          8 |          0 |          4 |         12 |
+| d:\.net\start\Services\Interfaces\ICloudinaryService.cs                                         | C#            |          5 |          0 |          2 |          7 |
+| d:\.net\start\Services\Interfaces\IEmailService.cs                                              | C#            |          6 |          0 |          1 |          7 |
+| d:\.net\start\Services\Interfaces\INewsService.cs                                               | C#            |         12 |          0 |          1 |         13 |
+| d:\.net\start\Services\Interfaces\IOrderReadService.cs                                          | C#            |          7 |          0 |          4 |         11 |
+| d:\.net\start\Services\Interfaces\IOrderService.cs                                              | C#            |         13 |          0 |          3 |         16 |
+| d:\.net\start\Services\Interfaces\IPaymentService.cs                                            | C#            |          9 |          0 |          4 |         13 |
+| d:\.net\start\Services\Interfaces\IProductService.cs                                            | C#            |          9 |          0 |          2 |         11 |
+| d:\.net\start\Services\Interfaces\IProfileService.cs                                            | C#            |          7 |          2 |          3 |         12 |
+| d:\.net\start\Services\Interfaces\IStoreService.cs                                              | C#            |          7 |          0 |          1 |          8 |
+| d:\.net\start\Temp\ADMIN_DROPDOWN_GUIDE.md                                                      | Markdown      |         87 |          3 |         28 |        118 |
+| d:\.net\start\Temp\ToggleProductStatus_Explanation.md                                           | Markdown      |        217 |          0 |         60 |        277 |
+| d:\.net\start\Temp\tempcode\CartViewModel.cs                                                    | C#            |          6 |          1 |          1 |          8 |
+| d:\.net\start\Views\Account\ChangePassword.cshtml                                               | ASP.NET Razor |        119 |          0 |         22 |        141 |
+| d:\.net\start\Views\Account\EditProfile.cshtml                                                  | ASP.NET Razor |        131 |          0 |         24 |        155 |
+| d:\.net\start\Views\Account\ForgotPassword.cshtml                                               | ASP.NET Razor |         79 |          0 |         14 |         93 |
+| d:\.net\start\Views\Account\Login.cshtml                                                        | ASP.NET Razor |        104 |          0 |         19 |        123 |
+| d:\.net\start\Views\Account\Profile.cshtml                                                      | ASP.NET Razor |        169 |          1 |         32 |        202 |
+| d:\.net\start\Views\Account\Register.cshtml                                                     | ASP.NET Razor |        125 |          0 |         22 |        147 |
+| d:\.net\start\Views\Account\ResetPassword.cshtml                                                | ASP.NET Razor |        126 |          0 |         24 |        150 |
+| d:\.net\start\Views\Account\SetPassword.cshtml                                                  | ASP.NET Razor |         46 |          0 |          8 |         54 |
+| d:\.net\start\Views\Account\VerifyEmail.cshtml                                                  | ASP.NET Razor |         73 |          0 |         12 |         85 |
+| d:\.net\start\Views\Admin\Approvals.cshtml                                                      | ASP.NET Razor |        303 |          1 |         33 |        337 |
+| d:\.net\start\Views\Admin\Branches.cshtml                                                       | ASP.NET Razor |        310 |          2 |         43 |        355 |
+| d:\.net\start\Views\Admin\Categories.cshtml                                                     | ASP.NET Razor |         53 |          0 |          6 |         59 |
+| d:\.net\start\Views\Admin\Customers.cshtml                                                      | ASP.NET Razor |        108 |          0 |         10 |        118 |
+| d:\.net\start\Views\Admin\Dashboard.cshtml                                                      | ASP.NET Razor |        276 |          0 |         18 |        294 |
+| d:\.net\start\Views\Admin\Discounts.cshtml                                                      | ASP.NET Razor |        265 |          1 |         19 |        285 |
+| d:\.net\start\Views\Admin\Employees.cshtml                                                      | ASP.NET Razor |        118 |          0 |          8 |        126 |
+| d:\.net\start\Views\Admin\News.cshtml                                                           | ASP.NET Razor |        262 |          1 |         39 |        302 |
+| d:\.net\start\Views\Admin\Orders.cshtml                                                         | ASP.NET Razor |        212 |          0 |         13 |        225 |
+| d:\.net\start\Views\Admin\Products.cshtml                                                       | ASP.NET Razor |        372 |          1 |         49 |        422 |
+| d:\.net\start\Views\Admin\Profile.cshtml                                                        | ASP.NET Razor |        222 |          6 |         32 |        260 |
+| d:\.net\start\Views\Admin\Reports.cshtml                                                        | ASP.NET Razor |        343 |          0 |         18 |        361 |
+| d:\.net\start\Views\Admin\ViewApproval.cshtml                                                   | ASP.NET Razor |        283 |          0 |         38 |        321 |
+| d:\.net\start\Views\Admin\ViewCustomer.cshtml                                                   | ASP.NET Razor |        149 |          1 |         11 |        161 |
+| d:\.net\start\Views\Admin\ViewEmployee.cshtml                                                   | ASP.NET Razor |         94 |          0 |          8 |        102 |
+| d:\.net\start\Views\Admin\ViewOrder.cshtml                                                      | ASP.NET Razor |        166 |          0 |         11 |        177 |
+| d:\.net\start\Views\Admin\_AddEditBranchModal.cshtml                                            | ASP.NET Razor |        112 |          0 |         12 |        124 |
+| d:\.net\start\Views\Admin\_AddEditDiscountModal.cshtml                                          | ASP.NET Razor |        125 |          0 |         17 |        142 |
+| d:\.net\start\Views\Admin\_AddEditNewsModal.cshtml                                              | ASP.NET Razor |         60 |          0 |         11 |         71 |
+| d:\.net\start\Views\Admin\_AddEditProductModal.cshtml                                           | ASP.NET Razor |        171 |          0 |         12 |        183 |
+| d:\.net\start\Views\Contact\Contact.cshtml                                                      | ASP.NET Razor |        173 |          0 |         17 |        190 |
+| d:\.net\start\Views\Employee\Chat.cshtml                                                        | ASP.NET Razor |         13 |          0 |          2 |         15 |
+| d:\.net\start\Views\Employee\Contract.cshtml                                                    | ASP.NET Razor |         76 |          0 |         21 |         97 |
+| d:\.net\start\Views\Employee\DayOff.cshtml                                                      | ASP.NET Razor |        124 |          0 |         14 |        138 |
+| d:\.net\start\Views\Employee\EditProfile.cshtml                                                 | ASP.NET Razor |        139 |          0 |         19 |        158 |
+| d:\.net\start\Views\Employee\Profile.cshtml                                                     | ASP.NET Razor |         93 |         10 |         15 |        118 |
+| d:\.net\start\Views\Employee\Salary.cshtml                                                      | ASP.NET Razor |        170 |          0 |         15 |        185 |
+| d:\.net\start\Views\Employee\Schedule.cshtml                                                    | ASP.NET Razor |        113 |          4 |         19 |        136 |
+| d:\.net\start\Views\Employee\_Header.cshtml                                                     | ASP.NET Razor |         26 |          2 |          3 |         31 |
+| d:\.net\start\Views\Employee\_Tabs.cshtml                                                       | ASP.NET Razor |         15 |          0 |          3 |         18 |
+| d:\.net\start\Views\Home\Index.cshtml                                                           | ASP.NET Razor |         43 |          0 |          6 |         49 |
+| d:\.net\start\Views\Home\Introduce.cshtml                                                       | ASP.NET Razor |        144 |          0 |         32 |        176 |
+| d:\.net\start\Views\Home\News.cshtml                                                            | ASP.NET Razor |         28 |          0 |          7 |         35 |
+| d:\.net\start\Views\Home\NewsDetail.cshtml                                                      | ASP.NET Razor |         25 |          0 |          4 |         29 |
+| d:\.net\start\Views\Home\Privacy.cshtml                                                         | ASP.NET Razor |        625 |          0 |         82 |        707 |
+| d:\.net\start\Views\Home\Store.cshtml                                                           | ASP.NET Razor |        285 |         28 |         29 |        342 |
+| d:\.net\start\Views\Home\_StoreListPartial.cshtml                                               | ASP.NET Razor |         11 |          0 |          1 |         12 |
+| d:\.net\start\Views\Order\Order.cshtml                                                          | ASP.NET Razor |        219 |          0 |         19 |        238 |
+| d:\.net\start\Views\Order\OrderConfirmed.cshtml                                                 | ASP.NET Razor |        152 |          1 |         26 |        179 |
+| d:\.net\start\Views\Order\OrderFailed.cshtml                                                    | ASP.NET Razor |          7 |          0 |          1 |          8 |
+| d:\.net\start\Views\Order\OrderHistory.cshtml                                                   | ASP.NET Razor |        192 |          3 |         14 |        209 |
+| d:\.net\start\Views\Order\Track.cshtml                                                          | ASP.NET Razor |        249 |          0 |         31 |        280 |
+| d:\.net\start\Views\Product\Product.cshtml                                                      | ASP.NET Razor |        163 |          0 |         13 |        176 |
+| d:\.net\start\Views\Product\_ProductQuickViewPartial.cshtml                                     | ASP.NET Razor |         20 |          0 |          1 |         21 |
+| d:\.net\start\Views\Shared\Error.cshtml                                                         | ASP.NET Razor |         22 |          0 |          4 |         26 |
+| d:\.net\start\Views\Shared\_AdminLayout.cshtml                                                  | ASP.NET Razor |        158 |          2 |         32 |        192 |
+| d:\.net\start\Views\Shared\_CheckoutSteps.cshtml                                                | ASP.NET Razor |         15 |          0 |          2 |         17 |
+| d:\.net\start\Views\Shared\_EmployeeLayout.cshtml                                               | ASP.NET Razor |         47 |          2 |         13 |         62 |
+| d:\.net\start\Views\Shared\_Layout.cshtml                                                       | ASP.NET Razor |        531 |          2 |         76 |        609 |
+| d:\.net\start\Views\Shared\_Layout.cshtml.css                                                   | PostCSS       |         38 |          2 |          9 |         49 |
+| d:\.net\start\Views\Shared\_ValidationScriptsPartial.cshtml                                     | ASP.NET Razor |          2 |          0 |          1 |          3 |
+| d:\.net\start\Views\_ViewImports.cshtml                                                         | ASP.NET Razor |          3 |          0 |          1 |          4 |
+| d:\.net\start\Views\_ViewStart.cshtml                                                           | ASP.NET Razor |          3 |          0 |          1 |          4 |
+| d:\.net\start\appsettings.Development.json                                                      | JSON          |         10 |          0 |          2 |         12 |
+| d:\.net\start\appsettings.json                                                                  | JSON          |         42 |          0 |          0 |         42 |
+| d:\.net\start\start.csproj                                                                      | XML           |         28 |          0 |          5 |         33 |
+| d:\.net\start\wwwroot\css\Account\editprofile.css                                               | PostCSS       |        153 |          5 |         26 |        184 |
+| d:\.net\start\wwwroot\css\Account\login.css                                                     | PostCSS       |        280 |          7 |         49 |        336 |
+| d:\.net\start\wwwroot\css\Account\profile.css                                                   | PostCSS       |        199 |         14 |         20 |        233 |
+| d:\.net\start\wwwroot\css\Account\register.css                                                  | PostCSS       |         43 |          4 |          9 |         56 |
+| d:\.net\start\wwwroot\css\Account\verify-email.css                                              | PostCSS       |         71 |          0 |         12 |         83 |
+| d:\.net\start\wwwroot\css\Admin\admin.css                                                       | PostCSS       |        945 |         56 |        168 |      1,169 |
+| d:\.net\start\wwwroot\css\Admin\profile.css                                                     | PostCSS       |        191 |         11 |         35 |        237 |
+| d:\.net\start\wwwroot\css\Layout\index_page.css                                                 | PostCSS       |        133 |          0 |         23 |        156 |
+| d:\.net\start\wwwroot\css\Layout\site.css                                                       | PostCSS       |        373 |          7 |         69 |        449 |
+| d:\.net\start\wwwroot\css\Order\order-history.css                                               | PostCSS       |         90 |         12 |         18 |        120 |
+| d:\.net\start\wwwroot\css\Order\order.css                                                       | PostCSS       |        439 |         14 |         94 |        547 |
+| d:\.net\start\wwwroot\css\Order\orderconfirmed.css                                              | PostCSS       |        206 |         42 |         39 |        287 |
+| d:\.net\start\wwwroot\css\Order\track.css                                                       | PostCSS       |        297 |         18 |         40 |        355 |
+| d:\.net\start\wwwroot\css\Product\product.css                                                   | PostCSS       |        997 |         63 |        144 |      1,204 |
+| d:\.net\start\wwwroot\css\StaticContent\News.css                                                | PostCSS       |        202 |         12 |         31 |        245 |
+| d:\.net\start\wwwroot\css\StaticContent\NewsDetail.css                                          | PostCSS       |         92 |          7 |         13 |        112 |
+| d:\.net\start\wwwroot\css\StaticContent\Store.css                                               | PostCSS       |        257 |         13 |         40 |        310 |
+| d:\.net\start\wwwroot\css\StaticContent\contact.css                                             | PostCSS       |        221 |         32 |         26 |        279 |
+| d:\.net\start\wwwroot\css\StaticContent\introduce.css                                           | PostCSS       |        255 |         14 |         44 |        313 |
+| d:\.net\start\wwwroot\css\employee\contract.css                                                 | PostCSS       |         86 |          9 |         10 |        105 |
+| d:\.net\start\wwwroot\css\employee\dayoff.css                                                   | PostCSS       |        132 |         20 |         25 |        177 |
+| d:\.net\start\wwwroot\css\employee\editprofile.css                                              | PostCSS       |         50 |          8 |          9 |         67 |
+| d:\.net\start\wwwroot\css\employee\profile.css                                                  | PostCSS       |        176 |         16 |         19 |        211 |
+| d:\.net\start\wwwroot\css\employee\salary.css                                                   | PostCSS       |         39 |          6 |          6 |         51 |
+| d:\.net\start\wwwroot\css\employee\schedule.css                                                 | PostCSS       |        150 |         17 |         29 |        196 |
+| d:\.net\start\wwwroot\js\admin-dropdown.js                                                      | JavaScript    |         68 |         20 |         20 |        108 |
+| d:\.net\start\wwwroot\js\order-history.js                                                       | JavaScript    |         94 |          3 |         10 |        107 |
+| d:\.net\start\wwwroot\js\order.js                                                               | JavaScript    |        406 |         31 |         44 |        481 |
+| d:\.net\start\wwwroot\js\privacy.js                                                             | JavaScript    |         68 |          9 |         11 |         88 |
+| d:\.net\start\wwwroot\js\product-ajax.js                                                        | JavaScript    |        441 |         67 |         76 |        584 |
+| d:\.net\start\wwwroot\js\product.js                                                             | JavaScript    |        243 |         50 |         49 |        342 |
+| d:\.net\start\wwwroot\js\site.js                                                                | JavaScript    |          0 |          2 |          3 |          5 |
+| d:\.net\start\wwwroot\lib\bootstrap\dist\css\bootstrap-grid.css                                 | PostCSS       |      3,886 |          6 |        193 |      4,085 |
+| d:\.net\start\wwwroot\lib\bootstrap\dist\css\bootstrap-grid.min.css                             | PostCSS       |          1 |          5 |          0 |          6 |
+| d:\.net\start\wwwroot\lib\bootstrap\dist\css\bootstrap-grid.rtl.css                             | PostCSS       |      3,886 |          6 |        192 |      4,084 |
+| d:\.net\start\wwwroot\lib\bootstrap\dist\css\bootstrap-grid.rtl.min.css                         | PostCSS       |          1 |          5 |          0 |          6 |
+| d:\.net\start\wwwroot\lib\bootstrap\dist\css\bootstrap-reboot.css                               | PostCSS       |        518 |         14 |         65 |        597 |
+| d:\.net\start\wwwroot\lib\bootstrap\dist\css\bootstrap-reboot.min.css                           | PostCSS       |          1 |          5 |          0 |          6 |
+| d:\.net\start\wwwroot\lib\bootstrap\dist\css\bootstrap-reboot.rtl.css                           | PostCSS       |        524 |          6 |         64 |        594 |
+| d:\.net\start\wwwroot\lib\bootstrap\dist\css\bootstrap-reboot.rtl.min.css                       | PostCSS       |          1 |          5 |          0 |          6 |
+| d:\.net\start\wwwroot\lib\bootstrap\dist\css\bootstrap-utilities.css                            | PostCSS       |      4,891 |          8 |        503 |      5,402 |
+| d:\.net\start\wwwroot\lib\bootstrap\dist\css\bootstrap-utilities.min.css                        | PostCSS       |          1 |          5 |          0 |          6 |
+| d:\.net\start\wwwroot\lib\bootstrap\dist\css\bootstrap-utilities.rtl.css                        | PostCSS       |      4,887 |          6 |        500 |      5,393 |
+| d:\.net\start\wwwroot\lib\bootstrap\dist\css\bootstrap-utilities.rtl.min.css                    | PostCSS       |          1 |          5 |          0 |          6 |
+| d:\.net\start\wwwroot\lib\bootstrap\dist\css\bootstrap.css                                      | PostCSS       |     11,136 |         24 |        897 |     12,057 |
+| d:\.net\start\wwwroot\lib\bootstrap\dist\css\bootstrap.min.css                                  | PostCSS       |          5 |          1 |          0 |          6 |
+| d:\.net\start\wwwroot\lib\bootstrap\dist\css\bootstrap.rtl.css                                  | PostCSS       |     11,138 |          6 |        886 |     12,030 |
+| d:\.net\start\wwwroot\lib\bootstrap\dist\css\bootstrap.rtl.min.css                              | PostCSS       |          5 |          1 |          0 |          6 |
+| d:\.net\start\wwwroot\lib\bootstrap\dist\js\bootstrap.bundle.js                                 | JavaScript    |      5,064 |        655 |        596 |      6,315 |
+| d:\.net\start\wwwroot\lib\bootstrap\dist\js\bootstrap.bundle.min.js                             | JavaScript    |          1 |          6 |          0 |          7 |
+| d:\.net\start\wwwroot\lib\bootstrap\dist\js\bootstrap.esm.js                                    | JavaScript    |      3,568 |        578 |        302 |      4,448 |
+| d:\.net\start\wwwroot\lib\bootstrap\dist\js\bootstrap.esm.min.js                                | JavaScript    |          1 |          6 |          0 |          7 |
+| d:\.net\start\wwwroot\lib\bootstrap\dist\js\bootstrap.js                                        | JavaScript    |      3,604 |        584 |        307 |      4,495 |
+| d:\.net\start\wwwroot\lib\bootstrap\dist\js\bootstrap.min.js                                    | JavaScript    |          1 |          6 |          0 |          7 |
+| d:\.net\start\wwwroot\lib\jquery-validation-unobtrusive\dist\jquery.validate.unobtrusive.js     | JavaScript    |        306 |         76 |         54 |        436 |
+| d:\.net\start\wwwroot\lib\jquery-validation-unobtrusive\dist\jquery.validate.unobtrusive.min.js | JavaScript    |          1 |          7 |          0 |          8 |
+| d:\.net\start\wwwroot\lib\jquery-validation\LICENSE.md                                          | Markdown      |         18 |          0 |          5 |         23 |
+| d:\.net\start\wwwroot\lib\jquery-validation\dist\additional-methods.js                          | JavaScript    |      1,106 |        258 |        141 |      1,505 |
+| d:\.net\start\wwwroot\lib\jquery-validation\dist\additional-methods.min.js                      | JavaScript    |          1 |          3 |          0 |          4 |
+| d:\.net\start\wwwroot\lib\jquery-validation\dist\jquery.validate.js                             | JavaScript    |      1,265 |        188 |        250 |      1,703 |
+| d:\.net\start\wwwroot\lib\jquery-validation\dist\jquery.validate.min.js                         | JavaScript    |          1 |          3 |          0 |          4 |
+| d:\.net\start\wwwroot\lib\jquery\dist\jquery.js                                                 | JavaScript    |      6,767 |      1,887 |      2,063 |     10,717 |
+| d:\.net\start\wwwroot\lib\jquery\dist\jquery.min.js                                             | JavaScript    |          1 |          1 |          1 |          3 |
+| d:\.net\start\wwwroot\lib\jquery\dist\jquery.slim.js                                            | JavaScript    |      5,381 |      1,558 |      1,679 |      8,618 |
+| d:\.net\start\wwwroot\lib\jquery\dist\jquery.slim.min.js                                        | JavaScript    |          1 |          1 |          1 |          3 |
+| Total                                                                                           |               |     91,113 |      7,014 |     12,525 |    110,652 |
++-------------------------------------------------------------------------------------------------+---------------+------------+------------+------------+------------+

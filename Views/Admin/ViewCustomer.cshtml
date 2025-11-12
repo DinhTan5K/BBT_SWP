@@ -1,0 +1,160 @@
+@model start.Models.Customer
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Chi tiết khách hàng";
+    var orders = ViewBag.Orders as List<start.Models.Order> ?? new List<start.Models.Order>();
+}
+
+<div style="padding: 24px;">
+    <div style="margin-bottom: 24px;">
+        <a href="@Url.Action("Customers", "Admin")" 
+           style="display: inline-flex; align-items: center; gap: 8px; color: var(--admin-primary); text-decoration: none; font-weight: 500;">
+            <i class="fas fa-arrow-left"></i> Quay lại danh sách
+        </a>
+    </div>
+
+    <div style="background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+        <h2 style="font-size: 24px; font-weight: 600; margin-bottom: 24px; color: var(--ink);">Thông tin khách hàng</h2>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px;">
+            <div>
+                <div style="margin-bottom: 16px;">
+                    <div style="font-size: 14px; color: var(--muted); margin-bottom: 4px;">Họ tên</div>
+                    <div style="font-size: 16px; font-weight: 600; color: var(--ink);">@Model.Name</div>
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <div style="font-size: 14px; color: var(--muted); margin-bottom: 4px;">Email</div>
+                    <div style="font-size: 16px; color: var(--ink);">@(Model.Email ?? "-")</div>
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <div style="font-size: 14px; color: var(--muted); margin-bottom: 4px;">Số điện thoại</div>
+                    <div style="font-size: 16px; color: var(--ink);">@(Model.Phone ?? "-")</div>
+                </div>
+            </div>
+            <div>
+                <div style="margin-bottom: 16px;">
+                    <div style="font-size: 14px; color: var(--muted); margin-bottom: 4px;">Ngày sinh</div>
+                    <div style="font-size: 16px; color: var(--ink);">@(Model.BirthDate?.ToString("dd/MM/yyyy") ?? "-")</div>
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <div style="font-size: 14px; color: var(--muted); margin-bottom: 4px;">Địa chỉ</div>
+                    <div style="font-size: 16px; color: var(--ink);">@(Model.Address ?? "-")</div>
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <div style="font-size: 14px; color: var(--muted); margin-bottom: 4px;">Ngày đăng ký</div>
+                    <div style="font-size: 16px; color: var(--ink);">@Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div style="background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 24px;">
+        <h2 style="font-size: 24px; font-weight: 600; margin-bottom: 24px; color: var(--ink);">Lịch sử đơn hàng</h2>
+        
+        @{
+            var currentPage = ViewBag.CurrentPage ?? 1;
+            var totalPages = ViewBag.TotalPages ?? 1;
+            var totalItems = ViewBag.TotalItems ?? 0;
+            var pageSize = ViewBag.PageSize ?? 10;
+        }
+        
+        @if (orders.Any())
+        {
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: var(--bg); border-bottom: 2px solid var(--line);">
+                            <th style="padding: 12px; text-align: left; font-weight: 600; color: var(--ink);">Mã đơn</th>
+                            <th style="padding: 12px; text-align: left; font-weight: 600; color: var(--ink);">Ngày đặt</th>
+                            <th style="padding: 12px; text-align: left; font-weight: 600; color: var(--ink);">Chi nhánh</th>
+                            <th style="padding: 12px; text-align: center; font-weight: 600; color: var(--ink);">Trạng thái</th>
+                            <th style="padding: 12px; text-align: right; font-weight: 600; color: var(--ink);">Tổng tiền</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var order in orders)
+                        {
+                            <tr style="border-bottom: 1px solid var(--line);">
+                                <td style="padding: 12px; color: var(--ink); font-weight: 500;">@order.OrderCode</td>
+                                <td style="padding: 12px; color: var(--muted);">@order.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td style="padding: 12px; color: var(--muted);">@(order.Branch?.Name ?? "-")</td>
+                                <td style="padding: 12px; text-align: center;">
+                                    @{
+                                        var statusColors = new Dictionary<string, string>
+                                        {
+                                            { "Chờ xác nhận", "background: #cbd5e1; color: #475569;" },
+                                            { "Đã xác nhận", "background: #dbeafe; color: #1e40af;" },
+                                            { "Đang giao", "background: #ddd6fe; color: #5b21b6;" },
+                                            { "Đã giao", "background: #d1fae5; color: #065f46;" },
+                                            { "Đã hủy", "background: #fee2e2; color: #991b1b;" },
+                                            { "Chờ hoàn tiền", "background: #e0e7ff; color: #3730a3; border: 1px solid #6366f1;" },
+                                            { "Đã hoàn tiền", "background: #6366f1; color: #ffffff;" }
+                                        };
+                                        var statusStyle = statusColors.ContainsKey(order.Status ?? "") 
+                                            ? statusColors[order.Status ?? ""] 
+                                            : "background: var(--bg); color: var(--muted);";
+                                    }
+                                    <span style="display: inline-block; padding: 4px 12px; @statusStyle border-radius: 999px; font-size: 13px; font-weight: 500;">
+                                        @(order.Status ?? "Chưa xác định")
+                                    </span>
+                                </td>
+                                <td style="padding: 12px; text-align: right; color: var(--ink); font-weight: 600;">@order.Total.ToString("N0") đ</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            @* Pagination *@
+            @if (totalPages > 1)
+            {
+                <div style="display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 24px; padding: 20px;">
+                    @if (currentPage > 1)
+                    {
+                        <a href="@Url.Action("ViewCustomer", "Admin", new { id = Model.CustomerID, page = currentPage - 1 })" 
+                           style="padding: 8px 16px; background: var(--card); border: 1px solid var(--line); border-radius: 6px; color: var(--ink); text-decoration: none; font-weight: 500; transition: all 0.2s;">
+                            <i class="fas fa-chevron-left"></i> Trước
+                        </a>
+                    }
+
+                    @for (int i = Math.Max(1, currentPage - 2); i <= Math.Min(totalPages, currentPage + 2); i++)
+                    {
+                        if (i == currentPage)
+                        {
+                            <span style="padding: 8px 16px; background: var(--admin-primary); color: white; border-radius: 6px; font-weight: 600;">
+                                @i
+                            </span>
+                        }
+                        else
+                        {
+                            <a href="@Url.Action("ViewCustomer", "Admin", new { id = Model.CustomerID, page = i })" 
+                               style="padding: 8px 16px; background: var(--card); border: 1px solid var(--line); border-radius: 6px; color: var(--ink); text-decoration: none; font-weight: 500; transition: all 0.2s;">
+                                @i
+                            </a>
+                        }
+                    }
+
+                    @if (currentPage < totalPages)
+                    {
+                        <a href="@Url.Action("ViewCustomer", "Admin", new { id = Model.CustomerID, page = currentPage + 1 })" 
+                           style="padding: 8px 16px; background: var(--card); border: 1px solid var(--line); border-radius: 6px; color: var(--ink); text-decoration: none; font-weight: 500; transition: all 0.2s;">
+                            Sau <i class="fas fa-chevron-right"></i>
+                        </a>
+                    }
+                </div>
+                <div style="text-align: center; color: var(--muted); font-size: 14px; margin-top: 8px;">
+                    Hiển thị @((currentPage - 1) * pageSize + 1)-@(Math.Min(currentPage * pageSize, totalItems)) trong tổng số @totalItems đơn hàng
+                </div>
+            }
+        }
+        else
+        {
+            <div style="padding: 48px; text-align: center; color: var(--muted);">
+                <div style="font-size: 48px; margin-bottom: 16px; color: var(--admin-muted);"><i class="fas fa-shopping-cart"></i></div>
+                <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">Chưa có đơn hàng nào</h3>
+                <p>Khách hàng này chưa đặt đơn hàng nào.</p>
+            </div>
+        }
+    </div>
+</div>
+

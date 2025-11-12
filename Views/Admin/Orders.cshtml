@@ -1,0 +1,355 @@
+@model List<start.Models.Order>
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Quản lý đơn hàng";
+    var statuses = ViewBag.Statuses as List<string> ?? new List<string>();
+    var currentStatusRaw = ViewBag.CurrentStatus as string;
+    var currentStatus = string.IsNullOrEmpty(currentStatusRaw) ? "Tất cả" : currentStatusRaw;
+    var searchTerm = ViewBag.SearchTerm as string ?? "";
+    var currentPage = (int)(ViewBag.CurrentPage ?? 1);
+    var totalPages = (int)(ViewBag.TotalPages ?? 1);
+    var totalCount = (int)(ViewBag.TotalCount ?? 0);
+    var pageSize = (int)(ViewBag.PageSize ?? 20);
+}
+
+<!-- Header -->
+<div style="padding: 24px 24px 0 24px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+        <div>
+            <h2 style="font-size: 24px; font-weight: 600; color: var(--ink); margin: 0 0 8px 0;">
+                Quản lý đơn hàng
+            </h2>
+            <div style="font-size: 14px; color: var(--muted);">
+                @{
+                    var hasSearch = !string.IsNullOrEmpty(searchTerm);
+                    var hasStatusFilter = !string.IsNullOrEmpty(currentStatus) && currentStatus != "Tất cả";
+                    var hasFilter = hasSearch || hasStatusFilter;
+                }
+                @if (hasFilter)
+                {
+                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                        <div>
+                            Tìm thấy <strong style="color: var(--admin-primary);">@totalCount</strong> đơn hàng
+                            @if (totalCount == 0)
+                            {
+                                <text>phù hợp với bộ lọc</text>
+                            }
+                        </div>
+                        @if (hasSearch || hasStatusFilter)
+                        {
+                            <div style="font-size: 12px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
+                                @if (hasStatusFilter)
+                                {
+                                    <span style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; background: #e0e7ff; color: #3730a3; border-radius: 4px; font-size: 11px;">
+                                        <i class="fas fa-filter" style="font-size: 10px;"></i>
+                                        Trạng thái: <strong>@currentStatus</strong>
+                                    </span>
+                                }
+                                @if (hasSearch)
+                                {
+                                    <span style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; background: #fef3c7; color: #92400e; border-radius: 4px; font-size: 11px;">
+                                        <i class="fas fa-search" style="font-size: 10px;"></i>
+                                        Tìm kiếm: <strong>@searchTerm</strong>
+                                    </span>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <text>
+                        Tổng cộng: <strong>@totalCount</strong> đơn hàng
+                    </text>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bộ lọc và tìm kiếm -->
+<div style="padding: 0 24px 24px 24px; position: relative; z-index: 100; overflow: visible;">
+    <div class="admin-filter-group" style="margin-bottom: 24px; position: relative; overflow: visible;">
+        <form method="get" action="@Url.Action("Orders", "Admin")" style="display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; width: 100%;">
+            <input type="hidden" name="page" value="1" />
+            <div class="admin-filter-search" style="flex: 1; min-width: 250px;">
+                <label class="admin-filter-label">Tìm kiếm</label>
+                <input type="text" name="search" value="@searchTerm" placeholder="Mã đơn, tên khách hàng, SĐT...">
+            </div>
+            <div class="admin-filter-select" style="flex: 1; min-width: 200px; position: relative; z-index: 1001; overflow: visible;">
+                <label class="admin-filter-label">Trạng thái</label>
+                <select name="status" style="position: relative; z-index: 1002;">
+                    <option value="">Tất cả</option>
+                    @foreach (var status in statuses)
+                    {
+                        <option value="@status" selected="@(status == currentStatus)">@status</option>
+                    }
+                </select>
+            </div>
+            <div style="display: flex; align-items: flex-end;">
+                <button type="submit" class="admin-filter-btn" style="background: var(--admin-primary); color: white; border-color: var(--admin-primary);">
+                    <i class="fas fa-search"></i> Tìm kiếm
+                </button>
+            </div>
+            @if (!string.IsNullOrEmpty(searchTerm) || currentStatus != "Tất cả")
+            {
+                <div>
+                    <a href="@Url.Action("Orders", "Admin")" 
+                       style="padding: 8px 20px; background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; text-decoration: none; display: inline-block;">
+                        <i class="fas fa-times"></i> Xóa bộ lọc
+                    </a>
+                </div>
+            }
+        </form>
+    </div>
+</div>
+
+<!-- Nội dung bảng đơn hàng -->
+<div style="padding: 0 24px 24px 24px;">
+    <!-- Bảng đơn hàng -->
+    <div style="background: var(--card); border: 1px solid var(--line); border-radius: 12px; overflow: hidden;">
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background: var(--bg); border-bottom: 2px solid var(--line);">
+                    <th style="padding: 16px; text-align: left; font-weight: 600; color: var(--ink);">Mã đơn</th>
+                    <th style="padding: 16px; text-align: left; font-weight: 600; color: var(--ink);">Khách hàng</th>
+                    <th style="padding: 16px; text-align: left; font-weight: 600; color: var(--ink);">Ngày đặt</th>
+                    <th style="padding: 16px; text-align: left; font-weight: 600; color: var(--ink);">Chi nhánh</th>
+                    <th style="padding: 16px; text-align: center; font-weight: 600; color: var(--ink);">Trạng thái</th>
+                    <th style="padding: 16px; text-align: right; font-weight: 600; color: var(--ink);">Tổng tiền</th>
+                    <th style="padding: 16px; text-align: center; font-weight: 600; color: var(--ink);">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var order in Model)
+                {
+                    <tr style="border-bottom: 1px solid var(--line);">
+                        <td style="padding: 16px; color: var(--ink); font-weight: 500;">@order.OrderCode</td>
+                        <td style="padding: 16px; color: var(--ink);">
+                            <div>@(order.Customer?.Name ?? "-")</div>
+                            <div style="font-size: 12px; color: var(--muted);">@(order.ReceiverPhone ?? order.Customer?.Phone ?? "-")</div>
+                        </td>
+                        <td style="padding: 16px; color: var(--muted);">@order.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td style="padding: 16px; color: var(--muted);">@(order.Branch?.Name ?? "-")</td>
+                        <td style="padding: 16px; text-align: center;">
+                            @{
+                                var statusColors = new Dictionary<string, string>
+                                {
+                                    { "Chờ xác nhận", "background: #cbd5e1; color: #475569;" },
+                                    { "Đã xác nhận", "background: #dbeafe; color: #1e40af;" },
+                                    { "Đang giao", "background: #ddd6fe; color: #5b21b6;" },
+                                    { "Đã giao", "background: #d1fae5; color: #065f46;" },
+                                    { "Đã hủy", "background: #fee2e2; color: #991b1b;" },
+                                    { "Chờ hoàn tiền", "background: #e0e7ff; color: #3730a3; border: 1px solid #6366f1;" },
+                                    { "Đã hoàn tiền", "background: #6366f1; color: #ffffff;" }
+                                };
+                                var statusStyle = statusColors.ContainsKey(order.Status ?? "") 
+                                    ? statusColors[order.Status ?? ""] 
+                                    : "background: var(--bg); color: var(--muted);";
+                            }
+                            <span style="display: inline-block; padding: 4px 12px; @statusStyle border-radius: 999px; font-size: 13px; font-weight: 500;">
+                                @(order.Status ?? "Chưa xác định")
+                            </span>
+                        </td>
+                        <td style="padding: 16px; text-align: right; color: var(--ink); font-weight: 600;">@order.Total.ToString("N0") đ</td>
+                        <td style="padding: 16px; text-align: center;">
+                            @{
+                                string viewOrderUrl = Url.Action("ViewOrder", "Admin", new { id = order.OrderID });
+                                var queryParts = new List<string>();
+                                if (!string.IsNullOrEmpty(searchTerm))
+                                {
+                                    queryParts.Add("search=" + Uri.EscapeDataString(searchTerm));
+                                }
+                                if (!string.IsNullOrEmpty(currentStatus) && currentStatus != "Tất cả")
+                                {
+                                    queryParts.Add("status=" + Uri.EscapeDataString(currentStatus));
+                                }
+                                if (currentPage > 1)
+                                {
+                                    queryParts.Add("page=" + currentPage);
+                                }
+                                if (queryParts.Any())
+                                {
+                                    viewOrderUrl += "?" + string.Join("&", queryParts);
+                                }
+                            }
+                            <a href="@viewOrderUrl" 
+                               title="Xem chi tiết đơn hàng"
+                               style="padding: 8px 16px; background: #3b82f6; color: white; border-radius: 8px; text-decoration: none; font-size: 13px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s;"
+                               onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(59,130,246,0.3)'; this.style.background='#2563eb';"
+                               onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'; this.style.background='#3b82f6';">
+                                <i class="fas fa-eye"></i>
+                                <span>Chi tiết</span>
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        @if (!Model.Any())
+        {
+            <div style="padding: 48px; text-align: center; color: var(--muted);">
+                <div style="font-size: 48px; margin-bottom: 16px; color: var(--admin-muted);"><i class="fas fa-shopping-cart"></i></div>
+                <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">Không có đơn hàng nào</h3>
+                <p>Không tìm thấy đơn hàng phù hợp với bộ lọc.</p>
+            </div>
+        }
+    </div>
+
+    <!-- Phân trang -->
+    @if (totalPages > 1)
+    {
+        <div style="display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 24px; flex-wrap: wrap;">
+            <!-- Nút Previous -->
+            @if (currentPage > 1)
+            {
+                <a href="@Url.Action("Orders", "Admin", new { status = currentStatus == "Tất cả" ? "" : currentStatus, search = searchTerm, page = currentPage - 1 })" 
+                   style="padding: 8px 16px; background: var(--card); border: 1px solid var(--line); border-radius: 8px; text-decoration: none; color: var(--ink); font-weight: 500;">
+                    <i class="fas fa-chevron-left"></i> Trước
+                </a>
+            }
+            else
+            {
+                <span style="padding: 8px 16px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; color: var(--muted);">
+                    <i class="fas fa-chevron-left"></i> Trước
+                </span>
+            }
+
+            <!-- Số trang -->
+            @{
+                int startPage = Math.Max(1, currentPage - 2);
+                int endPage = Math.Min(totalPages, currentPage + 2);
+            }
+
+            @if (startPage > 1)
+            {
+                <a href="@Url.Action("Orders", "Admin", new { status = currentStatus == "Tất cả" ? "" : currentStatus, search = searchTerm, page = 1 })" 
+                   style="padding: 8px 12px; background: var(--card); border: 1px solid var(--line); border-radius: 8px; text-decoration: none; color: var(--ink);">
+                    1
+                </a>
+                @if (startPage > 2)
+                {
+                    <span style="padding: 8px 4px; color: var(--muted);">...</span>
+                }
+            }
+
+            @for (int i = startPage; i <= endPage; i++)
+            {
+                @if (i == currentPage)
+                {
+                    <span style="padding: 8px 12px; background: var(--admin-primary); color: white; border-radius: 8px; font-weight: 600;">
+                        @i
+                    </span>
+                }
+                else
+                {
+                    <a href="@Url.Action("Orders", "Admin", new { status = currentStatus == "Tất cả" ? "" : currentStatus, search = searchTerm, page = i })" 
+                       style="padding: 8px 12px; background: var(--card); border: 1px solid var(--line); border-radius: 8px; text-decoration: none; color: var(--ink);">
+                        @i
+                    </a>
+                }
+            }
+
+            @if (endPage < totalPages)
+            {
+                @if (endPage < totalPages - 1)
+                {
+                    <span style="padding: 8px 4px; color: var(--muted);">...</span>
+                }
+                <a href="@Url.Action("Orders", "Admin", new { status = currentStatus == "Tất cả" ? "" : currentStatus, search = searchTerm, page = totalPages })" 
+                   style="padding: 8px 12px; background: var(--card); border: 1px solid var(--line); border-radius: 8px; text-decoration: none; color: var(--ink);">
+                    @totalPages
+                </a>
+            }
+
+            <!-- Nút Next -->
+            @if (currentPage < totalPages)
+            {
+                <a href="@Url.Action("Orders", "Admin", new { status = currentStatus == "Tất cả" ? "" : currentStatus, search = searchTerm, page = currentPage + 1 })" 
+                   style="padding: 8px 16px; background: var(--card); border: 1px solid var(--line); border-radius: 8px; text-decoration: none; color: var(--ink); font-weight: 500;">
+                    Sau <i class="fas fa-chevron-right"></i>
+                </a>
+            }
+            else
+            {
+                <span style="padding: 8px 16px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; color: var(--muted);">
+                    Sau <i class="fas fa-chevron-right"></i>
+                </span>
+            }
+        </div>
+
+        <div style="text-align: center; margin-top: 16px; color: var(--muted); font-size: 14px;">
+            @if (totalCount > 0)
+            {
+                var startIndex = (currentPage - 1) * pageSize + 1;
+                var endIndex = Math.Min(currentPage * pageSize, totalCount);
+                <text>Trang @currentPage / @totalPages - Hiển thị @startIndex-@endIndex trong tổng số @totalCount đơn hàng</text>
+            }
+            else
+            {
+                <text>Không có đơn hàng nào</text>
+            }
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        // Custom dropdown sẽ tự động được convert bởi admin-dropdown.js
+        // Script này chỉ đảm bảo card có overflow: visible khi dropdown active
+        document.addEventListener('DOMContentLoaded', function() {
+            // Observer để watch khi custom dropdown được tạo và active
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                        const target = mutation.target;
+                        if (target.classList.contains('admin-custom-dropdown')) {
+                            const card = target.closest('.card');
+                            if (card) {
+                                if (target.classList.contains('active')) {
+                                    card.classList.add('dropdown-active');
+                                } else {
+                                    // Delay để dropdown close animation hoàn thành
+                                    setTimeout(() => {
+                                        if (!target.classList.contains('active')) {
+                                            card.classList.remove('dropdown-active');
+                                        }
+                                    }, 300);
+                                }
+                            }
+                        }
+                    }
+                });
+            });
+            
+            // Watch for custom dropdowns
+            document.querySelectorAll('.admin-custom-dropdown').forEach(dropdown => {
+                observer.observe(dropdown, {
+                    attributes: true,
+                    attributeFilter: ['class']
+                });
+            });
+            
+            // Watch for new dropdowns được tạo bởi admin-dropdown.js
+            const dropdownObserver = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    mutation.addedNodes.forEach(function(node) {
+                        if (node.nodeType === 1 && node.classList && node.classList.contains('admin-custom-dropdown')) {
+                            observer.observe(node, {
+                                attributes: true,
+                                attributeFilter: ['class']
+                            });
+                        }
+                    });
+                });
+            });
+            
+            dropdownObserver.observe(document.body, {
+                childList: true,
+                subtree: true
+            });
+        });
+    </script>
+}
+

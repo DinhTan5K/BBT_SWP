@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using start.Models;
 using start.Data;
@@ -24,6 +25,15 @@ public class OrderController : Controller
         _paymentService = paymentService;
     }
 
+    // Helper method để lấy CustomerID từ Claims (CustomerScheme)
+    private int? GetCustomerId()
+    {
+        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (int.TryParse(userIdClaim, out int customerId))
+            return customerId;
+        return null;
+    }
+
     [HttpGet("Track")]
     public IActionResult Track() => View();
 
@@ -38,9 +48,10 @@ public class OrderController : Controller
     }
 
     [HttpGet("Confirmed/{id}")]
+    [Authorize(AuthenticationSchemes = "CustomerScheme")]
     public async Task<IActionResult> OrderConfirmed(int id)
     {
-        int? customerId = HttpContext.Session.GetInt32("CustomerID");
+        int? customerId = GetCustomerId();
         if (customerId == null)
         {
             return RedirectToAction("Login", "Account");
@@ -56,10 +67,11 @@ public class OrderController : Controller
     }
 
     [HttpGet]
+    [Authorize(AuthenticationSchemes = "CustomerScheme")]
     public async Task<IActionResult> Order()
     {
-        // Lấy ID khách hàng từ session
-        int? customerId = HttpContext.Session.GetInt32("CustomerID");
+        // Lấy ID khách hàng từ Claims
+        int? customerId = GetCustomerId();
 
         if (customerId == null)
         {
@@ -92,9 +104,10 @@ public class OrderController : Controller
     }
 
     [HttpPost("CreateOrder")]
+    [Authorize(AuthenticationSchemes = "CustomerScheme")]
     public async Task<IActionResult> CreateOrder([FromForm] OrderFormModel form)
     {
-        int? customerId = HttpContext.Session.GetInt32("CustomerID");
+        int? customerId = GetCustomerId();
         if (customerId == null)
         {
             return Json(new { success = false, message = "Bạn cần đăng nhập" });
@@ -114,19 +127,21 @@ public class OrderController : Controller
     }
 
     [HttpGet("OrderHistory")]
-    public async Task<IActionResult> OrderHistory()
+    [Authorize(AuthenticationSchemes = "CustomerScheme")]
+    public async Task<IActionResult> OrderHistory(int page = 1, int pageSize = 10)
     {
-        int? customerId = HttpContext.Session.GetInt32("CustomerID");
+        int? customerId = GetCustomerId();
         if (customerId == null)
         {
             return RedirectToAction("Login", "Account");
         }
 
-        var vm = await _orderReadService.GetOrderHistoryAsync(customerId.Value);
+        var vm = await _orderReadService.GetOrderHistoryAsync(customerId.Value, page, pageSize);
         return View(vm);
     }
     #region Payment with MoMo
     [HttpGet("PayWithMomo")]
+    [Authorize(AuthenticationSchemes = "CustomerScheme")]
     public async Task<IActionResult> PayWithMomo()
     {
         // Lấy form đang chờ từ session
@@ -138,7 +153,7 @@ public class OrderController : Controller
         // Ước tính tổng tiền để gửi qua MoMo (đồng bộ với tính toán ở OrderService)
         // Tạm thời dùng FinalTotal phía client submit (ShippingFee + itemsTotal - discounts) nếu có.
         // Ở đây đơn giản: lấy giỏ + tính lại trước khi redirect.
-        int? customerId = HttpContext.Session.GetInt32("CustomerID");
+        int? customerId = GetCustomerId();
         if (customerId == null) return RedirectToAction("Login", "Account");
 
         var payUrl = await _checkoutService.InitiateMomoPaymentAsync(customerId.Value, HttpContext.Session, HttpContext);
@@ -147,9 +162,10 @@ public class OrderController : Controller
 
 
     [HttpGet("PaymentCallback")]
+    [Authorize(AuthenticationSchemes = "CustomerScheme")]
     public async Task<IActionResult> PaymentCallback()
     {
-        int? customerId = HttpContext.Session.GetInt32("CustomerID");
+        int? customerId = GetCustomerId();
         if (customerId == null) return RedirectToAction("Login", "Account");
 
         var result = await _checkoutService.HandleMomoCallbackAsync(Request.Query, customerId.Value, HttpContext.Session);
@@ -158,37 +174,38 @@ public class OrderController : Controller
     }
 
     [HttpPost("RefundMomo/{orderId}")]
-[ValidateAntiForgeryToken]
-public async Task<IActionResult> RefundMomo(int orderId)
-{
-    var order = await _orderService.GetOrderByIdAsync(orderId);
-    if (order == null || string.IsNullOrEmpty(order.TransId))
-        return BadRequest("Không tìm thấy giao dịch để hoàn tiền.");
-
-    // 🟢 Gọi API Refund MoMo
-    var resultJson = await _paymentService.RefundAsync(order.TransId, order.Total, "Hoàn tiền đơn hàng");
-
-    var response = System.Text.Json.JsonSerializer.Deserialize<MomoRefundResponse>(resultJson);
-    if (response == null)
-        return BadRequest("Không thể đọc phản hồi từ MoMo.");
-
-    // 🟢 Nếu refund thành công
-    if (response.resultCode == 0)
+    [Authorize(AuthenticationSchemes = "CustomerScheme")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> RefundMomo(int orderId)
     {
-        order.Status = "Đã hoàn tiền";
-        order.RefundTransId = response.orderId;
-        order.RefundAt = DateTime.Now;
+        var order = await _orderService.GetOrderByIdAsync(orderId);
+        if (order == null || string.IsNullOrEmpty(order.TransId))
+            return BadRequest("Không tìm thấy giao dịch để hoàn tiền.");
 
-        await _context.SaveChangesAsync();
-        Console.WriteLine($"✅ Refund thành công: {order.OrderCode} - TransId: {order.TransId}");
-    }
-    else
-    {
-        Console.WriteLine($"❌ Refund thất bại: {response.message}");
-    }
+        // 🟢 Gọi API Refund MoMo
+        var resultJson = await _paymentService.RefundAsync(order.TransId, order.Total, "Hoàn tiền đơn hàng");
 
-    return RedirectToAction("OrderHistory", "Order");
-}
+        var response = System.Text.Json.JsonSerializer.Deserialize<MomoRefundResponse>(resultJson);
+        if (response == null)
+            return BadRequest("Không thể đọc phản hồi từ MoMo.");
+
+        // 🟢 Nếu refund thành công
+        if (response.resultCode == 0)
+        {
+            order.Status = "Đã hoàn tiền";
+            order.RefundTransId = response.orderId;
+            order.RefundAt = DateTime.Now;
+
+            await _context.SaveChangesAsync();
+            Console.WriteLine($"✅ Refund thành công: {order.OrderCode} - TransId: {order.TransId}");
+        }
+        else
+        {
+            Console.WriteLine($"❌ Refund thất bại: {response.message}");
+        }
+
+        return RedirectToAction("OrderHistory", "Order");
+    }
 
     #endregion
     [HttpGet("Failed")]
@@ -199,10 +216,11 @@ public async Task<IActionResult> RefundMomo(int orderId)
     }
 
     [HttpPost("Cancel/{id}")]
+    [Authorize(AuthenticationSchemes = "CustomerScheme")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Cancel(int id, [FromForm] string? reason)
     {
-        int? customerId = HttpContext.Session.GetInt32("CustomerID");
+        int? customerId = GetCustomerId();
         if (customerId == null)
         {
             return Json(new { success = false, message = "Bạn cần đăng nhập" });
@@ -214,9 +232,10 @@ public async Task<IActionResult> RefundMomo(int orderId)
 
     #region Reorder
     [HttpPost("Reorder")]
+    [Authorize(AuthenticationSchemes = "CustomerScheme")]
     public IActionResult Reorder([FromForm] int orderId)
     {
-        int? customerId = HttpContext.Session.GetInt32("CustomerID");
+        int? customerId = GetCustomerId();
         if (customerId == null)
             return Json(new { success = false, message = "Bạn chưa đăng nhập" });
 

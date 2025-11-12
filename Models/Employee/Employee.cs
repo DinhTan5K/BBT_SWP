@@ -47,6 +47,9 @@ namespace start.Models
         [Column("BranchID")]
         public int? BranchID { get; set; }
 
+        [Column("RegionID")]
+        public int? RegionID { get; set; }
+
         [Required]
         [Column("Password")]
         [StringLength(200)]
@@ -88,6 +91,10 @@ namespace start.Models
 
         [ForeignKey(nameof(BranchID))]
         public Branch? Branch { get; set; }
+
+        [ForeignKey(nameof(RegionID))]
+        public Region? Region { get; set; }
+        
         public ICollection<Contract> Contracts { get; set; } = new List<Contract>();
         [InverseProperty(nameof(Salary.Employee))]
         public ICollection<Salary> Salaries { get; set; } = new List<Salary>();

@@ -28,12 +28,14 @@
      padding: 0;
  }
 
- body {
-     background-color: var(--page-bg);
-     font-family: var(--font-main);
-     color: var(--text-primary);
-     background: url('https://res.cloudinary.com/do48qpmut/image/upload/v1761645164/jfom7ydm7lzhzrwubevc.jpg');
- }
+body {
+    background-color: var(--page-bg);
+    font-family: var(--font-main);
+    color: var(--text-primary);
+    background: url('https://app.make10000hours.com/photo/working_room.webp?v=2025-01-04-v2') no-repeat center center fixed;
+    background-size: cover;
+}
+
 
  h2,h3,.cart h2,.filter-sidebar h2,.filter-btn {
      font-family: var(--font-heading);
@@ -107,6 +109,7 @@
      border: 2px solid transparent;
      /* Ensure proper stacking context */
      transform: translateZ(0);
+     height: 100%;
  }
 
 
@@ -175,6 +178,13 @@
      margin-bottom: 0.5rem;
      /* Thêm margin-bottom */
      line-height: 1.3;
+     /* Giới hạn tên sản phẩm chỉ hiển thị tối đa 2 dòng */
+     display: -webkit-box;
+     -webkit-line-clamp: 2;
+     -webkit-box-orient: vertical;
+     overflow: hidden;
+     text-overflow: ellipsis;
+     min-height: 2.6em; /* Đảm bảo chiều cao đồng đều (2 dòng * 1.3 line-height) */
  }
 
  /* --- Khối hành động (chứa size và nút add) --- */
@@ -238,6 +248,10 @@
      font-size: 1.1rem;
      transition: opacity 0.2s ease, transform 0.2s ease;
      margin-top: 0.5rem;
+     min-height: 1.5em; /* Đảm bảo chiều cao đồng đều cho phần giá */
+     display: flex;
+     align-items: center;
+     justify-content: center;
  }
 
  .btn-add {
@@ -660,19 +674,21 @@
      align-items: center;
      gap: 0.5rem;
  }
-
+ 
  .products-title::before {
      font-size: 1.5rem;
  }
 
 .sort-wrapper {
-    position: relative;
     display: flex;
     align-items: center;
     margin-left: auto;
     flex-shrink: 0;
-    z-index: 100;
+    z-index: 1;
     justify-content: flex-end;
+    height: fit-content;
+    position: relative;
+    gap: 0.75rem;
 }
 
  .sort-icon {
@@ -738,7 +754,7 @@
     justify-content: space-between;
     padding: 0.75rem 1.25rem 0.75rem 2.75rem;
     position: relative;
-    z-index: 100;
+    z-index: 0;
     border-radius: 12px;
     border: none;
     background: var(--brand-color);
@@ -784,9 +800,10 @@
      visibility: hidden;
      transform: translateY(-10px);
      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-     z-index: 1000;
+     z-index: 100;
      max-height: 0;
      border: 2px solid var(--border-color);
+     margin-top: 0.25rem;
  }
 
  .custom-select.active .custom-select-options {
@@ -911,12 +928,12 @@
      padding-bottom: 1.25rem;
      border-bottom: 1px solid rgba(232, 213, 183, 0.3);
  }
-
+ 
  .filter-section:last-child {
      border-bottom: none;
      padding-bottom: 0;
  }
-
+ 
  .filter-section-title {
      margin: 0 0 1rem 0;
      font-size: 1rem;
@@ -927,7 +944,7 @@
      gap: 0.5rem;
      font-family: var(--font-heading);
  }
-
+ 
  .filter-section-title i {
      color: var(--brand-color);
      font-size: 0.9rem;
@@ -947,10 +964,11 @@
      display: flex;
      flex-direction: column;
      gap: 1.5rem;
-     position: sticky;
-     top: 2rem;
+     position: sticky !important;
+     top: 100px;
      height: fit-content;
      border: 1px solid rgba(255, 184, 77, 0.1);
+     
  }
 
  .filter-sidebar h2 {

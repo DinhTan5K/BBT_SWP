@@ -1,4 +1,5 @@
 @model News 
+@using start.Models
 
 @{
     ViewData["Title"] = "Chi tiết tin tức";
@@ -7,16 +8,137 @@
 <head>
     <link rel="stylesheet" href="/css/StaticContent/NewsDetail.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        .discount-banner {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            border-radius: 16px;
+            padding: 24px;
+            margin: 30px 0;
+            color: white;
+            box-shadow: 0 8px 24px rgba(245, 158, 11, 0.3);
+        }
+        .discount-banner h3 {
+            margin: 0 0 12px 0;
+            font-size: 20px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .discount-code {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px dashed rgba(255, 255, 255, 0.5);
+            border-radius: 12px;
+            padding: 16px;
+            margin: 16px 0;
+            text-align: center;
+        }
+        .discount-code-value {
+            font-size: 32px;
+            font-weight: 700;
+            letter-spacing: 3px;
+            margin: 8px 0;
+            font-family: 'Courier New', monospace;
+        }
+        .discount-info {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 16px;
+            margin-top: 8px;
+        }
+        .discount-copy-btn {
+            background: white;
+            color: #d97706;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 12px;
+            transition: all 0.2s;
+        }
+        .discount-copy-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        .discount-validity {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-top: 12px;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+    </style>
 </head>
 
 <div class="news-detail-container">
     @if (Model != null)
     {
         <h2>@Model.Title</h2>
-        <img src="@Model.ImageUrl" alt="@Model.Title" class="img-fluid mb-4">
+        @if (!string.IsNullOrEmpty(Model.ImageUrl))
+        {
+            <img src="@Model.ImageUrl" alt="@Model.Title" class="img-fluid mb-4">
+        }
         <div class="news-content">
             @Html.Raw(Model.Content) 
         </div>
+
+        @* Hiển thị mã giảm giá nếu có *@
+        @if (Model.Discount != null && Model.Discount.IsActive)
+        {
+            <div class="discount-banner">
+                <h3>
+                    <i class="fas fa-tag"></i>
+                    Mã giảm giá đặc biệt
+                </h3>
+                <div class="discount-code">
+                    <div style="font-size: 14px; opacity: 0.9;">Mã giảm giá của bạn</div>
+                    <div class="discount-code-value" id="discountCode">@Model.Discount.Code</div>
+                    <div class="discount-info">
+                        @if (Model.Discount.Type == DiscountType.Percentage)
+                        {
+                            <i class="fas fa-percent"></i>
+                            <span>Giảm <strong>@Model.Discount.Percent%</strong> cho đơn hàng</span>
+                        }
+                        else if (Model.Discount.Type == DiscountType.FixedAmount)
+                        {
+                            <i class="fas fa-money-bill-wave"></i>
+                            <span>Giảm <strong>@Model.Discount.Amount?.ToString("N0") VNĐ</strong> cho đơn hàng</span>
+                        }
+                        else if (Model.Discount.Type == DiscountType.FreeShipping)
+                        {
+                            <i class="fas fa-shipping-fast"></i>
+                            <span><strong>Miễn phí vận chuyển</strong></span>
+                        }
+                        else if (Model.Discount.Type == DiscountType.FixedShippingDiscount)
+                        {
+                            <i class="fas fa-shipping-fast"></i>
+                            <span>Giảm <strong>@Model.Discount.Amount?.ToString("N0") VNĐ</strong> phí vận chuyển</span>
+                        }
+                        else if (Model.Discount.Type == DiscountType.PercentShippingDiscount)
+                        {
+                            <i class="fas fa-shipping-fast"></i>
+                            <span>Giảm <strong>@Model.Discount.Percent%</strong> phí vận chuyển</span>
+                        }
+                    </div>
+                    @if (Model.Discount.EndAt.HasValue)
+                    {
+                        <div class="discount-validity">
+                            <i class="fas fa-clock"></i>
+                            Có hiệu lực đến: @Model.Discount.EndAt.Value.ToString("dd/MM/yyyy HH:mm")
+                        </div>
+                    }
+                    <button class="discount-copy-btn" onclick="copyDiscountCode()">
+                        <i class="fas fa-copy"></i> Sao chép mã
+                    </button>
+                </div>
+            </div>
+        }
     }
     else
     {
@@ -27,3 +149,21 @@
         <a asp-controller="Home" asp-action="News" class="btn-back">← Quay lại tin tức</a>
     </div>
 </div>
+
+<script>
+    function copyDiscountCode() {
+        const code = document.getElementById('discountCode').textContent;
+        navigator.clipboard.writeText(code).then(function() {
+            alert('Đã sao chép mã giảm giá: ' + code);
+        }, function() {
+            // Fallback for older browsers
+            const textArea = document.createElement('textarea');
+            textArea.value = code;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            alert('Đã sao chép mã giảm giá: ' + code);
+        });
+    }
+</script>

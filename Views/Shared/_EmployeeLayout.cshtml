@@ -16,6 +16,7 @@
 
     <!-- CSS chung cho khu vực nhân viên -->
     <link rel="stylesheet" href="~/css/employee/profile.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
     @* Cho phép view con chèn thêm CSS *@
     @RenderSection("Styles", required: false)
@@ -27,24 +28,32 @@
     <div class="sb-title">Menu</div>
 
     <a class="sb-item @(active=="Profile" ? "active" : "")"
-       href="@Url.Action("Profile","Employee")">Hồ sơ của tôi</a>
+       href="@Url.Action("Profile","Employee")">
+      <i class="fas fa-user"></i> Hồ sơ của tôi
+    </a>
 
     @if (role is "EM" or "SL" or "NV")
     {
       <a class="sb-item @(ViewBag.ActiveMenu=="DayOff" ? "active" : "")"
          href="@Url.Action("DayOff","Employee")">
-        Quản lý ngày nghỉ
+        <i class="fas fa-calendar-times"></i> Quản lý ngày nghỉ
       </a>
     }
 
     <a class="sb-item @(active=="Schedule" ? "active" : "")"
-       href="@Url.Action("Schedule","Employee")">Lịch làm</a>
-
+       href="@Url.Action("Schedule","Employee")">
+      <i class="fas fa-calendar-alt"></i> Lịch làm
+    </a>
 
     <a class="sb-item @(active=="EditProfile" ? "active" : "")"
-       href="@Url.Action("EditProfile","Employee")">Chỉnh sửa thông tin cá nhân</a>
-        <a class="sb-item @(active=="" ? "active" : "")"
-       href="@Url.Action("Index","Home")">Đăng xuất</a>
+       href="@Url.Action("EditProfile","Employee")">
+      <i class="fas fa-edit"></i> Chỉnh sửa thông tin cá nhân
+    </a>
+
+    <a class="sb-item @(active=="" ? "active" : "")"
+       href="@Url.Action("Index","Home")">
+      <i class="fas fa-sign-out-alt"></i> Đăng xuất
+    </a>
   </aside>
 
   <main>

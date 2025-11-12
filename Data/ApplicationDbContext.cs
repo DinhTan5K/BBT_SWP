@@ -23,6 +23,12 @@ namespace start.Data
         public DbSet<ProductSize> ProductSizes { get; set; }
 
         public DbSet<Discount> Discounts { get; set; }
+        public DbSet<DiscountRequest> DiscountRequests { get; set; }
+        public DbSet<NewsRequest> NewsRequests { get; set; }
+        public DbSet<EmployeeBranchRequest> EmployeeBranchRequests { get; set; }
+        public DbSet<ProductRequest> ProductRequests { get; set; }
+        public DbSet<CategoryRequest> CategoryRequests { get; set; }
+        public DbSet<BranchRequest> BranchRequests { get; set; }
 
         public DbSet<Role> Roles { get; set; }
         public DbSet<Employee> Employees { get; set; }
@@ -36,6 +42,8 @@ namespace start.Data
         public DbSet<News> News { get; set; }
         public DbSet<Wishlist> Wishlist { get; set; }
         public DbSet<ChatHistory> ChatHistories { get; set; }
+        public DbSet<AuditLog> AuditLogs { get; set; }
+        public DbSet<MarketingKPI> MarketingKPIs { get; set; }
 
     }
 }

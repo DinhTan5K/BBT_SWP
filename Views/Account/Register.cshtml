@@ -69,6 +69,7 @@
     document.addEventListener('DOMContentLoaded', function() {
         const form = document.querySelector('form');
         const inputs = form.querySelectorAll('input[required]');
+        const phoneInput = document.querySelector('input[name="Phone"]');
         
         // Add real-time validation
         inputs.forEach(input => {
@@ -92,6 +93,34 @@
                     isValid = false;
                 }
             });
+            
+            // Validate phone specifically
+            if (phoneInput) {
+                const phone = phoneInput.value.trim();
+                if (!phone) {
+                    phoneInput.closest('.input-group').classList.add('error');
+                    phoneInput.classList.add('is-invalid');
+                    isValid = false;
+                } else if (phone.length < 10) {
+                    const phoneErrorSpan = phoneInput.closest('.input-group').nextElementSibling;
+                    if (phoneErrorSpan) {
+                        phoneErrorSpan.textContent = 'Số điện thoại phải có ít nhất 10 số.';
+                        phoneErrorSpan.style.display = 'block';
+                    }
+                    phoneInput.closest('.input-group').classList.add('error');
+                    phoneInput.classList.add('is-invalid');
+                    isValid = false;
+                } else if (!/^[0-9]{10,11}$/.test(phone)) {
+                    const phoneErrorSpan = phoneInput.closest('.input-group').nextElementSibling;
+                    if (phoneErrorSpan) {
+                        phoneErrorSpan.textContent = 'Số điện thoại không hợp lệ. Vui lòng nhập 10 hoặc 11 số.';
+                        phoneErrorSpan.style.display = 'block';
+                    }
+                    phoneInput.closest('.input-group').classList.add('error');
+                    phoneInput.classList.add('is-invalid');
+                    isValid = false;
+                }
+            }
             
             if (!isValid) {
                 e.preventDefault();
@@ -130,15 +159,57 @@
         }
         
         // Phone validation
-        const phoneInput = document.querySelector('input[name="Phone"]');
         if (phoneInput) {
-            phoneInput.addEventListener('blur', function() {
-                const phone = this.value.trim();
+            const phoneErrorSpan = phoneInput.closest('.input-group').nextElementSibling;
+            
+            function validatePhone() {
+                const phone = phoneInput.value.trim();
                 const phoneRegex = /^[0-9]{10,11}$/;
+                const inputGroup = phoneInput.closest('.input-group');
                 
-                if (phone && !phoneRegex.test(phone)) {
-                    this.closest('.input-group').classList.add('error');
-                    this.classList.add('is-invalid');
+                if (!phone) {
+                    inputGroup.classList.remove('error');
+                    phoneInput.classList.remove('is-invalid');
+                    if (phoneErrorSpan) {
+                        phoneErrorSpan.textContent = '';
+                        phoneErrorSpan.style.display = 'none';
+                    }
+                    return true;
+                }
+                
+                if (phone.length < 10) {
+                    inputGroup.classList.add('error');
+                    phoneInput.classList.add('is-invalid');
+                    if (phoneErrorSpan) {
+                        phoneErrorSpan.textContent = 'Số điện thoại phải có ít nhất 10 số.';
+                        phoneErrorSpan.style.display = 'block';
+                    }
+                    return false;
+                }
+                
+                if (!phoneRegex.test(phone)) {
+                    inputGroup.classList.add('error');
+                    phoneInput.classList.add('is-invalid');
+                    if (phoneErrorSpan) {
+                        phoneErrorSpan.textContent = 'Số điện thoại không hợp lệ. Vui lòng nhập 10 hoặc 11 số.';
+                        phoneErrorSpan.style.display = 'block';
+                    }
+                    return false;
+                }
+                
+                inputGroup.classList.remove('error');
+                phoneInput.classList.remove('is-invalid');
+                if (phoneErrorSpan) {
+                    phoneErrorSpan.textContent = '';
+                    phoneErrorSpan.style.display = 'none';
+                }
+                return true;
+            }
+            
+            phoneInput.addEventListener('blur', validatePhone);
+            phoneInput.addEventListener('input', function() {
+                if (this.value.trim().length > 0) {
+                    validatePhone();
                 }
             });
         }

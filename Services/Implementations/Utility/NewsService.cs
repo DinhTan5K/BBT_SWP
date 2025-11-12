@@ -22,7 +22,9 @@ namespace start.Services
 
         public async Task<News?> GetByIdAsync(int id)
         {
-            return await _context.News.FindAsync(id);
+            return await _context.News
+                .Include(n => n.Discount)
+                .FirstOrDefaultAsync(n => n.Id == id);
         }
 
         public async Task AddAsync(News news)

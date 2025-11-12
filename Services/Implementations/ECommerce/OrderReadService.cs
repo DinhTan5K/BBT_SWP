@@ -25,8 +25,17 @@ public class OrderReadService : IOrderReadService
         return cart ?? new Cart { CartDetails = new List<CartDetail>() };
     }
 
-    public async Task<OrderHistoryViewModel> GetOrderHistoryAsync(int customerId)
+    public async Task<OrderHistoryViewModel> GetOrderHistoryAsync(int customerId, int page = 1, int pageSize = 10)
     {
+        // Đếm tổng số đơn hàng
+        var totalItems = await _context.Orders
+            .Where(o => o.CustomerID == customerId)
+            .CountAsync();
+
+        var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
+        page = Math.Max(1, Math.Min(page, totalPages > 0 ? totalPages : 1));
+
+        // Lấy đơn hàng với pagination
         var customerOrders = await _context.Orders
             .Where(o => o.CustomerID == customerId)
             .Include(o => o.OrderDetails!)
@@ -34,6 +43,8 @@ public class OrderReadService : IOrderReadService
             .Include(o => o.OrderDetails!)
                 .ThenInclude(od => od.ProductSize)
             .OrderByDescending(o => o.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync();
 
         var vm = new OrderHistoryViewModel
@@ -63,7 +74,11 @@ public class OrderReadService : IOrderReadService
                     UnitPrice = detail.UnitPrice,
                     Total = detail.Total
                 }).ToList()
-            }).ToList()
+            }).ToList(),
+            CurrentPage = page,
+            TotalPages = totalPages,
+            TotalItems = totalItems,
+            PageSize = pageSize
         };
 
         return vm;

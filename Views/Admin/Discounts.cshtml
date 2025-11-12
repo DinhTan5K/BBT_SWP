@@ -1,0 +1,389 @@
+@model List<Discount>
+@using start.Models
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Danh sách mã giảm giá";
+}
+
+<style>
+    .discount-card {
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 24px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+    }
+    .discount-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        background: var(--admin-primary);
+        transition: width 0.3s;
+    }
+    .discount-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 24px rgba(0,0,0,0.1);
+        border-color: var(--admin-primary);
+    }
+    .discount-card:hover::before {
+        width: 6px;
+    }
+    .discount-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 16px;
+    }
+    .discount-code {
+        font-size: 24px;
+        font-weight: 800;
+        color: #1e293b;
+        letter-spacing: 1px;
+        margin: 0;
+    }
+    .discount-type-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+    .discount-value {
+        font-size: 32px;
+        font-weight: 900;
+        color: var(--admin-primary);
+        margin: 12px 0;
+        line-height: 1;
+    }
+    .discount-info-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 2px solid #e2e8f0;
+    }
+    .discount-info-item {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+    .discount-info-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .discount-info-value {
+        font-size: 14px;
+        font-weight: 600;
+        color: #1e293b;
+    }
+    .discount-status {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .status-active {
+        background: #d1fae5;
+        color: #065f46;
+    }
+    .status-expired {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+    .status-inactive {
+        background: #e5e7eb;
+        color: #374151;
+    }
+</style>
+
+<div style="padding: 24px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px;">
+        <div>
+            <h2 style="font-size: 28px; font-weight: 800; color: #1e293b; margin: 0 0 8px 0; letter-spacing: -0.5px;">
+                Quản lý mã giảm giá
+            </h2>
+            <div style="font-size: 14px; color: var(--muted); font-weight: 500;">
+                Tổng cộng: <strong style="color: var(--admin-primary);">@Model.Count</strong> mã giảm giá
+            </div>
+        </div>
+        <div style="display: flex; gap: 12px; align-items: center;">
+            <a href="@Url.Action("Approvals", "Admin", new { requestType = "discount" })" 
+               style="padding: 10px 20px; background: var(--admin-primary); color: white; border: none; border-radius: 8px; font-weight: 500; text-decoration: none; display: inline-block;">
+                <i class="fas fa-check-circle"></i> Duyệt yêu cầu mã giảm giá
+            </a>
+            <div class="admin-filter-container">
+                <div class="admin-filter-select">
+                    <select id="filterType" onchange="filterByType()">
+                        @if (ViewBag.CurrentFilter == "Tất cả")
+                        {
+                            <option value="Tất cả" selected>Tất cả</option>
+                        }
+                        else
+                        {
+                            <option value="Tất cả">Tất cả</option>
+                        }
+                        
+                        @if (ViewBag.CurrentFilter == "Sale")
+                        {
+                            <option value="Sale" selected>Sale</option>
+                        }
+                        else
+                        {
+                            <option value="Sale">Sale</option>
+                        }
+                        
+                        @if (ViewBag.CurrentFilter == "Ship")
+                        {
+                            <option value="Ship" selected>Ship</option>
+                        }
+                        else
+                        {
+                            <option value="Ship">Ship</option>
+                        }
+                    </select>
+                </div>
+                <div class="admin-filter-search">
+                    <input type="text" id="searchDiscount" placeholder="Tìm kiếm mã giảm giá...">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (Model.Any())
+    {
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 24px;">
+            @foreach (var discount in Model)
+            {
+                var isExpired = discount.EndAt.HasValue && discount.EndAt < DateTime.Now;
+                var isActive = discount.IsActive && !isExpired;
+                
+                // Chuyển đổi loại discount sang text tiếng Việt
+                var typeText = discount.Type switch
+                {
+                    DiscountType.Percentage => "Phần trăm",
+                    DiscountType.FixedAmount => "Số tiền cố định",
+                    DiscountType.FreeShipping => "Miễn phí vận chuyển",
+                    DiscountType.FixedShippingDiscount => "Giảm phí vận chuyển (số cố định)",
+                    DiscountType.PercentShippingDiscount => "Giảm phí vận chuyển (%)",
+                    _ => discount.Type.ToString()
+                };
+
+                // Badge màu cho loại
+                var typeBadgeColor = discount.Type switch
+                {
+                    DiscountType.Percentage => ("#fef3c7", "#92400e"),
+                    DiscountType.FixedAmount => ("#dbeafe", "#1e40af"),
+                    DiscountType.FreeShipping => ("#d1fae5", "#065f46"),
+                    DiscountType.FixedShippingDiscount => ("#e0e7ff", "#4338ca"),
+                    DiscountType.PercentShippingDiscount => ("#fce7f3", "#9f1239"),
+                    _ => ("#e5e7eb", "#374151")
+                };
+
+                // Hiển thị giá trị giảm
+                string valueDisplay = "";
+                if (discount.Type == DiscountType.Percentage)
+                {
+                    valueDisplay = $"{discount.Percent}%";
+                }
+                else if (discount.Type == DiscountType.FixedAmount)
+                {
+                    valueDisplay = discount.Amount?.ToString("N0") + " đ" ?? "-";
+                }
+                else if (discount.Type == DiscountType.FreeShipping)
+                {
+                    valueDisplay = "Miễn phí";
+                }
+                else if (discount.Type == DiscountType.FixedShippingDiscount)
+                {
+                    valueDisplay = discount.Amount?.ToString("N0") + " đ" ?? "-";
+                }
+                else if (discount.Type == DiscountType.PercentShippingDiscount)
+                {
+                    valueDisplay = $"{discount.Percent}%";
+                }
+                else
+                {
+                    valueDisplay = "-";
+                }
+
+                // Status class
+                var statusClass = isActive ? "status-active" : (isExpired ? "status-expired" : "status-inactive");
+                var statusText = isActive ? "Hoạt động" : (isExpired ? "Hết hạn" : "Vô hiệu");
+                
+                <div class="discount-card" data-code="@discount.Code?.ToLower()">
+                    <div class="discount-status @statusClass">
+                        <i class="fas @(isActive ? "fa-check-circle" : (isExpired ? "fa-times-circle" : "fa-ban"))"></i>
+                        @statusText
+                    </div>
+                    
+                    <div class="discount-header">
+                        <div style="flex: 1;">
+                            <h3 class="discount-code">@discount.Code</h3>
+                            <span class="discount-type-badge" style="background: @typeBadgeColor.Item1; color: @typeBadgeColor.Item2;">
+                                <i class="fas fa-tag"></i>
+                                @typeText
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="discount-value">
+                        @valueDisplay
+                    </div>
+
+                    <div class="discount-info-grid">
+                        <div class="discount-info-item">
+                            <span class="discount-info-label">
+                                <i class="fas fa-calendar-alt" style="margin-right: 4px;"></i>
+                                Ngày bắt đầu
+                            </span>
+                            <span class="discount-info-value">
+                                @(discount.StartAt?.ToString("dd/MM/yyyy") ?? "Không giới hạn")
+                            </span>
+                        </div>
+                        <div class="discount-info-item">
+                            <span class="discount-info-label">
+                                <i class="fas fa-calendar-check" style="margin-right: 4px;"></i>
+                                Ngày kết thúc
+                            </span>
+                            <span class="discount-info-value">
+                                @(discount.EndAt?.ToString("dd/MM/yyyy") ?? "Không giới hạn")
+                            </span>
+                        </div>
+                        <div class="discount-info-item">
+                            <span class="discount-info-label">
+                                <i class="fas fa-users" style="margin-right: 4px;"></i>
+                                Giới hạn sử dụng
+                            </span>
+                            <span class="discount-info-value">
+                                @(discount.UsageLimit?.ToString("N0") + " lần" ?? "Không giới hạn")
+                            </span>
+                        </div>
+                        <div class="discount-info-item">
+                            <span class="discount-info-label">
+                                <i class="fas fa-info-circle" style="margin-right: 4px;"></i>
+                                Trạng thái
+                            </span>
+                            <span class="discount-info-value">
+                                @(discount.IsActive ? "Kích hoạt" : "Tắt")
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div style="padding: 64px; text-align: center; color: #64748b; background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); border: 2px dashed #e2e8f0; border-radius: 20px;">
+            <div style="width: 100px; height: 100px; margin: 0 auto 24px; background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 24px rgba(0,0,0,0.08);">
+                <i class="fas fa-tag" style="font-size: 48px; color: #94a3b8;"></i>
+            </div>
+            <h3 style="font-size: 22px; font-weight: 700; color: #1e293b; margin-bottom: 12px;">Chưa có mã giảm giá nào</h3>
+            <p style="font-size: 15px; color: #64748b; margin: 0;">Danh sách mã giảm giá sẽ hiển thị tại đây khi có mã được duyệt.</p>
+        </div>
+    }
+
+    @* Pagination *@
+    @{
+        var currentPage = ViewBag.CurrentPage ?? 1;
+        var totalPages = ViewBag.TotalPages ?? 1;
+        var totalItems = ViewBag.TotalItems ?? 0;
+        var pageSize = ViewBag.PageSize ?? 10;
+    }
+    
+    @if (totalPages > 1)
+    {
+        <div style="display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 32px; padding: 20px;">
+            @{
+                var currentFilter = ViewBag.CurrentFilter ?? "Tất cả";
+            }
+            
+            @if (currentPage > 1)
+            {
+                <a href="@Url.Action("Discounts", "Admin", new { page = currentPage - 1, filter = currentFilter })" 
+                   style="padding: 8px 16px; background: var(--card); border: 1px solid var(--line); border-radius: 6px; color: var(--ink); text-decoration: none; font-weight: 500; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px;">
+                    <i class="fas fa-chevron-left"></i> Trước
+                </a>
+            }
+
+            @for (int i = Math.Max(1, currentPage - 2); i <= Math.Min(totalPages, currentPage + 2); i++)
+            {
+                if (i == currentPage)
+                {
+                    <span style="padding: 8px 16px; background: var(--admin-primary); color: white; border-radius: 6px; font-weight: 600;">
+                        @i
+                    </span>
+                }
+                else
+                {
+                    <a href="@Url.Action("Discounts", "Admin", new { page = i, filter = currentFilter })" 
+                       style="padding: 8px 16px; background: var(--card); border: 1px solid var(--line); border-radius: 6px; color: var(--ink); text-decoration: none; font-weight: 500; transition: all 0.2s;">
+                        @i
+                    </a>
+                }
+            }
+
+            @if (currentPage < totalPages)
+            {
+                <a href="@Url.Action("Discounts", "Admin", new { page = currentPage + 1, filter = currentFilter })" 
+                   style="padding: 8px 16px; background: var(--card); border: 1px solid var(--line); border-radius: 6px; color: var(--ink); text-decoration: none; font-weight: 500; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px;">
+                    Sau <i class="fas fa-chevron-right"></i>
+                </a>
+            }
+        </div>
+        <div style="text-align: center; color: var(--muted); font-size: 14px; margin-top: 8px;">
+            Hiển thị @((currentPage - 1) * pageSize + 1)-@(Math.Min(currentPage * pageSize, totalItems)) trong tổng số @totalItems mã giảm giá
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        function normalizeText(str) {
+            if (!str) return '';
+            return str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/Đ/g, "d").trim();
+        }
+
+        // Filter theo loại (Tất cả, Sale, Ship)
+        function filterByType() {
+            const filterValue = document.getElementById('filterType').value;
+            const url = new URL(window.location.href);
+            url.searchParams.set('filter', filterValue);
+            url.searchParams.set('page', '1'); // Reset về trang 1 khi filter
+            window.location.href = url.toString();
+        }
+
+        // Tìm kiếm theo mã giảm giá
+        document.getElementById('searchDiscount')?.addEventListener('input', function(e) {
+            const searchTerm = normalizeText(e.target.value);
+            const cards = document.querySelectorAll('.discount-card');
+            
+            cards.forEach(card => {
+                const code = card.getAttribute('data-code') || '';
+                const normalizedCode = normalizeText(code);
+                
+                if (normalizedCode.includes(searchTerm)) {
+                    card.style.display = '';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+    </script>
+}

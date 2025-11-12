@@ -1,0 +1,241 @@
+@model start.Models.Employee
+@using start.Models
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Tạo Region Manager mới";
+}
+
+<div style="padding: 24px;">
+    <div style="margin-bottom: 24px;">
+        <a href="@Url.Action("RegionManagers", "Admin")" 
+           style="display: inline-flex; align-items: center; gap: 8px; color: var(--admin-primary); text-decoration: none; font-weight: 500; margin-bottom: 16px;">
+            <i class="fas fa-arrow-left"></i> Quay lại danh sách
+        </a>
+        <h2 style="font-size: 24px; font-weight: 600; color: var(--ink); margin: 0;">
+            Tạo Region Manager mới
+        </h2>
+    </div>
+
+    <form id="createRMForm" style="background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 24px; max-width: 800px;">
+        @Html.AntiForgeryToken()
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+            <div>
+                <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--ink);">Họ tên <span style="color: red;">*</span></label>
+                <input type="text" id="fullName" name="fullName" required 
+                       style="width: 100%; padding: 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px;"
+                       placeholder="Nhập họ tên">
+            </div>
+            <div>
+                <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--ink);">Email <span style="color: red;">*</span></label>
+                <input type="email" id="email" name="email" required 
+                       style="width: 100%; padding: 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px;"
+                       placeholder="example@email.com">
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+            <div>
+                <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--ink);">Số điện thoại <span style="color: red;">*</span></label>
+                <input type="tel" id="phoneNumber" name="phoneNumber" required 
+                       style="width: 100%; padding: 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px;"
+                       placeholder="0901234567">
+            </div>
+            <div>
+                <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--ink);">Ngày sinh</label>
+                <input type="date" id="dateOfBirth" name="dateOfBirth" 
+                       style="width: 100%; padding: 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px;">
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+            <div>
+                <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--ink);">Giới tính</label>
+                <select id="gender" name="gender" 
+                        style="width: 100%; padding: 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px;">
+                    <option value="">Chọn giới tính</option>
+                    <option value="Nam">Nam</option>
+                    <option value="Nữ">Nữ</option>
+                    <option value="Khác">Khác</option>
+                </select>
+            </div>
+            <div>
+                <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--ink);">Thành phố</label>
+                <input type="text" id="city" name="city" 
+                       style="width: 100%; padding: 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px;"
+                       placeholder="Hà Nội">
+            </div>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--ink);">Vùng quản lý <span style="color: red;">*</span></label>
+            <select id="regionId" name="regionId" required 
+                    style="width: 100%; padding: 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px;">
+                <option value="">Chọn vùng quản lý</option>
+                @{
+                    var regions = ViewBag.Regions as List<start.Models.Region> ?? new List<start.Models.Region>();
+                    var regionsWithRM = ViewBag.RegionsWithRM as List<int> ?? new List<int>();
+                }
+                @foreach (var region in regions)
+                {
+                    var hasActiveRM = regionsWithRM.Contains(region.RegionID);
+                    <option value="@region.RegionID" data-has-rm="@(hasActiveRM ? "true" : "false")">
+                        @region.RegionName @(hasActiveRM ? "(Đã có RM)" : "")
+                    </option>
+                }
+            </select>
+            <div id="regionError" style="display: none; margin-top: 8px; padding: 8px 12px; background: #fee2e2; color: #991b1b; border-radius: 6px; font-size: 13px;">
+                <i class="fas fa-exclamation-circle"></i> <span id="regionErrorText"></span>
+            </div>
+            <p style="font-size: 12px; color: var(--muted); margin-top: 4px;">
+                <i class="fas fa-info-circle"></i> Các vùng đã có Region Manager sẽ không thể chọn
+            </p>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+            <div>
+                <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--ink);">Quốc tịch</label>
+                <input type="text" id="nationality" name="nationality" value="Việt Nam"
+                       style="width: 100%; padding: 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px;"
+                       placeholder="Việt Nam">
+            </div>
+            <div>
+                <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--ink);">Dân tộc</label>
+                <input type="text" id="ethnicity" name="ethnicity" value="Kinh"
+                       style="width: 100%; padding: 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px;"
+                       placeholder="Kinh">
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+            <div>
+                <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--ink);">Số điện thoại khẩn cấp 1</label>
+                <input type="tel" id="emergencyPhone1" name="emergencyPhone1" 
+                       style="width: 100%; padding: 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px;"
+                       placeholder="0901234567">
+            </div>
+            <div>
+                <label style="display: block; margin-bottom: 8px; font-weight: 500; color: var(--ink);">Số điện thoại khẩn cấp 2</label>
+                <input type="tel" id="emergencyPhone2" name="emergencyPhone2" 
+                       style="width: 100%; padding: 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px;"
+                       placeholder="0901234567">
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
+            <a href="@Url.Action("RegionManagers", "Admin")" 
+               style="padding: 10px 20px; background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; font-weight: 500; text-decoration: none; display: inline-block;">
+                Hủy
+            </a>
+            <button type="submit" 
+                    style="padding: 10px 20px; background: var(--admin-primary); color: white; border: none; border-radius: 8px; font-weight: 500; cursor: pointer;">
+                <i class="fas fa-save"></i> Tạo Region Manager
+            </button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        // Danh sách các region đã có RM (từ server)
+        const regionsWithRM = @Html.Raw(Json.Serialize(ViewBag.RegionsWithRM as List<int> ?? new List<int>()));
+
+        // Validate region khi chọn
+        const regionSelect = document.getElementById('regionId');
+        const regionError = document.getElementById('regionError');
+        const regionErrorText = document.getElementById('regionErrorText');
+        const submitButton = document.querySelector('#createRMForm button[type="submit"]');
+
+        regionSelect?.addEventListener('change', function() {
+            const selectedRegionId = parseInt(this.value);
+            const selectedOption = this.options[this.selectedIndex];
+            const hasRM = selectedOption.getAttribute('data-has-rm') === 'true';
+
+            // Ẩn lỗi trước
+            regionError.style.display = 'none';
+            submitButton.disabled = false;
+            regionSelect.style.borderColor = 'var(--line)';
+
+            if (selectedRegionId && hasRM) {
+                // Hiển thị lỗi
+                regionErrorText.textContent = 'Vùng này đã có Region Manager đang hoạt động. Vui lòng chọn vùng khác.';
+                regionError.style.display = 'block';
+                regionSelect.style.borderColor = '#ef4444';
+                submitButton.disabled = true;
+            } else if (selectedRegionId && !hasRM) {
+                // Region hợp lệ
+                regionSelect.style.borderColor = '#10b981';
+            }
+        });
+
+        // Validate khi submit form
+        document.getElementById('createRMForm')?.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            const selectedRegionId = parseInt(formData.get('regionId'));
+
+            // Kiểm tra lại region trước khi submit
+            if (!selectedRegionId) {
+                regionErrorText.textContent = 'Vui lòng chọn vùng quản lý.';
+                regionError.style.display = 'block';
+                regionSelect.style.borderColor = '#ef4444';
+                return;
+            }
+
+            if (regionsWithRM.includes(selectedRegionId)) {
+                regionErrorText.textContent = 'Vùng này đã có Region Manager đang hoạt động. Vui lòng chọn vùng khác.';
+                regionError.style.display = 'block';
+                regionSelect.style.borderColor = '#ef4444';
+                return;
+            }
+
+            // Ẩn lỗi nếu hợp lệ
+            regionError.style.display = 'none';
+
+            const data = {
+                fullName: formData.get('fullName'),
+                email: formData.get('email'),
+                phoneNumber: formData.get('phoneNumber'),
+                dateOfBirth: formData.get('dateOfBirth') || null,
+                gender: formData.get('gender') || null,
+                city: formData.get('city') || null,
+                regionId: selectedRegionId,
+                nationality: formData.get('nationality') || null,
+                ethnicity: formData.get('ethnicity') || null,
+                emergencyPhone1: formData.get('emergencyPhone1') || null,
+                emergencyPhone2: formData.get('emergencyPhone2') || null,
+                __RequestVerificationToken: token
+            };
+
+            const body = Object.keys(data).map(key => {
+                if (data[key] === null) return '';
+                return `${encodeURIComponent(key)}=${encodeURIComponent(data[key])}`;
+            }).filter(x => x).join('&');
+
+            fetch('@Url.Action("CreateRegionManager", "Admin")', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'RequestVerificationToken': token
+                },
+                body: body
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    window.location.href = '@Url.Action("RegionManagers", "Admin")';
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Có lỗi xảy ra khi tạo Region Manager.');
+            });
+        });
+    </script>
+}
+
