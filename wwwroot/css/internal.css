@@ -1,0 +1,763 @@
+/* ============================= */
+/*  SIDEBAR CỐ ĐỊNH FULL CHIỀU CAO */
+/* ============================= */
+.sidebar {
+    width: 16rem;
+    height: 100vh;
+    background: linear-gradient(to bottom, #86efac, #34d399);
+    border-top-right-radius: 2rem;
+    border-bottom-right-radius: 2rem;
+    padding: 2rem 1rem;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.2);
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 50;
+    font-family: 'Arial', sans-serif;
+}
+
+.sidebar h2 {
+    font-size: 1.75rem;
+    font-weight: 800;
+    margin-bottom: 2rem;
+    text-align: center;
+    color: #065f46;
+}
+
+/* 🔹 Nút trong sidebar */
+.sidebar button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 1rem;
+    padding: 0.75rem 1.25rem;
+    border-radius: 12px;
+    border: none;
+    background: linear-gradient(135deg, #4ade80, #16a34a);
+    color: #ffffff;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 5px 12px rgba(0, 0, 0, 0.15);
+    transition: all 0.25s ease;
+    font-family: 'Arial', sans-serif;
+}
+
+.sidebar button:hover {
+    background: linear-gradient(135deg, #22c55e, #15803d);
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.25);
+}
+
+/* ============================= */
+/* 🧾 MAIN CONTENT */
+/* ============================= */
+.main-content {
+    margin-left: 16rem;
+    padding: 2rem;
+    overflow-x: auto;
+    min-height: 100vh;
+    background-color: #f3f4f6;
+    font-family: 'Arial', sans-serif;
+}
+
+/* ============================= */
+/* 🪟 CARD BẢNG DỮ LIỆU */
+/* ============================= */
+.card {
+    opacity: 0;
+    max-height: 0;
+    overflow: hidden;
+    transition: all 0.5s ease;
+    background-color: #ffffff;
+    border-radius: 1rem;
+    padding: 1rem;
+    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+    margin-left: auto;
+    margin-right: auto;
+    width: 100%;
+    max-width: 1200px;
+    font-family: 'Arial', sans-serif;
+}
+
+.card.show {
+    opacity: 1;
+    max-height: 2000px;
+}
+
+.card table {
+    width: 100%;
+    border-collapse: collapse;
+    border-radius: 1rem;
+    overflow: hidden;
+    table-layout: fixed;
+}
+
+.card thead {
+    background-color: #16a34a;
+    color: #ffffff;
+}
+
+.card th,
+.card td {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    font-size: 0.875rem;
+    word-wrap: break-word;
+}
+
+.card tbody tr:hover {
+    background-color: #d1fae5;
+}
+
+
+/* ============================= */
+/* ⚠️ ALERT BOX */
+/* ============================= */
+.alert-yellow {
+    padding: 1.5rem;
+    border-radius: 1rem;
+    text-align: center;
+    font-size: 1.125rem;
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
+    background-color: #fef3c7;
+    color: #92400e;
+    font-family: 'Arial', sans-serif;
+}
+
+/* ============================= */
+/* 🧩 RESPONSIVE DESIGN */
+/* ============================= */
+@media (max-width: 1024px) {
+    .sidebar {
+        width: 14rem;
+        padding: 1.5rem;
+    }
+
+    .main-content {
+        margin-left: 14rem;
+        padding: 1.5rem;
+    }
+}
+
+/* ============================= */
+/* ✅ NÚT XÁC NHẬN */
+/* ============================= */
+button.confirm-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: none;
+    border-radius: 30px;
+    padding: 10px 18px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    color: white;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    background: linear-gradient(135deg, #86efac, #22c55e);
+}
+
+button.confirm-btn:hover {
+    background: linear-gradient(135deg, #4ade80, #16a34a);
+    transform: scale(1.05);
+}
+
+/* ========================================================= */
+/* 🪄 MODAL POPUP (CHI TIẾT ĐƠN HÀNG) */
+/* ========================================================= */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    animation: overlayFadeIn 0.35s ease forwards;
+    backdrop-filter: blur(2px);
+    font-family: 'Arial', sans-serif;
+}
+
+.modal-overlay.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.modal-content {
+    background: #fff;
+    border-radius: 20px;
+    padding: 25px;
+    width: 90%;
+    max-width: 700px;
+    max-height: 90%;
+    overflow-y: auto;
+    box-shadow: 0 10px 35px rgba(0, 0, 0, 0.25);
+    position: relative;
+    transform: translateY(30px) scale(0.95);
+    opacity: 0;
+    animation: modalPopUp 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    font-family: 'Arial', sans-serif;
+}
+
+.close-modal {
+    position: absolute;
+    top: 10px;
+    right: 14px;
+    background: none;
+    border: none;
+    font-size: 22px;
+    cursor: pointer;
+    color: #666;
+}
+
+/* bảng chi tiết */
+.order-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 12px;
+    margin-bottom: 12px;
+    border: 1px solid #e6e6e6;
+}
+
+.order-table th,
+.order-table td {
+    border: 1px solid #eee;
+    padding: 10px;
+    text-align: center;
+    font-size: 14px;
+}
+
+.order-table th {
+    background: #fafafa;
+    font-weight: 600;
+}
+
+.order-table tr:nth-child(even) {
+    background: #fbfbfb;
+}
+
+.summary p {
+    margin: 6px 0;
+    text-align: right;
+    font-weight: 600;
+}
+
+/* nút xác nhận trong modal */
+.confirm-btn-rounded {
+    background: #2e8b57;
+    color: white;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: 600;
+    font-family: 'Arial', sans-serif;
+}
+
+.confirm-btn-rounded:hover {
+    background: #267147;
+}
+
+/* ============================= */
+/* 🔥 ANIMATION KEYFRAMES */
+/* ============================= */
+@keyframes overlayFadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes modalPopUp {
+    0% {
+        transform: translateY(40px) scale(0.9);
+        opacity: 0;
+    }
+
+    60% {
+        transform: translateY(-5px) scale(1.02);
+        opacity: 1;
+    }
+
+    100% {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes modalFadeOut {
+    0% {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+
+    100% {
+        transform: translateY(40px) scale(0.95);
+        opacity: 0;
+    }
+}
+
+@keyframes overlayFadeOut {
+    from {
+        opacity: 1;
+    }
+
+    to {
+        opacity: 0;
+    }
+}
+
+/* Khi đóng modal */
+.modal-overlay.closing {
+    animation: overlayFadeOut 0.35s ease forwards;
+}
+
+.modal-content.closing {
+    animation: modalFadeOut 0.45s cubic-bezier(0.55, 0.06, 0.68, 0.19) forwards;
+}
+
+.note-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(3px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 99999;
+    animation: overlayFadeIn 0.3s ease forwards;
+    font-family: 'Arial', sans-serif;
+}
+
+.note-content {
+    background: #ffffff;
+    border-radius: 1rem;
+    padding: 25px 30px;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 12px 25px rgba(0, 0, 0, 0.25);
+    animation: modalPopUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    font-family: 'Arial', sans-serif;
+    color: #111827;
+}
+
+.note-content h3 {
+    text-align: center;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #047857;
+    margin-bottom: 1rem;
+}
+
+.note-content form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.note-content label {
+    font-weight: 600;
+    color: #065f46;
+    margin-bottom: 4px;
+}
+
+.note-content input,
+.note-content select,
+.note-content textarea {
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 0.95rem;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.note-content input:focus,
+.note-content select:focus,
+.note-content textarea:focus {
+    border-color: #34d399;
+    box-shadow: 0 0 0 2px rgba(52, 211, 153, 0.3);
+}
+
+.note-content .modal-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.note-content button {
+    border: none;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.15s ease, background 0.3s ease;
+}
+
+.note-content button[type="submit"] {
+    background: linear-gradient(to right, #10b981, #059669);
+    color: #fff;
+}
+
+.note-content button[type="submit"]:hover {
+    transform: scale(1.05);
+    background: linear-gradient(to right, #059669, #047857);
+}
+
+.note-content #closeModal {
+    background: #e5e7eb;
+    color: #374151;
+}
+
+.note-content #closeModal:hover {
+    background: #d1d5db;
+    transform: scale(1.05);
+}
+
+.refresh-btn {
+    background-color: #16a34a;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.refresh-btn:hover {
+    background-color: #15803d;
+    transform: scale(1.05);
+}
+
+/* ========================================================= */
+/* 🎯 STYLE NÚT QUẢN LÝ ĐƠN HÀNG (GIAO / HOÀN TẤT) */
+/* ========================================================= */
+.order-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: none;
+    border-radius: 30px;
+    padding: 10px 18px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    color: white;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+/* 🟢 Nút Giao hàng */
+.ship-btn {
+    background: linear-gradient(135deg, #4ade80, #16a34a);
+}
+
+.ship-btn:hover {
+    background: linear-gradient(135deg, #22c55e, #15803d);
+    transform: scale(1.05);
+}
+
+/* 🔵 Nút Hoàn tất */
+
+.done-btn {
+    background: linear-gradient(135deg, #86efac, #22c55e);
+    color: white;
+    border: none;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+    transition: all 0.25s ease;
+}
+
+.done-btn:hover {
+    background: linear-gradient(135deg, #4ade80, #16a34a);
+    transform: scale(1.05);
+}
+
+
+/* 🧊 Trạng thái nút disable (nếu cần) */
+.order-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* ============================= */
+/* 🌈 HÀNG “ĐÃ GIAO” - HIỆU ỨNG HOÀN TẤT */
+/* ============================= */
+tr.completed-row td {
+    background-color: #dcfce7 !important;
+    transition: background-color 0.6s ease;
+}
+
+/* ========================================================= */
+/* 💰 BÁO CÁO DOANH THU - REVENUE REPORT */
+/* ========================================================= */
+.revenue-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.revenue-summary .stat-box {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 12px 16px;
+    font-weight: 600;
+    color: #065f46;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+    border-left: 5px solid #16a34a;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.revenue-summary .stat-box:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+}
+
+/* Bảng thống kê sản phẩm và nhân viên */
+#revenueCard table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+    border-radius: 0.75rem;
+    overflow: hidden;
+}
+
+#revenueCard th,
+#revenueCard td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #e5e7eb;
+    text-align: left;
+    font-size: 0.9rem;
+}
+
+#revenueCard thead {
+    background: linear-gradient(90deg, #22c55e, #16a34a);
+    color: #fff;
+}
+
+#revenueCard tbody tr:nth-child(even) {
+    background-color: #f9fafb;
+}
+
+#revenueCard tbody tr:hover {
+    background-color: #dcfce7;
+}
+
+/* Tiêu đề section */
+#revenueCard h3 {
+    color: #065f46;
+    border-left: 5px solid #10b981;
+    padding-left: 10px;
+    margin-bottom: 0.75rem;
+    margin-top: 1.25rem;
+    font-size: 1.1rem;
+}
+
+/* Khi không có dữ liệu */
+#revenueCard td[colspan] {
+    text-align: center;
+    color: #6b7280;
+    padding: 1rem;
+    font-style: italic;
+}
+
+.stat-box i {
+    transition: transform 0.25s ease, filter 0.25s ease;
+}
+
+.stat-box:hover i {
+    transform: scale(1.15);
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15));
+}
+
+/* ========================================================= */
+/* 🧃 BỐ CỤC BIỂU ĐỒ SẢN PHẨM VÀ DANH SÁCH BÊN PHẢI */
+/* ========================================================= */
+.product-chart-section {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 2rem;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+}
+
+/* Biểu đồ bên trái */
+.product-chart-section>div:first-child {
+    flex: 1;
+    min-width: 350px;
+    max-width: 450px;
+}
+
+/* Danh sách sản phẩm bên phải */
+#productList {
+    flex: 1;
+    min-width: 250px;
+    max-width: 400px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+    padding: 1rem 1.5rem;
+    font-family: 'Arial', sans-serif;
+}
+
+#productList h4 {
+    font-size: 1.1rem;
+    color: #047857;
+    margin-bottom: 0.75rem;
+    border-left: 4px solid #16a34a;
+    padding-left: 8px;
+}
+
+#productLegend li {
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: #374151;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+}
+
+#productLegend li:hover {
+    transform: translateX(4px);
+    color: #047857;
+}
+
+/* Cho mobile / tablet tự xuống hàng */
+@media (max-width: 768px) {
+    .product-chart-section {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    #productList {
+        max-width: 90%;
+    }
+}
+
+.refresh-btn,
+.export-btn {
+    background-color: #22c55e;
+    color: white;
+    border: none;
+    border-radius: 0.5rem;
+    padding: 8px 14px;             /* tăng đều cho cân */
+    font-size: 15px;               /* đồng nhất chữ */
+    font-weight: 500;
+    line-height: 1;                /* tránh nút bị cao hơn do line-height */
+    display: inline-flex;          /* canh giữa text & icon */
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    height: 38px;                  /* ép cùng chiều cao luôn, cho chắc */
+}
+
+.refresh-btn:hover,
+.export-btn:hover {
+    background-color: #16a34a;
+    transform: scale(1.05);
+}
+
+.refresh-btn:disabled,
+.export-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+
+.detail-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border: none;
+    border-radius: 30px;
+    padding: 10px 18px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    color: #fff;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    background: linear-gradient(135deg, #38bdf8, #0ea5e9);
+    /* 💙 xanh dương */
+    transition: all 0.25s ease;
+}
+
+.detail-btn:hover {
+    background: linear-gradient(135deg, #0ea5e9, #0369a1);
+    transform: scale(1.05);
+}
+
+/* Nếu muốn nó cùng hàng đẹp hơn khi có nhiều nút */
+.order-btn+.detail-btn {
+    margin-left: 8px;
+}
+
+
+/* ========================================================= */
+/* 🧾 FILTER TRẠNG THÁI ĐƠN HÀNG TRONG TIẾN HÀNH */
+/* ========================================================= */
+.order-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.filter-status {
+    display: flex;
+    gap: 15px;
+    background: #f1f5f9;
+    padding: 8px 14px;
+    border-radius: 12px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.filter-status label {
+    font-weight: 600;
+    color: #065f46;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.filter-status input[type="checkbox"] {
+    accent-color: #16a34a;
+    margin-right: 4px;
+}
+
+.note-form label i {
+    color: #16a34a;
+    width: 18px;
+    height: 18px;
+    margin-right: 6px;
+    vertical-align: middle;
+}
+
+.btn-save i {
+    color: #fff;
+    width: 18px;
+    height: 18px;
+}
+
+.btn-cancel i {
+    color: #374151;
+    width: 18px;
+    height: 18px;
+}
+

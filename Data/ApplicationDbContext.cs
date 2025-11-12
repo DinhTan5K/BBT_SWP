@@ -40,10 +40,13 @@ namespace start.Data
         public DbSet<DayOffRequest> DayOffRequests => Set<DayOffRequest>();
         public DbSet<ProductCategory> ProductCategories { get; set; }
         public DbSet<News> News { get; set; }
-        public DbSet<Wishlist> Wishlist { get; set; }
+
         public DbSet<ChatHistory> ChatHistories { get; set; }
+        public DbSet<ShiftReport> ShiftReports { get; set; }
         public DbSet<AuditLog> AuditLogs { get; set; }
-        public DbSet<MarketingKPI> MarketingKPIs { get; set; }
+
+        public DbSet<Wishlist> Wishlist { get; set; }
+public DbSet<MarketingKPI> MarketingKPIs { get; set; }
 
     }
 }

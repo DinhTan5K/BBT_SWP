@@ -1,0 +1,977 @@
+@model List<start.Models.Order>
+@{
+    ViewData["Title"] = "Dashboard Shift Leader";
+    Layout = null;
+}
+
+<head>
+    <link rel="stylesheet" href="~/css/internal.css" />
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+</head>
+
+<div class="dashboard-container">
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <h2>BUBLE TEA</h2>
+        <button id="btnProfile">Hồ sơ cá nhân</button>
+        <button id="btnOrders">Xác nhận đơn hàng</button>
+        <button id="btnInProgress">Quản lí đơn hàng</button>
+        <button id="btnEmployees">Nhân viên ca làm</button>
+        <button id="btnRevenue">Báo cáo doanh thu</button>
+    </div>
+
+    <!-- Main content -->
+    <div class="main-content">
+
+        <!-- Chờ xác nhận -->
+        <div id="ordersCard" class="card show">
+            @{
+                string shift = ViewBag.Shift ?? "Morning";
+                string displayShift;
+
+                if (shift.Equals("Morning", StringComparison.OrdinalIgnoreCase))
+                    displayShift = "Ca sáng";
+                else if (shift.Equals("Night", StringComparison.OrdinalIgnoreCase))
+                    displayShift = "Ca tối";
+                else
+                    displayShift = "Chưa có ca";
+
+                string today = ViewBag.Date ?? DateTime.Now.ToString("dd/MM/yyyy");
+            }
+
+
+
+            <h2 class="text-lg font-semibold mb-4 text-green-700" style="text-align:center;">
+                Cơ sở: <b>@ViewBag.BranchName</b>
+            </h2>
+
+            <h3 class="text-md font-semibold mb-4 text-green-600" style="text-align:center;">
+                Ngày: <b>@today</b> — Ca làm: <b>@displayShift</b>
+            </h3>
+
+
+            <button id="refreshOrdersBtn" class="refresh-btn">↻ Cập nhật</button>
+
+            @if (!Model.Any(o => o.Status.Trim().Equals("Chờ xác nhận", StringComparison.OrdinalIgnoreCase)))
+            {
+                <div class="alert-yellow">
+                    Không có đơn hàng nào đang chờ xác nhận trong @displayShift hôm nay.
+                </div>
+
+            }
+            else
+            {
+                var pendingOrders = Model
+                .Where(o => o.Status.Trim().Equals("Chờ xác nhận", StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+                <h3 class="text-xl font-semibold mb-4">
+                    Danh sách đơn hàng chờ xác nhận (@pendingOrders.Count)
+
+                </h3>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Mã đơn</th>
+                            <th>Khách hàng</th>
+                            <th>SĐT</th>
+                            <th>Địa chỉ</th>
+                            <th>Ngày tạo</th>
+                            <th>Tổng tiền</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var order in pendingOrders)
+                        {
+                            <tr>
+                                <td>@order.OrderCode</td>
+                                <td>@order.Customer?.Name</td>
+                                <td>@order.Customer?.Phone</td>
+                                <td>
+                                    @order.Address
+                                    @if (!string.IsNullOrWhiteSpace(order.DetailAddress))
+                                    {
+                                        <span>, @order.DetailAddress</span>
+                                    }
+                                </td>
+                                <td>@order.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td>@order.Total.ToString("C")</td>
+                                <td>
+                                    <form method="post" asp-action="ConfirmOrder" asp-controller="Internal">
+                                        <input type="hidden" name="id" value="@order.OrderID" />
+                                        <button type="submit" class="confirm-btn">Xác nhận</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+
+
+        </div>
+
+
+        <!-- Đang tiến hành -->
+        <div id="inProgressCard" class="card">
+            @{
+                var inProgressOrders = Model
+                .Where(o => !string.IsNullOrWhiteSpace(o.Status) &&
+                (o.Status.Trim().Equals("Đã xác nhận", StringComparison.OrdinalIgnoreCase) ||
+                o.Status.Trim().Equals("Đang giao", StringComparison.OrdinalIgnoreCase) ||
+                o.Status.Trim().Equals("Đã giao", StringComparison.OrdinalIgnoreCase) ||
+                o.Status.Trim().Equals("Đã hủy", StringComparison.OrdinalIgnoreCase)))
+                .ToList();
+            }
+
+            @if (!inProgressOrders.Any())
+            {
+                <div class="alert-yellow">Không có đơn hàng nào đang tiến hành.</div>
+            }
+            else
+            {
+                <div class="order-header">
+                    <h3 class="text-xl font-semibold">
+                        Danh sách đơn hàng đang tiến hành (@inProgressOrders.Count)
+                    </h3>
+
+                    <div class="filter-status">
+                        <label><input type="checkbox" class="filter-checkbox" value="Đã xác nhận" checked /> Đã xác
+                            nhận</label>
+                        <label><input type="checkbox" class="filter-checkbox" value="Đang giao" checked /> Đang giao</label>
+                        <label><input type="checkbox" class="filter-checkbox" value="Đã giao" /> Đã giao</label>
+                        <label><input type="checkbox" class="filter-checkbox" value="Đã hủy" /> Đã hủy</label>
+                    </div>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Mã đơn</th>
+                            <th>Khách hàng</th>
+                            <th>SĐT</th>
+                            <th>Địa chỉ</th>
+                            <th>Ngày tạo</th>
+                            <th>Tổng tiền</th>
+                            <th>Trạng thái đơn</th>
+                            <th>Thao tác</th>
+                            <th>Chi tiết</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+
+                        @foreach (var order in inProgressOrders)
+                        {
+                            <tr>
+                                <td>@order.OrderCode</td>
+                                <td>@order.Customer?.Name</td>
+                                <td>@order.Customer?.Phone</td>
+                                <td>
+                                    @order.Address
+                                    @if (!string.IsNullOrWhiteSpace(order.DetailAddress))
+                                    {
+                                        <span>, @order.DetailAddress</span>
+                                    }
+                                </td>
+                                <td>@order.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td>@order.Total.ToString("C")</td>
+                                <td>@order.Status</td>
+                                <td>
+                                    @if (order.Status == "Đã xác nhận")
+                                    {
+                                        <button type="button" class="order-btn ship-btn deliver-btn" data-order-id="@order.OrderID">
+                                            Giao hàng
+                                        </button>
+                                    }
+                                    else if (order.Status == "Đang giao")
+                                    {
+                                        <button type="button" class="order-btn done-btn complete-btn"
+                                            data-order-id="@order.OrderID">
+                                            Hoàn tất đơn hàng
+                                        </button>
+                                    }
+
+                                </td>
+                                <td>
+                                    <button type="button" class="icon-btn detail-btn" data-order-id="@order.OrderID"
+                                        title="Xem chi tiết">
+                                        <i data-lucide="list-checks"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+
+        <!-- Nhân viên ca làm -->
+        <div id="employeesCard" class="card">
+            <h3 class="text-xl font-semibold mb-4 flex items-center justify-between">
+                <span> Nhân viên ca làm hôm nay</span>
+                <button id="refreshEmployeesBtn" class="refresh-btn">↻ Cập nhật</button>
+            </h3>
+            <div id="employeesInShiftContainer">
+                <p>Đang tải...</p>
+            </div>
+        </div>
+
+        <!-- Báo cáo doanh thu -->
+        <div id="revenueCard" class="card">
+            @{
+                string revenueShift = ViewBag.Shift ?? "None";
+                string revenueDisplayShift = revenueShift switch
+                {
+                    "Morning" => "Ca sáng",
+                    "Night" => "Ca tối",
+                    _ => "Chưa có ca"
+                };
+
+                string revenueDate = ViewBag.Date ?? DateTime.Now.ToString("dd/MM/yyyy");
+                var totalOrders = ViewBag.TotalOrders ?? 0;
+                var completed = ViewBag.Completed ?? 0;
+                var delivering = ViewBag.Delivering ?? 0;
+                var cancelled = ViewBag.Cancelled ?? 0;
+                var totalRevenue = ViewBag.TotalRevenue ?? 0;
+            }
+
+            <h2 class="text-lg font-semibold mb-6 text-green-700 text-center">
+                Báo cáo doanh thu @revenueDisplayShift - Ngày @revenueDate
+                <button id="refreshRevenueBtn" class="refresh-btn">↻ Cập nhật</button>
+                <button id="exportExcelBtn" class="export-btn">🧾 In báo cáo</button>
+                <button id="captureChartsBtn" class="export-btn">📸 In biểu đồ</button>
+                <button id="uploadReportBtn" class="export-btn">📤 Nộp báo cáo</button>
+            </h2>
+
+            @if (ViewBag.Message != null)
+            {
+                <div class="alert-yellow text-center">@ViewBag.Message</div>
+            }
+            else
+            {
+                <!-- Tổng quan -->
+                <div class="revenue-summary grid sm:grid-cols-2 lg:grid-cols-5 gap-5 text-gray-800 mb-10">
+                    <div
+                        class="stat-box flex items-center gap-3 p-4 bg-white rounded-2xl shadow-md border border-green-100 hover:shadow-lg transition">
+                        <i data-lucide="file-text" class="text-green-600 w-6 h-6"></i>
+                        <div><strong>Tổng đơn hàng:</strong> @totalOrders</div>
+                    </div>
+
+                    <div
+                        class="stat-box flex items-center gap-3 p-4 bg-white rounded-2xl shadow-md border border-green-100 hover:shadow-lg transition">
+                        <i data-lucide="check-circle-2" class="text-emerald-600 w-6 h-6"></i>
+                        <div><strong>Đơn hoàn tất:</strong> @completed</div>
+                    </div>
+
+                    <div
+                        class="stat-box flex items-center gap-3 p-4 bg-white rounded-2xl shadow-md border border-green-100 hover:shadow-lg transition">
+                        <i data-lucide="truck" class="text-blue-600 w-6 h-6"></i>
+                        <div><strong>Đơn đang giao:</strong> @delivering</div>
+                    </div>
+
+                    <div
+                        class="stat-box flex items-center gap-3 p-4 bg-white rounded-2xl shadow-md border border-green-100 hover:shadow-lg transition">
+                        <i data-lucide="x-octagon" class="text-red-500 w-6 h-6"></i>
+                        <div><strong>Đơn hủy:</strong> @cancelled</div>
+                    </div>
+
+                    <div
+                        class="stat-box flex items-center gap-3 p-4 bg-white rounded-2xl shadow-md border border-green-100 hover:shadow-lg transition lg:col-span-1 sm:col-span-2 justify-center">
+                        <i data-lucide="wallet" class="text-yellow-600 w-7 h-7"></i>
+                        <div class="text-lg font-semibold">
+                            <strong>Tổng doanh thu:</strong> @String.Format("{0:N0} ₫", totalRevenue)
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Thống kê chi tiết sản phẩm -->
+                <h3 class="section-title flex items-center gap-2 text-green-700 text-lg font-semibold mb-4">
+                    <i data-lucide="bar-chart-3" class="w-5 h-5 text-green-600"></i>
+                    Thống kê chi tiết sản phẩm bán ra
+                </h3>
+
+                <div class="product-chart-section flex flex-col lg:flex-row items-start justify-center gap-10 mb-10">
+                    <div style="width: 400px; height: 400px;">
+                        <canvas id="productPieChart"></canvas>
+                    </div>
+
+                    <div id="productList" style="max-width: 300px;">
+                        <h4 class="mb-2 text-green-700 font-medium">Danh sách sản phẩm</h4>
+                        <ul id="productLegend" style="list-style: none; padding-left: 0;"></ul>
+                    </div>
+                </div>
+
+                <!-- Biểu đồ doanh thu -->
+                <h3 class="section-title flex items-center gap-2 text-green-700 text-lg font-semibold mb-4">
+                    <i data-lucide="area-chart" class="w-5 h-5 text-green-600"></i>
+                    Biểu đồ doanh thu theo khung giờ
+                </h3>
+
+                <div class="chart-container mb-6">
+                    <canvas id="revenueChart"></canvas>
+                </div>
+            }
+
+            <!-- Modal upload -->
+            <div id="uploadModal" class="modal-overlay" style="display:none;">
+                <div class="modal-content">
+                    <h3 class="text-lg font-semibold mb-4 text-green-700">📤 Nộp báo cáo ca làm</h3>
+                    <form id="uploadForm" enctype="multipart/form-data">
+                        <input type="hidden" name="branchId" value='@Context.Session.GetString("BranchId")' />
+                        <input type="hidden" name="shift" value='@Context.Session.GetString("SelectedShift")' />
+                        <label>File Excel:</label>
+                        <input type="file" name="excelFile" accept=".xlsx,.xls" required /><br><br>
+                        <label>Ảnh biểu đồ (nếu có):</label>
+                        <input type="file" name="imageFile" accept="image/*" /><br><br>
+                        <div class="flex gap-3 mt-4">
+                            <button type="submit" class="refresh-btn">📩 Gửi báo cáo</button>
+                            <button type="button" id="cancelUpload" class="export-btn">❌ Hủy</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+
+
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- JS -->
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        /* =====================================================
+           🔹 KHỞI TẠO TOÀN BỘ CHỨC NĂNG CHÍNH
+        ===================================================== */
+        initTabs();
+        initConfirmModal();
+        initDeliverButtons();
+        initEmployeesAutoReload();
+        initRevenueChart(); // Gọi chart sau khi DOM load
+        initRefreshButtons();
+        initOrderDetailPopup(); ư
+    });
+
+    /* =====================================================
+       🔹 FUNCTION 1: CHUYỂN TAB
+    ===================================================== */
+    function initTabs() {
+        const toggleCards = id => {
+            document.querySelectorAll('.card').forEach(c => c.classList.remove('show'));
+            const card = document.getElementById(id);
+            if (card) {
+                card.classList.add('show');
+                card.scrollIntoView({ behavior: 'smooth' });
+            }
+
+            // 🔥 Khi mở tab "Nhân viên" → tự load danh sách
+            if (id === 'employeesCard') loadEmployeesInShift();
+        };
+
+        const btnOrders = document.getElementById('btnOrders');
+        const btnInProgress = document.getElementById('btnInProgress');
+        const btnEmployees = document.getElementById('btnEmployees');
+        const btnRevenue = document.getElementById('btnRevenue');
+        const btnProfile = document.getElementById('btnProfile');
+
+        btnOrders?.addEventListener('click', () => toggleCards('ordersCard'));
+        btnInProgress?.addEventListener('click', () => toggleCards('inProgressCard'));
+        btnEmployees?.addEventListener('click', () => toggleCards('employeesCard'));
+        btnRevenue?.addEventListener('click', () => toggleCards('revenueCard'));
+        btnProfile?.addEventListener('click', () => {
+            window.location.href = '/Employee';
+        });
+    }
+
+    /* =====================================================
+       🔹 FUNCTION 2: MODAL CHI TIẾT ĐƠN HÀNG
+    ===================================================== */
+    function initConfirmModal() {
+        document.querySelectorAll('.confirm-btn').forEach(btn => {
+            btn.addEventListener('click', async e => {
+                e.preventDefault();
+                const id = btn.closest('tr').querySelector('input[name="id"]').value;
+                const res = await fetch(`/Internal/OrderDetails/${id}`);
+                const html = await res.text();
+
+                const wrapper = document.createElement('div');
+                wrapper.innerHTML = html;
+                document.body.appendChild(wrapper);
+
+                const overlay = wrapper.querySelector('.modal-overlay');
+                if (!overlay) return;
+                requestAnimationFrame(() => overlay.classList.add('visible'));
+
+                overlay.addEventListener('click', ev => {
+                    if (ev.target === overlay) closeModal(overlay, wrapper);
+                });
+                overlay.querySelector('.close-modal')?.addEventListener('click', () => closeModal(overlay, wrapper));
+            });
+        });
+
+        function closeModal(overlay, wrapper) {
+            overlay.classList.remove('visible');
+            setTimeout(() => wrapper.remove(), 320);
+        }
+    }
+
+    /* =====================================================
+       🔹 FUNCTION 3: GIAO HÀNG & HOÀN TẤT
+    ===================================================== */
+    function initDeliverButtons() {
+        document.querySelectorAll(".deliver-btn").forEach(button => {
+            button.addEventListener("click", async function () {
+                const orderId = this.dataset.orderId;
+                const row = this.closest("tr");
+                try {
+                    const response = await fetch(`/Internal/DeliverOrder`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                        body: `orderId=${orderId}`
+                    });
+                    const data = await response.json();
+                    if (!data.success) return alert(data.message);
+
+                    const statusCell = row.querySelector("td:nth-child(7)");
+                    if (statusCell) statusCell.textContent = "Đang giao";
+                    this.textContent = "Hoàn tất đơn hàng";
+                    this.classList.replace("deliver-btn", "complete-btn");
+                    alert(data.message);
+                } catch (err) {
+                    console.error(err);
+                    alert("Lỗi khi cập nhật đơn hàng.");
+                }
+            });
+        });
+
+        document.addEventListener("click", async e => {
+            if (e.target.classList.contains("complete-btn")) {
+                const btn = e.target;
+                const orderId = btn.dataset.orderId;
+                const row = btn.closest("tr");
+                try {
+                    const res = await fetch(`/Internal/CompleteOrder`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                        body: `orderId=${orderId}`
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        const statusCell = row.querySelector("td:nth-child(7)");
+                        if (statusCell) statusCell.textContent = "Đã giao";
+                        btn.textContent = "✔ Đã giao";
+                        btn.disabled = true;
+                    }
+                    alert(data.message);
+                } catch (err) {
+                    console.error(err);
+                    alert("Lỗi khi hoàn tất đơn hàng.");
+                }
+            }
+        });
+    }
+
+    /* =====================================================
+       🔹 FUNCTION 4: NHÂN VIÊN CA LÀM
+    ===================================================== */
+    function loadEmployeesInShift() {
+        $.ajax({
+            url: '/Internal/GetEmployeesInCurrentShift',
+            type: 'GET',
+            beforeSend: () => $('#employeesInShiftContainer').html('<p>🔄 Đang tải danh sách nhân viên...</p>'),
+            success: result => {
+                $('#employeesInShiftContainer').html(result);
+                initNotePopup();
+            },
+            error: () => $('#employeesInShiftContainer').html('<p>❌ Không thể tải dữ liệu nhân viên.</p>')
+        });
+    }
+
+    function initEmployeesAutoReload() {
+        loadEmployeesInShift();
+        const refreshBtn = document.getElementById('refreshEmployeesBtn');
+        refreshBtn?.addEventListener('click', () => {
+            loadEmployeesInShift();
+            refreshBtn.textContent = '⏳ Đang cập nhật...';
+            refreshBtn.disabled = true;
+            setTimeout(() => {
+                refreshBtn.textContent = '↻ Cập nhật';
+                refreshBtn.disabled = false;
+            }, 1500);
+        });
+    }
+
+    /* =====================================================
+       🔹 FUNCTION 5: NOTE POPUP (GHI NHẬN THƯỞNG/PHẠT)
+    ===================================================== */
+    function initNotePopup() {
+        const noteModal = document.getElementById('noteModal');
+        const noteForm = document.getElementById('noteForm');
+        const closeModalBtn = document.getElementById('closeModal');
+        const adjustmentTypeSelect = document.getElementById('AdjustmentType');
+        const reasonSelect = document.getElementById('Reason');
+        const amountInput = document.getElementById('Amount');
+
+        const reasons = {
+            Bonus: [
+                { reason: 'Làm việc xuất sắc', amount: 500000 },
+                { reason: 'Hoàn thành KPI', amount: 300000 },
+                { reason: 'Tăng ca chăm chỉ', amount: 200000 }
+            ],
+            Penalty: [
+                { reason: 'Đi trễ', amount: -100000 },
+                { reason: 'Vắng không phép', amount: -300000 },
+                { reason: 'Thái độ kém', amount: -200000 }
+            ]
+        };
+
+        document.querySelectorAll('.note-btn').forEach(btn => {
+            const newBtn = btn.cloneNode(true);
+            btn.parentNode.replaceChild(newBtn, btn);
+        });
+
+        document.querySelectorAll('.note-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const empId = btn.dataset.id;
+                const empName = btn.dataset.name;
+                document.getElementById('EmployeeID').value = empId;
+                document.getElementById('modalTitle').innerText = `🧾 Ghi chú: ${empName}`;
+                noteModal.style.display = 'flex';
+            });
+        });
+
+        adjustmentTypeSelect.addEventListener('change', function () {
+            const type = this.value;
+            reasonSelect.innerHTML = '<option value="">-- Chọn lý do --</option>';
+            reasons[type].forEach(item => {
+                const opt = document.createElement('option');
+                opt.value = item.reason;
+                opt.textContent = item.reason;
+                reasonSelect.appendChild(opt);
+            });
+            amountInput.value = '';
+        });
+
+        reasonSelect.addEventListener('change', function () {
+            const type = adjustmentTypeSelect.value;
+            const selected = reasons[type].find(r => r.reason === this.value);
+            amountInput.value = selected ? selected.amount : '';
+        });
+
+        closeModalBtn?.addEventListener('click', () => noteModal.style.display = 'none');
+
+        noteForm?.addEventListener('submit', async e => {
+            e.preventDefault();
+            const payload = {
+                EmployeeID: noteForm.EmployeeID.value,
+                Type: noteForm.AdjustmentType.value,
+                Amount: parseFloat(noteForm.Amount.value),
+                Reason: noteForm.Reason.value
+            };
+            try {
+                const res = await fetch('/Internal/AddSalaryAdjustment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                alert(data.message || 'Ghi nhận thành công!');
+                noteModal.style.display = 'none';
+            } catch (err) {
+                console.error(err);
+                alert('Lỗi khi gửi dữ liệu.');
+            }
+        });
+    }
+
+    /* =====================================================
+   🔹 FUNCTION 6: BIỂU ĐỒ DOANH THU THEO 30 PHÚT (DẠNG SÓNG)
+===================================================== */
+    function initRevenueChart() {
+        const ctx = document.getElementById('revenueChart');
+        if (!ctx) return;
+
+        const chartData = @Html.Raw(ViewBag.ChartData ?? "[]");
+
+        if (!chartData || chartData.length === 0) {
+            document.querySelector(".chart-container").innerHTML =
+                "<p class='text-center text-gray-500'>Không có dữ liệu biểu đồ cho ca này.</p>";
+            return;
+        }
+
+        const labels = chartData.map(d => d.Label);
+        const values = chartData.map(d => d.Revenue);
+
+        const context = ctx.getContext('2d');
+        const gradient = context.createLinearGradient(0, 0, 0, 400);
+        gradient.addColorStop(0, 'rgba(34,197,94,0.8)');
+        gradient.addColorStop(1, 'rgba(34,197,94,0.1)');
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [{
+                    label: 'Doanh thu (₫)',
+                    data: values,
+                    borderColor: '#16a34a',
+                    backgroundColor: gradient,
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.35,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    pointBackgroundColor: '#22c55e',
+                    pointBorderWidth: 1
+                }]
+            },
+            options: {
+                animation: {
+                    duration: 900,
+                    easing: 'easeOutQuart'
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) =>
+                                new Intl.NumberFormat('vi-VN', {
+                                    style: 'currency',
+                                    currency: 'VND',
+                                    minimumFractionDigits: 0
+                                }).format(ctx.parsed.y)
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: '📈 Doanh thu theo từng 30 phút trong ca',
+                        font: { size: 16, weight: 'bold' },
+                        padding: { top: 10, bottom: 15 }
+                    }
+                },
+                scales: {
+                    x: {
+                        title: { display: true, text: 'Thời gian (HH:mm)', font: { weight: 'bold' } },
+                        grid: { display: false },
+                        ticks: {
+                            autoSkip: true,
+                            maxTicksLimit: 10
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        title: { display: true, text: 'Doanh thu (₫)', font: { weight: 'bold' } },
+                        ticks: {
+                            callback: (val) =>
+                                val >= 1_000_000
+                                    ? (val / 1_000_000).toFixed(1) + 'tr'
+                                    : (val / 1000).toFixed(0) + 'k'
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+
+
+
+    /* =====================================================
+      🔹 FUNCTION 7: BIỂU ĐỒ TRÒN SẢN PHẨM BÁN RA (TƯƠNG TÁC + HIỆU ỨNG)
+   ===================================================== */
+    document.addEventListener("DOMContentLoaded", () => {
+        const pieData = @Html.Raw(ViewBag.ProductChartData ?? "[]");
+        if (!pieData || pieData.length === 0) {
+            document.getElementById('productList').innerHTML =
+                "<p style='color:gray;'>Không có dữ liệu sản phẩm đã bán.</p>";
+            return;
+        }
+
+        const ctx = document.getElementById("productPieChart");
+        const colors = [
+            "#FF6384", "#36A2EB", "#FFCE56", "#4BC0C0",
+            "#9966FF", "#FF9F40", "#66CC99", "#C94C4C",
+            "#2E8B57", "#DAA520", "#4682B4"
+        ];
+
+        // Danh sách sản phẩm đang hiển thị (true = hiển thị)
+        const visibility = {};
+        pieData.forEach(p => (visibility[p.ProductName] = true));
+
+        // Hàm lấy danh sách dữ liệu đang hiển thị
+        function getVisibleData() {
+            return pieData.filter(p => visibility[p.ProductName]);
+        }
+
+        // Render chart
+        function renderChart() {
+            const visible = getVisibleData();
+            const totalVisible = visible.reduce((sum, p) => sum + p.Quantity, 0);
+
+            if (window.productChart) window.productChart.destroy();
+
+            window.productChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: visible.map(p => p.ProductName),
+                    datasets: [{
+                        data: visible.map(p => p.Quantity),
+                        backgroundColor: colors.slice(0, visible.length),
+                        borderColor: "#fff",
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    animation: {
+                        duration: 500,
+                        easing: "easeOutCubic"
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: (context) => {
+                                    const qty = context.parsed;
+                                    const percent = ((qty / totalVisible) * 100).toFixed(1);
+                                    return `${context.label}: ${qty} ly (${percent}%)`;
+                                }
+                            }
+                        },
+                        legend: { display: false }
+                    }
+                }
+            });
+
+            // Render danh sách bên phải
+            const legendContainer = document.getElementById("productLegend");
+            legendContainer.innerHTML = "";
+            pieData.forEach((item, i) => {
+                const isVisible = visibility[item.ProductName];
+                const totalQty = visible.reduce((sum, p) => sum + p.Quantity, 0);
+                const percent = isVisible
+                    ? ((item.Quantity / totalQty) * 100).toFixed(1)
+                    : ((item.Quantity / pieData.reduce((s, p) => s + p.Quantity, 0)) * 100).toFixed(1);
+
+                const li = document.createElement("li");
+                li.dataset.name = item.ProductName;
+                li.className = "legend-item" + (isVisible ? "" : " hidden");
+                li.style.display = "flex";
+                li.style.alignItems = "center";
+                li.style.marginBottom = "6px";
+                li.style.cursor = "pointer";
+                li.innerHTML = `
+                <span style="
+                    display:inline-block;
+                    width:15px;height:15px;
+                    background-color:${colors[i % colors.length]};
+                    margin-right:8px;border-radius:3px;
+                    flex-shrink:0;
+                "></span>
+                <div style="white-space:nowrap;flex:1;">
+                    <strong>${item.ProductName}</strong>
+                    <span style="color:gray;">  (${percent}%)</span>
+                </div>
+            `;
+                li.addEventListener("click", () => toggleProduct(item.ProductName));
+                legendContainer.appendChild(li);
+            });
+        }
+
+        // Toggle hiển thị
+        function toggleProduct(name) {
+            visibility[name] = !visibility[name];
+            const li = document.querySelector(`li[data-name='${name}']`);
+            li?.classList.toggle("hidden");
+            renderChart();
+        }
+
+        // CSS hiệu ứng
+        const style = document.createElement("style");
+        style.innerHTML = `
+        #productLegend li { 
+            transition: opacity 0.3s, text-decoration 0.3s; 
+        }
+        #productLegend li.hidden {
+            opacity: 0.4;
+            text-decoration: line-through;
+        }
+    `;
+        document.head.appendChild(style);
+
+        // Render đầu tiên
+        renderChart();
+    });
+
+    function initRefreshButtons() {
+        const refreshOrders = document.getElementById("refreshOrdersBtn");
+        const refreshInProgress = document.getElementById("refreshInProgressBtn");
+        const refreshRevenue = document.getElementById("refreshRevenueBtn");
+
+        const refreshAction = (btn) => {
+            btn.textContent = "⏳ Đang cập nhật...";
+            btn.disabled = true;
+            setTimeout(() => {
+                location.reload(); // reload lại trang
+            }, 1000);
+        };
+
+        refreshOrders?.addEventListener("click", () => refreshAction(refreshOrders));
+        refreshInProgress?.addEventListener("click", () => refreshAction(refreshInProgress));
+        refreshRevenue?.addEventListener("click", () => refreshAction(refreshRevenue));
+    }
+    /* =====================================================
+       🔹 FUNCTION 8: XEM CHI TIẾT ĐƠN HÀNG (POPUP)
+    ===================================================== */
+    function initOrderDetailPopup() {
+        document.querySelectorAll(".detail-btn").forEach(btn => {
+            btn.addEventListener("click", async function () {
+                const orderId = this.dataset.orderId;
+                try {
+                    // 🔥 Gọi partial view OrderDetailsModal.cshtml
+                    const response = await fetch(`/Internal/OrderDetailsView/${orderId}`);
+                    const html = await response.text();
+
+                    // Chèn modal vào body
+                    const wrapper = document.createElement("div");
+                    wrapper.innerHTML = html;
+                    document.body.appendChild(wrapper);
+
+                    // Thêm class hiển thị popup
+                    const overlay = wrapper.querySelector(".modal-overlay");
+                    if (!overlay) return;
+                    requestAnimationFrame(() => overlay.classList.add("visible"));
+
+                    // Đóng modal khi click ra ngoài hoặc bấm nút X
+                    overlay.addEventListener("click", e => {
+                        if (e.target === overlay) closeDetailModal(overlay, wrapper);
+                    });
+                    overlay.querySelector(".close-modal")?.addEventListener("click", () => closeDetailModal(overlay, wrapper));
+                } catch (err) {
+                    console.error(err);
+                    alert("❌ Không thể tải chi tiết đơn hàng.");
+                }
+            });
+        });
+
+        function closeDetailModal(overlay, wrapper) {
+            overlay.classList.remove("visible");
+            setTimeout(() => wrapper.remove(), 300);
+        }
+    }
+    document.addEventListener("DOMContentLoaded", function () {
+        const checkboxes = document.querySelectorAll(".filter-checkbox");
+        const rows = document.querySelectorAll("#inProgressCard tbody tr");
+
+        function filterOrders() {
+            const checked = Array.from(checkboxes)
+                .filter(cb => cb.checked)
+                .map(cb => cb.value);
+
+            rows.forEach(row => {
+                const status = row.querySelector("td:nth-child(7)")?.textContent.trim();
+                row.style.display = checked.includes(status) ? "" : "none";
+            });
+        }
+
+        checkboxes.forEach(cb => cb.addEventListener("change", filterOrders));
+        checkboxes.forEach(cb => cb.addEventListener("change", filterOrders));
+        filterOrders();
+    });
+
+    document.addEventListener("DOMContentLoaded", () => {
+        const exportBtn = document.getElementById("exportExcelBtn");
+        exportBtn?.addEventListener("click", () => {
+            const confirmExport = confirm("Xuất báo cáo doanh thu ra Excel?");
+            if (!confirmExport) return;
+
+            window.location.href = "/Internal/ExportRevenueToExcel";
+        });
+    });
+
+    document.addEventListener("DOMContentLoaded", () => {
+        const captureBtn = document.getElementById("captureChartsBtn");
+        if (!captureBtn) return;
+
+        captureBtn.addEventListener("click", async () => {
+            const confirmCap = confirm("Chụp lại hai biểu đồ và lưu về máy?");
+            if (!confirmCap) return;
+
+            // Chụp cả vùng chứa hai biểu đồ
+            const target = document.querySelector(".revenue-summary")
+                ? document.querySelector(".main-content") // chứa cả phần biểu đồ
+                : document.body; // fallback
+
+            try {
+                // Cuộn lên để đảm bảo chart hiển thị hoàn toàn
+                window.scrollTo({ top: 0, behavior: "smooth" });
+                await new Promise(r => setTimeout(r, 500));
+
+                const canvas = await html2canvas(target, {
+                    backgroundColor: "#ffffff",
+                    scale: 2,
+                    useCORS: true
+                });
+
+                const imgData = canvas.toDataURL("image/png");
+                const link = document.createElement("a");
+                link.href = imgData;
+                link.download = `BieuDo_BaoCao_${new Date().toISOString().slice(0, 10)}.png`;
+                link.click();
+
+                alert("✅ Đã chụp và lưu hai biểu đồ thành công!");
+            } catch (err) {
+                console.error(err);
+                alert("❌ Lỗi khi chụp biểu đồ!");
+            }
+        });
+    });
+
+    document.addEventListener("DOMContentLoaded", () => {
+        const uploadBtn = document.getElementById("uploadReportBtn");
+        const modal = document.getElementById("uploadModal");
+        const cancelBtn = document.getElementById("cancelUpload");
+        const form = document.getElementById("uploadForm");
+
+        uploadBtn?.addEventListener("click", () => {
+            modal.style.display = "flex";
+        });
+
+        cancelBtn?.addEventListener("click", () => {
+            modal.style.display = "none";
+        });
+
+        form?.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const formData = new FormData(form);
+
+            try {
+                const res = await fetch("/Internal/UploadShiftReport", {
+                    method: "POST",
+                    body: formData
+                });
+
+                if (!res.ok) {
+                    const text = await res.text();
+                    throw new Error(`Server trả lỗi ${res.status}: ${text}`);
+                }
+
+                const data = await res.json();
+                alert(data.message || "✅ Đã nộp báo cáo thành công!");
+                modal.style.display = "none";
+            } catch (err) {
+                console.error("❌ Lỗi khi gửi báo cáo:", err);
+                alert(`❌ Lỗi khi gửi báo cáo!\nChi tiết: ${err.message}`);
+            }
+
+        });
+    });
+
+</script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>document.addEventListener("DOMContentLoaded", () => lucide.createIcons());</script>

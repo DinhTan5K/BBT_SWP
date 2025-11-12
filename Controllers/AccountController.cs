@@ -35,29 +35,29 @@ namespace start.Controllers
             return View();
         }
 
-                [HttpPost]
-    public async Task<IActionResult> Login(string loginId, string password)
-    {
-        if (string.IsNullOrWhiteSpace(loginId) || string.IsNullOrWhiteSpace(password))
+        [HttpPost]
+        public async Task<IActionResult> Login(string loginId, string password)
         {
-            ModelState.AddModelError("", "Vui lòng nhập Email/Username và mật khẩu");
-            return View();
-        }
-
-        try
-        {
-            // 1) Ưu tiên Employee (quản trị, nhân sự nội bộ)
-            var emp = _authService.LoginEmployee(loginId, password);
-            if (emp != null)
+            if (string.IsNullOrWhiteSpace(loginId) || string.IsNullOrWhiteSpace(password))
             {
-                // Log thành công - UTCID5-01
-                System.Diagnostics.Debug.WriteLine($"Login successful: EmployeeID={emp.EmployeeID}, Role={emp.RoleID}");
-                
-                // Xác định scheme dựa trên role
-                string authScheme = emp.RoleID == "AD" ? "AdminScheme" : "EmployeeScheme";
-                
-                // Tạo Claims cho Employee
-                var claims = new List<System.Security.Claims.Claim>
+                ModelState.AddModelError("", "Vui lòng nhập Email/Username và mật khẩu");
+                return View();
+            }
+
+            try
+            {
+                // 1) Ưu tiên Employee (quản trị, nhân sự nội bộ)
+                var emp = _authService.LoginEmployee(loginId, password);
+                if (emp != null)
+                {
+                    // Log thành công - UTCID5-01
+                    System.Diagnostics.Debug.WriteLine($"Login successful: EmployeeID={emp.EmployeeID}, Role={emp.RoleID}");
+
+                    // Xác định scheme dựa trên role
+                    string authScheme = emp.RoleID == "AD" ? "AdminScheme" : "EmployeeScheme";
+
+                    // Tạo Claims cho Employee
+                    var claims = new List<System.Security.Claims.Claim>
                 {
                     new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.NameIdentifier, emp.EmployeeID ?? ""),
                     new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, emp.FullName ?? ""),
@@ -66,65 +66,65 @@ namespace start.Controllers
                     new System.Security.Claims.Claim("RoleID", emp.RoleID ?? "EM")
                 };
 
-                var claimsIdentity = new System.Security.Claims.ClaimsIdentity(claims, authScheme);
-                var principal = new System.Security.Claims.ClaimsPrincipal(claimsIdentity);
+                    var claimsIdentity = new System.Security.Claims.ClaimsIdentity(claims, authScheme);
+                    var principal = new System.Security.Claims.ClaimsPrincipal(claimsIdentity);
 
-                // Sign in với đúng scheme để tạo authentication cookie
-                // KHÔNG sign out các schemes khác - mỗi scheme có cookie riêng nên không conflict
-                await HttpContext.SignInAsync(authScheme, principal);
-                
-                // Set Session để tương thích với code cũ
-                HttpContext.Session.SetString("EmployeeID", emp.EmployeeID ?? "");
-                HttpContext.Session.SetString("EmployeeName", emp.FullName ?? "");
-                HttpContext.Session.SetString("Role", emp.RoleID ?? "EM");
-                HttpContext.Session.SetString("RoleID", emp.RoleID ?? "EM");
-                
-                if (emp.BranchID.HasValue)
-                {
-                    HttpContext.Session.SetString("BranchId", emp.BranchID.Value.ToString());
+                    // Sign in với đúng scheme để tạo authentication cookie
+                    // KHÔNG sign out các schemes khác - mỗi scheme có cookie riêng nên không conflict
+                    await HttpContext.SignInAsync(authScheme, principal);
+
+                    // Set Session để tương thích với code cũ
+                    HttpContext.Session.SetString("EmployeeID", emp.EmployeeID ?? "");
+                    HttpContext.Session.SetString("EmployeeName", emp.FullName ?? "");
+                    HttpContext.Session.SetString("Role", emp.RoleID ?? "EM");
+                    HttpContext.Session.SetString("RoleID", emp.RoleID ?? "EM");
+
+                    if (emp.BranchID.HasValue)
+                    {
+                        HttpContext.Session.SetString("BranchId", emp.BranchID.Value.ToString());
+                    }
+
+                    // Commit session
+                    await HttpContext.Session.CommitAsync();
+
+                    // điều hướng theo role nội bộ
+                    if (emp.RoleID == "AD")         // Admin
+                    {
+                        return RedirectToAction("Dashboard", "Admin");
+                    }
+                    else if (emp.RoleID?.Equals("EM", StringComparison.OrdinalIgnoreCase) == true)
+                    {
+                        return RedirectToAction("Profile", "Employee");
+                    }
+                    else if (emp.RoleID == "SL")    // Shift Leader (nếu có)
+                    {
+                        return RedirectToAction("BranchOrders", "Internal");
+                    }
+                    else if (emp.RoleID == "BM")    // Branch Manager (nếu có)
+                    {
+                        return RedirectToAction("Index", "BManager");
+                    }
+                    else if (emp.RoleID == "RM")    // Region Manager (nếu có)
+                    {
+                        return RedirectToAction("Profile", "Employee");
+                    }
+                    else
+                    {
+                        return RedirectToAction("Profile", "Employee"); // Default
+                    }
                 }
 
-                // Commit session
-                await HttpContext.Session.CommitAsync();
+                // 2) Nếu không phải Employee, thử Customer (người dùng ngoài)
+                try
+                {
+                    var customer = _authService.LoginCustomer(loginId, password);
+                    if (customer != null)
+                    {
+                        // Log thành công - UTCID5-01
+                        System.Diagnostics.Debug.WriteLine("Login successful");
 
-                // điều hướng theo role nội bộ
-                if (emp.RoleID == "AD")         // Admin
-                {
-                    return RedirectToAction("Dashboard", "Admin");
-                }
-                else if (emp.RoleID?.Equals("EM", StringComparison.OrdinalIgnoreCase) == true)
-                {
-                    return RedirectToAction("Profile", "Employee");
-                }
-                else if (emp.RoleID == "SL")    // Shift Leader (nếu có)
-                {
-                    return RedirectToAction("Profile", "Employee");
-                }
-                else if (emp.RoleID == "BM")    // Branch Manager (nếu có)
-                {
-                    return RedirectToAction("Index", "BManager");
-                }
-                else if (emp.RoleID == "RM")    // Region Manager (nếu có)
-                {
-                    return RedirectToAction("Profile", "Employee");
-                }
-                else
-                {
-                    return RedirectToAction("Profile", "Employee"); // Default
-                }
-            }
-
-            // 2) Nếu không phải Employee, thử Customer (người dùng ngoài)
-            try
-            {
-                var customer = _authService.LoginCustomer(loginId, password);
-                if (customer != null)
-                {
-                    // Log thành công - UTCID5-01
-                    System.Diagnostics.Debug.WriteLine("Login successful");
-                    
-                    // Tạo Claims giống Google login để đảm bảo authentication hoạt động
-                    var claims = new List<System.Security.Claims.Claim>
+                        // Tạo Claims giống Google login để đảm bảo authentication hoạt động
+                        var claims = new List<System.Security.Claims.Claim>
                     {
                         new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.NameIdentifier, customer.CustomerID.ToString()),
                         new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, customer.Name ?? ""),
@@ -132,49 +132,49 @@ namespace start.Controllers
                         new System.Security.Claims.Claim("Role", "CU")
                     };
 
-                    var claimsIdentity = new System.Security.Claims.ClaimsIdentity(claims, "CustomerScheme");
-                    var principal = new System.Security.Claims.ClaimsPrincipal(claimsIdentity);
+                        var claimsIdentity = new System.Security.Claims.ClaimsIdentity(claims, "CustomerScheme");
+                        var principal = new System.Security.Claims.ClaimsPrincipal(claimsIdentity);
 
-                    // Sign in với CustomerScheme để tạo authentication cookie
-                    // KHÔNG sign out các schemes khác - mỗi scheme có cookie riêng nên không conflict
-                    await HttpContext.SignInAsync("CustomerScheme", principal);
-                    
-                    // Set Session để tương thích với code cũ
-                    HttpContext.Session.SetInt32("CustomerID", customer.CustomerID);
-                    HttpContext.Session.SetString("CustomerName", customer.Name ?? "");
-                    HttpContext.Session.SetString("Role", "Customer");
-                    
-                    // Đảm bảo session được commit trước khi redirect
-                    await HttpContext.Session.CommitAsync();
-                    
-                    // Clear ModelState để tránh validation errors khi redirect
-                    ModelState.Clear();
-                    
-                    return RedirectToAction("Index", "Home");
+                        // Sign in với CustomerScheme để tạo authentication cookie
+                        // KHÔNG sign out các schemes khác - mỗi scheme có cookie riêng nên không conflict
+                        await HttpContext.SignInAsync("CustomerScheme", principal);
+
+                        // Set Session để tương thích với code cũ
+                        HttpContext.Session.SetInt32("CustomerID", customer.CustomerID);
+                        HttpContext.Session.SetString("CustomerName", customer.Name ?? "");
+                        HttpContext.Session.SetString("Role", "Customer");
+
+                        // Đảm bảo session được commit trước khi redirect
+                        await HttpContext.Session.CommitAsync();
+
+                        // Clear ModelState để tránh validation errors khi redirect
+                        ModelState.Clear();
+
+                        return RedirectToAction("Index", "Home");
+                    }
                 }
-            }
-            catch (Exception customerEx)
-            {
-                // Nếu là lỗi email chưa xác thực, hiển thị thông báo cụ thể
-                if (customerEx.Message.Contains("Email chưa xác thực") || customerEx.Message.Contains("chưa xác thực"))
+                catch (Exception customerEx)
                 {
-                    ModelState.AddModelError("", customerEx.Message);
-                    return View();
+                    // Nếu là lỗi email chưa xác thực, hiển thị thông báo cụ thể
+                    if (customerEx.Message.Contains("Email chưa xác thực") || customerEx.Message.Contains("chưa xác thực"))
+                    {
+                        ModelState.AddModelError("", customerEx.Message);
+                        return View();
+                    }
+                    // Nếu là lỗi khác, throw lại để catch bên ngoài xử lý
+                    throw;
                 }
-                // Nếu là lỗi khác, throw lại để catch bên ngoài xử lý
-                throw;
-            }
 
-            // 3) Sai thông tin (đã log trong AuthService)
-            ModelState.AddModelError("", "Sai Email/Username hoặc mật khẩu");
-            return View();
+                // 3) Sai thông tin (đã log trong AuthService)
+                ModelState.AddModelError("", "Sai Email/Username hoặc mật khẩu");
+                return View();
+            }
+            catch (Exception ex)
+            {
+                ModelState.AddModelError("", ex.Message);
+                return View();
+            }
         }
-        catch (Exception ex)
-        {
-            ModelState.AddModelError("", ex.Message);
-            return View();
-        }
-    }
 
         #endregion
 
@@ -279,12 +279,12 @@ namespace start.Controllers
 
             // Sign in với CustomerScheme để tạo authentication cookie
             await HttpContext.SignInAsync("CustomerScheme", principal);
-            
+
             // Set Session để tương thích với code cũ
             HttpContext.Session.SetInt32("CustomerID", user.CustomerID);
             HttpContext.Session.SetString("CustomerName", user.Name ?? "");
             HttpContext.Session.SetString("Role", "Customer");
-            
+
             // Đảm bảo session được commit trước khi redirect
             await HttpContext.Session.CommitAsync();
 
@@ -300,13 +300,13 @@ namespace start.Controllers
         {
             // Xác định scheme hiện tại của user dựa trên User.Identity
             string? currentScheme = null;
-            
+
             // Kiểm tra User.Identity để xác định scheme đang active
             if (User?.Identity?.IsAuthenticated == true)
             {
                 // Lấy authentication type từ User.Identity
                 var authType = User.Identity.AuthenticationType;
-                
+
                 if (authType == "AdminScheme")
                 {
                     currentScheme = "AdminScheme";
@@ -336,7 +336,7 @@ namespace start.Controllers
                     HttpContext.Session.Remove("Role");
                 }
             }
-            
+
             // Nếu không tìm thấy từ User.Identity, thử kiểm tra từng scheme
             if (string.IsNullOrEmpty(currentScheme))
             {
@@ -376,13 +376,13 @@ namespace start.Controllers
                     }
                 }
             }
-            
+
             // Chỉ sign out scheme của user hiện tại, KHÔNG sign out tất cả
             if (!string.IsNullOrEmpty(currentScheme))
             {
                 await HttpContext.SignOutAsync(currentScheme);
             }
-            
+
             return RedirectToAction("Index", "Home");
         }
 
