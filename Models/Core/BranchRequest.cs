@@ -64,6 +64,8 @@ namespace start.Models
 
         [StringLength(1000)]
         public string? Notes { get; set; } // Ghi chú/Lý do
+        public bool IsActive { get; set; } = true;
+
 
         // Navigation properties
         [ForeignKey(nameof(RequestedBy))]

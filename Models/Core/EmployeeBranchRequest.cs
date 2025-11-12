@@ -21,6 +21,8 @@ namespace start.Models
         // ID của Branch cần thêm/chuyển nhân viên vào
         public int? BranchId { get; set; }
 
+        public int? RegionID { get; set; }
+
         // Thông tin nhân viên (chỉ cần khi RequestType = Add, để tạo nhân viên mới)
         [StringLength(100)]
         public string? FullName { get; set; }
@@ -62,6 +64,8 @@ namespace start.Models
         public string RequestedBy { get; set; } = string.Empty;
 
         public DateTime RequestedAt { get; set; } = DateTime.UtcNow;
+
+        public bool IsActive { get; set; } = true;
 
         // Thông tin duyệt
         [Required]

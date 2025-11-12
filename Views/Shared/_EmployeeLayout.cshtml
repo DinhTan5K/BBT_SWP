@@ -24,10 +24,17 @@
   <aside class="sidebar">
     <div class="sb-title">Menu</div>
 
-    <a class="sb-item @(active=="Profile" ? "active" : "")"
-       href="@Url.Action("Profile","Employee")">
-      <i class="fas fa-user"></i> Hồ sơ của tôi
-    </a>
+    @if (role == "RM")
+    {
+        <a class="sb-item @(active=="Profile" ? "active" : "")"
+           href="@Url.Action("RegionHome", "Region")">
+            <i class="fas fa-user"></i> Hồ sơ của tôi
+        </a>
+    }
+    else
+    {
+        <a class="sb-item @(active=="Profile" ? "active" : "")" href="@Url.Action("Profile", "Employee")"><i class="fas fa-user"></i> Hồ sơ của tôi</a>
+    }
 
     @if (role is "EM" or "SL" or "SH")
     {

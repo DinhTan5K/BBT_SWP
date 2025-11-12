@@ -21,8 +21,7 @@ namespace start.Services
         Task<List<WorkSchedule>> GetScheduleDetailsForDateAsync(int branchId, DateTime date);
         
         // Các hàm phụ
-        Task<(bool success, string message)> CheckInAsync(int workScheduleID);
-        Task<(bool success, string message)> CheckOutAsync(int workScheduleID);
+       
         Task<List<WorkSchedule>> GetSchedulesForCalendarAsync(int branchId, DateTime start, DateTime end);
         Task<List<WorkSchedule>> GetSchedulesForEmployeeAsync(string employeeId, DateTime start, DateTime end);
     }

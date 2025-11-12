@@ -16,6 +16,7 @@ namespace start.Data
 
         public DbSet<Branch> Branches { get; set; }
         public DbSet<Region> Regions { get; set; }
+       
         public DbSet<Cart> Carts { get; set; }
         public DbSet<CartDetail> CartDetails { get; set; }
 
@@ -41,7 +42,6 @@ namespace start.Data
         public DbSet<DayOffRequest> DayOffRequests => Set<DayOffRequest>();
         public DbSet<ProductCategory> ProductCategories { get; set; }
         public DbSet<News> News { get; set; }
-
         public DbSet<ChatHistory> ChatHistories { get; set; }
         public DbSet<ShiftReport> ShiftReports { get; set; }
         public DbSet<AuditLog> AuditLogs { get; set; }
@@ -52,5 +52,8 @@ namespace start.Data
         public DbSet<Attendance> Attendances { get; set; }
         
 
+      
+
+      
     }
 }

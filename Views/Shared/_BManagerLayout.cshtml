@@ -1,11 +1,13 @@
 @using System.Security.Claims
 @{
+    // Lấy thông tin người dùng từ Session hoặc Claims để đảm bảo luôn có dữ liệu
     var currentAction = ViewContext.RouteData.Values["Action"]?.ToString();
-    var currentController = ViewContext.RouteData.Values["Controller"]?.ToString();
-    var userName = User.FindFirstValue(ClaimTypes.Name) ?? "BManager User";
-    var userEmail = User.FindFirstValue(ClaimTypes.Email) ?? "admin@example.com";
+
+    var userName = Context.Session.GetString("EmployeeName") ?? "BManager User";
+    var userEmail = Context.Session.GetString("Email") ?? "Email không xác định";
     var userInitials = "BM"; // Giá trị dự phòng
-    if (!string.IsNullOrEmpty(userName))
+    // Sửa lại: Kiểm tra userName khác giá trị mặc định
+    if (!string.IsNullOrEmpty(userName) && userName != "BManager User")
     {
         var names = userName.Split(' ').Where(s => !string.IsNullOrEmpty(s)).Select(s => s[0]);
         userInitials = string.Concat(names.Take(2)).ToUpper();

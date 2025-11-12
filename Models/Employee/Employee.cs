@@ -20,8 +20,6 @@ namespace start.Models
         [StringLength(100)]
         public string? FullName { get; set; }
 
-
-
         [DataType(DataType.Date)]
         [DisplayFormat(DataFormatString = "{0:yyyy-MM-dd}", ApplyFormatInEditMode = true)]
         [Display(Name = "Date of Birth")]
@@ -38,7 +36,6 @@ namespace start.Models
         [Column("City")]
         public string? City { get; set; }
 
-
         [Required]
         [Column("RoleID")]
         [StringLength(2)]
@@ -47,18 +44,17 @@ namespace start.Models
         [Column("BranchID")]
         public int? BranchID { get; set; }
 
+        // --- NEW: RegionID (nullable) ---
         [Column("RegionID")]
         public int? RegionID { get; set; }
 
         [Required]
         [Column("Password")]
         [StringLength(200)]
-       
         public string? Password { get; set; }
 
         public DateTime HireDate { get; set; }
         public bool IsActive { get; set; }
-
 
         [Column("Gender")]
         [StringLength(10)]
@@ -86,7 +82,6 @@ namespace start.Models
 
        
         public bool IsHashed { get; set; } = false;
-
 
         [ForeignKey(nameof(RoleID))]
         public Role Role { get; set; } = null!;

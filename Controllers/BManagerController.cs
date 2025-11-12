@@ -143,6 +143,9 @@ public class BManagerController : Controller
         var dashboardData = await _dashboardService.GetDashboardSummaryAsync(CurrentBranchId.Value);
         dashboardData.ManagerName = managerName ?? "Quản lý";
 
+        // SỬA LỖI: Thêm logic lấy dữ liệu hiệu suất nhân viên và truyền qua ViewBag
+        ViewBag.EmployeeSummary = await _dashboardService.GetWeeklyEmployeeSummaryAsync(CurrentBranchId.Value);
+
         return View(dashboardData);
     }
 
@@ -627,141 +630,132 @@ public async Task<IActionResult> CreateEmp(EmployeeBranchRequest request)
     }
 
 
-  // Trong BManagerController.cs
+    // Trong BManagerController.cs
 
-[HttpGet]
-public async Task<IActionResult> ExportSalaryToExcel(string? name, int month = 0, int year = 0)
-{
-    (month, year) = NormalizeMonthYear(month, year);
-    if (!CurrentBranchId.HasValue)
+    [HttpGet]
+    public async Task<IActionResult> ExportSalaryToExcel(string? name, int month = 0, int year = 0)
     {
-        return NotFound("Branch ID not found");
-    }
-
-    // Lấy báo cáo tổng hợp (Sheet 1)
-    var salaries = await _reportService.GetSalaryReportAsync(name, month, year, CurrentBranchId.Value);
-
-    // Lấy tất cả chi tiết ca làm việc trong tháng (Sử dụng hàm đã thêm vào IReportService)
-    var allWorkSchedules = await _reportService.GetAllWorkSchedulesForMonthAsync(month, year, CurrentBranchId.Value); 
-
-    try
-    {
-        using var workbook = new ClosedXML.Excel.XLWorkbook();
-        
-        
-        // ===========================================
-        // SHEET 1: TỔNG HỢP LƯƠNG
-        // ===========================================
-        var wsSummary = workbook.Worksheets.Add($"1. Summary {month}-{year}");
-
-        // Headers
-        wsSummary.Cell(1, 1).Value = "Employee ID";
-        wsSummary.Cell(1, 2).Value = "Full Name";
-        wsSummary.Cell(1, 3).Value = "Total Shifts";
-        wsSummary.Cell(1, 4).Value = "Total Hours";
-        wsSummary.Cell(1, 5).Value = "Lương CB (100%)"; 
-        wsSummary.Cell(1, 7).Value = "Thưởng";
-        wsSummary.Cell(1, 8).Value = "Phạt/Khấu trừ";
-        wsSummary.Cell(1, 9).Value = "Total Salary (VND)";
-
-        wsSummary.Range("A1:I1").Style.Font.Bold = true;
-        wsSummary.Range("A1:I1").Style.Fill.BackgroundColor = ClosedXML.Excel.XLColor.LightGray;
-
-        // Data
-        int row = 2;
-        foreach (var s in salaries)
+        (month, year) = NormalizeMonthYear(month, year);
+        if (!CurrentBranchId.HasValue)
         {
-            wsSummary.Cell(row, 1).Value = s.EmployeeID;
-            wsSummary.Cell(row, 2).Value = s.FullName;
-            wsSummary.Cell(row, 3).Value = s.TotalShifts;
-            wsSummary.Cell(row, 4).Value = s.TotalHours;
-            wsSummary.Cell(row, 5).Value = s.BaseSalary;
-            wsSummary.Cell(row, 7).Value = s.Bonus;
-            wsSummary.Cell(row, 8).Value = s.Penalty;
-            wsSummary.Cell(row, 9).Value = s.TotalSalary;
-            row++;
+            return NotFound("Branch ID not found");
         }
-        wsSummary.Columns().AdjustToContents();
 
+        // Lấy báo cáo tổng hợp (Sheet 1)
+        var salaries = await _reportService.GetSalaryReportAsync(name, month, year, CurrentBranchId.Value);
 
-        // ===========================================
-        // SHEET 2: CHI TIẾT CA LÀM THEO NGÀY
-        // ===========================================
-        var wsDetail = workbook.Worksheets.Add($"2. Detail Shifts {month}-{year}");
-        int detailRow = 1;
-        
-        // Headers
-        wsDetail.Cell(detailRow, 1).Value = "Employee ID";
-        wsDetail.Cell(detailRow, 2).Value = "Full Name";
-        wsDetail.Cell(detailRow, 3).Value = "Date";
-        wsDetail.Cell(detailRow, 4).Value = "Shift";
-        wsDetail.Cell(detailRow, 5).Value = "Check In";
-        wsDetail.Cell(detailRow, 6).Value = "Check Out";
-        wsDetail.Cell(detailRow, 7).Value = "Duration (Hours)";
-        wsDetail.Cell(detailRow, 8).Value = "Base Rate (VND/h)";
-        wsDetail.Cell(detailRow, 9).Value = "Total Pay (VND)";
-        
-        wsDetail.Range("A1:I1").Style.Font.Bold = true;
-        wsDetail.Range("A1:I1").Style.Fill.BackgroundColor = ClosedXML.Excel.XLColor.LightBlue;
-        detailRow++;
-        
-        // Lấy tất cả bản ghi chấm công trong tháng của chi nhánh
-        var attendancesForMonth = await _context.Attendances
-            .Include(a => a.WorkSchedule.Employee)
-            .Where(a => a.WorkSchedule.Employee.BranchID == CurrentBranchId.Value &&
-                        a.CheckInTime.Month == month &&
-                        a.CheckInTime.Year == year &&
-                        a.CheckOutTime.HasValue)
-            .OrderBy(a => a.EmployeeID).ThenBy(a => a.CheckInTime)
-            .ToListAsync();
-            
-        // Data (Duyệt qua tất cả Attendance đã lấy)
-        foreach (var att in attendancesForMonth)
+        // Lấy tất cả chi tiết ca làm việc trong tháng (Sử dụng hàm đã thêm vào IReportService)
+        var allWorkSchedules = await _reportService.GetAllWorkSchedulesForMonthAsync(month, year, CurrentBranchId.Value);
+
+        try
         {
-            // 1. Lấy lương giờ từ hợp đồng (Cần đảm bảo _contractService được inject)
-            var contract = await _contractService.GetActiveHourlyContractOnDateAsync(att.EmployeeID, att.CheckInTime.Date);
-            decimal hourlyRate = (contract != null && contract.PaymentType == Contract.PaymentTypes.Gio) 
-                                        ? contract.BaseRate 
-                                        : 0m; 
-            
-            double durationHours = (att.CheckOutTime.Value - att.CheckInTime).TotalHours;
-            decimal totalShiftPay = (decimal)durationHours * hourlyRate;
-            
-            wsDetail.Cell(detailRow, 1).Value = att.EmployeeID;
-            wsDetail.Cell(detailRow, 2).Value = att.WorkSchedule?.Employee?.FullName ?? "N/A";
-            wsDetail.Cell(detailRow, 3).Value = att.CheckInTime.ToString("yyyy-MM-dd");
-            wsDetail.Cell(detailRow, 4).Value = att.WorkSchedule?.Shift ?? "N/A";
-            wsDetail.Cell(detailRow, 5).Value = att.CheckInTime.ToString("HH:mm");
-            wsDetail.Cell(detailRow, 6).Value = att.CheckOutTime?.ToString("HH:mm");
-            wsDetail.Cell(detailRow, 7).Value = durationHours;
-            wsDetail.Cell(detailRow, 8).Value = hourlyRate;
-            wsDetail.Cell(detailRow, 9).Value = totalShiftPay;
+            using var workbook = new ClosedXML.Excel.XLWorkbook();
+
+            // ===========================================
+            // SHEET 1: TỔNG HỢP LƯƠNG
+            // ===========================================
+            var wsSummary = workbook.Worksheets.Add($"1. Summary {month}-{year}");
+
+            // Headers
+            wsSummary.Cell(1, 1).Value = "Employee ID";
+            wsSummary.Cell(1, 2).Value = "Full Name";
+            wsSummary.Cell(1, 3).Value = "Total Shifts";
+            wsSummary.Cell(1, 4).Value = "Total Hours";
+            wsSummary.Cell(1, 5).Value = "Lương CB (100%)";
+            wsSummary.Cell(1, 7).Value = "Thưởng";
+            wsSummary.Cell(1, 8).Value = "Phạt/Khấu trừ";
+            wsSummary.Cell(1, 9).Value = "Total Salary (VND)";
+
+            wsSummary.Range("A1:I1").Style.Font.Bold = true;
+            wsSummary.Range("A1:I1").Style.Fill.BackgroundColor = ClosedXML.Excel.XLColor.LightGray;
+
+            // Data
+            int row = 2;
+            foreach (var s in salaries)
+            {
+                wsSummary.Cell(row, 1).Value = s.EmployeeID;
+                wsSummary.Cell(row, 2).Value = s.FullName;
+                wsSummary.Cell(row, 3).Value = s.TotalShifts;
+                wsSummary.Cell(row, 4).Value = s.TotalHours;
+                wsSummary.Cell(row, 5).Value = s.BaseSalary;
+                wsSummary.Cell(row, 7).Value = s.Bonus;
+                wsSummary.Cell(row, 8).Value = s.Penalty;
+                wsSummary.Cell(row, 9).Value = s.TotalSalary;
+                row++;
+            }
+            wsSummary.Columns().AdjustToContents();
+
+
+            // ===========================================
+            // SHEET 2: CHI TIẾT CA LÀM THEO NGÀY
+            // ===========================================
+            var wsDetail = workbook.Worksheets.Add($"2. Detail Shifts {month}-{year}");
+            int detailRow = 1;
+
+            // Headers
+            wsDetail.Cell(detailRow, 1).Value = "Employee ID";
+            wsDetail.Cell(detailRow, 2).Value = "Full Name";
+            wsDetail.Cell(detailRow, 3).Value = "Date";
+            wsDetail.Cell(detailRow, 4).Value = "Shift";
+            wsDetail.Cell(detailRow, 5).Value = "Check In";
+            wsDetail.Cell(detailRow, 6).Value = "Check Out";
+            wsDetail.Cell(detailRow, 7).Value = "Duration (Hours)";
+            wsDetail.Cell(detailRow, 8).Value = "Base Rate (VND/h)";
+            wsDetail.Cell(detailRow, 9).Value = "Total Pay (VND)";
+
+            wsDetail.Range("A1:I1").Style.Font.Bold = true;
+            wsDetail.Range("A1:I1").Style.Fill.BackgroundColor = ClosedXML.Excel.XLColor.LightBlue;
             detailRow++;
+
+            // Data (Duyệt qua tất cả Attendance đã lấy)
+            foreach (var schedule in allWorkSchedules)
+            {
+                if (schedule.CheckInTime.HasValue && schedule.CheckOutTime.HasValue)
+                {
+                    // 1. Lấy lương giờ từ hợp đồng (Cần đảm bảo _contractService được inject)
+                    var contract = await _contractService.GetActiveHourlyContractOnDateAsync(schedule.EmployeeID, schedule.Date);
+                    decimal hourlyRate = (contract != null && contract.PaymentType == Contract.PaymentTypes.Gio)
+                                                ? contract.BaseRate
+                                                : 0m;
+
+                    double durationHours = (schedule.CheckOutTime.Value - schedule.CheckInTime.Value).TotalHours;
+                    decimal totalShiftPay = (decimal)durationHours * hourlyRate;
+
+                    wsDetail.Cell(detailRow, 1).Value = schedule.EmployeeID;
+                    wsDetail.Cell(detailRow, 2).Value = schedule.Employee?.FullName ?? "N/A";
+                    wsDetail.Cell(detailRow, 3).Value = schedule.Date.ToString("yyyy-MM-dd");
+                    wsDetail.Cell(detailRow, 4).Value = schedule.Shift;
+                    wsDetail.Cell(detailRow, 5).Value = schedule.CheckInTime?.ToString("HH:mm");
+                    wsDetail.Cell(detailRow, 6).Value = schedule.CheckOutTime?.ToString("HH:mm");
+                    wsDetail.Cell(detailRow, 7).Value = durationHours;
+                    wsDetail.Cell(detailRow, 8).Value = hourlyRate;
+                    wsDetail.Cell(detailRow, 9).Value = totalShiftPay;
+                    detailRow++;
+                }
+            }
+
+            wsDetail.Columns().AdjustToContents();
+            wsDetail.Range(2, 8, detailRow - 1, 8).Style.NumberFormat.Format = "#,##0";
+            wsDetail.Range(2, 9, detailRow - 1, 9).Style.NumberFormat.Format = "#,##0";
+
+
+            // --- TRẢ VỀ FILE ---
+            using var stream = new MemoryStream();
+            workbook.SaveAs(stream);
+            stream.Position = 0;
+
+            var fileName = $"SalaryReport_{month}_{year}_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+
+            return File(stream.ToArray(),
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        fileName);
         }
-        
-        wsDetail.Columns().AdjustToContents();
-        wsDetail.Range(2, 8, detailRow - 1, 8).Style.NumberFormat.Format = "#,##0";
-        wsDetail.Range(2, 9, detailRow - 1, 9).Style.NumberFormat.Format = "#,##0";
+        catch (Exception ex)
+        {
+            return BadRequest($"Export failed: {ex.Message}");
+        }
 
-
-        // --- TRẢ VỀ FILE ---
-        using var stream = new MemoryStream();
-        workbook.SaveAs(stream);
-        stream.Position = 0;
-
-        var fileName = $"SalaryReport_{month}_{year}_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
-
-        return File(stream.ToArray(),
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            fileName);
     }
-    catch (Exception ex)
-    {
-        return BadRequest($"Export failed: {ex.Message}");
-    }
-}
-
-
     private (int, int) NormalizeMonthYear(int month, int year)
     {
         if (month <= 0 || month > 12)

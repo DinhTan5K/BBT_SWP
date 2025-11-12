@@ -398,19 +398,13 @@ namespace start.Controllers
             var dto = _s.GetMonthSchedule(id, m, y);
 
             // Lấy thông tin check-in hôm nay
-            // Lấy thông tin check-in hôm nay
-            // Lấy thông tin check-in hôm nay
             var tomorrow = today.AddDays(1);
-
             var todayCheckIn = await _db.Attendances
                 .AsNoTracking()
                 .FirstOrDefaultAsync(a =>
                     a.EmployeeID == id &&
                     a.CheckInTime >= today &&
                     a.CheckInTime < tomorrow);
-
-
-
 
 
             // Lấy ca làm việc hôm nay - query trực tiếp từ database (không phụ thuộc vào tháng được chọn)
@@ -1054,4 +1048,3 @@ namespace start.Controllers
 
         }
     }
-

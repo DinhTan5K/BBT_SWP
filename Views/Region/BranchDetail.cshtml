@@ -1,0 +1,143 @@
+@using start.DTOs
+@model start.DTOs.BranchDetail
+
+@{
+    ViewData["Title"] = "Chi nhánh: " + (Model?.Name ?? "");
+    Layout = "~/Views/Shared/_RegionLayout.cshtml";
+}
+
+<link rel="stylesheet" href="~/css/Region/branch-info-details.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+<div class="region-dashboard-container">
+    <div class="detail-header text-center">
+        <h2 class="page-title">Chi nhánh: @Model.Name</h2>
+    </div>
+
+    <div class="top-row">
+        <div class="card card-left">
+            <h4 class="card-title">@Model.Name</h4>
+            <p><strong>Địa chỉ:</strong> @Model.Address</p>
+            @if (!string.IsNullOrEmpty(Model.City))
+            {
+                <p><strong>Thành phố:</strong> @Model.City</p>
+            }
+            @if (!string.IsNullOrEmpty(Model.Phone))
+            {
+                <p><strong>Số điện thoại chi nhánh:</strong> @Model.Phone</p>
+            }
+
+            <p><strong>Quản lý chi nhánh:</strong> @(string.IsNullOrEmpty(Model.ManagerName) ? "Chưa được phân công" :
+                                Model.ManagerName)</p>
+            @if (!string.IsNullOrEmpty(Model.ManagerPhone))
+            {
+                <p><strong>SĐT quản lý:</strong> @Model.ManagerPhone</p>
+            }
+
+            <div style="margin-top:18px; display:flex; gap:12px;">
+                <a asp-action="RegionHome" asp-controller="Region" class="detail-btn">← Quay về</a>
+
+            </div>
+        </div>
+
+        <div class="card card-right">
+            <h5 class="card-title">Vị trí chi nhánh</h5>
+
+            @if (Model.Latitude.HasValue && Model.Longitude.HasValue)
+            {
+                <div id="branch-map" class="branch-map"></div>
+                <div style="margin-top:10px">
+                    <a id="openGoogleMapsBtn" target="_blank" class="map-btn">📍 Mở trên Google Maps</a>
+                </div>
+            }
+            else
+            {
+                <p class="text-muted">Không có toạ độ.</p>
+            }
+        </div>
+    </div>
+
+    <div class="employees-row">
+        <div class="card employees-card">
+            <h5 class="card-title">Danh sách nhân viên</h5>
+
+            @if (Model.Employees == null || !Model.Employees.Any())
+            {
+                <p class="text-muted">Chưa có nhân viên.</p>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Tên</th>
+                                <th>Vị trí</th>
+                                <th>Ngày sinh</th>
+                                <th>SĐT</th>
+                                <th>Email</th>
+                                <th>Ngày vào làm</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var e in Model.Employees)
+                            {
+                                <tr>
+                                    <td>@e.FullName</td>
+                                    <td>
+                                        @{
+                                            string position = e.RoleId switch
+                                            {
+                                                "EM" => "Nhân viên",
+                                                "SL" => "Trưởng ca",
+                                                _ => "Khác"
+                                            };
+                                        }
+                                        @position
+                                    </td>
+                                    <td>@(e.DateOfBirth?.ToString("yyyy-MM-dd") ?? "-")</td>
+                                    <td>@(e.PhoneNumber ?? "-")</td>
+                                    <td>@(e.Email ?? "-")</td>
+                                    <td>@e.HireDate.ToString("yyyy-MM-dd")</td>
+
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    // giữ nguyên script bản đồ như bạn có
+    window.addEventListener('load', function () {
+        var mapDiv = document.getElementById('branch-map');
+        if (!mapDiv) return;
+
+        const latRaw = @System.Text.Json.JsonSerializer.Serialize(Model.Latitude);
+        const lngRaw = @System.Text.Json.JsonSerializer.Serialize(Model.Longitude);
+
+        if (latRaw !== null && lngRaw !== null) {
+            const lat = Number(latRaw);
+            const lng = Number(lngRaw);
+            if (!isNaN(lat) && !isNaN(lng)) {
+                var map = L.map('branch-map').setView([lat, lng], 16);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                    attribution: '&copy; OpenStreetMap contributors'
+                }).addTo(map);
+
+                var marker = L.marker([lat, lng]).addTo(map);
+                marker.bindPopup(`<b>@Html.Raw(System.Net.WebUtility.HtmlEncode(Model.Name))</b><br/>@Html.Raw(System.Net.WebUtility.HtmlEncode(Model.Address ?? ""))`).openPopup();
+
+                setTimeout(function () { map.invalidateSize(); }, 200);
+
+                var mapsBtn = document.getElementById('openGoogleMapsBtn');
+                if (mapsBtn) { mapsBtn.href = `https://www.google.com/maps?q=${lat},${lng}`; }
+            }
+        }
+    });
+</script>

@@ -2,7 +2,7 @@
 @{
     Layout = "_BManagerLayout";
     ViewData["Title"] = "Lịch Làm Việc";
-    
+
     // --- Logic tính toán lịch  ---
     var viewDate = (DateTime)ViewBag.CurrentDate;
     var year = viewDate.Year;
@@ -21,7 +21,7 @@
     var prevMonthDate = viewDate.AddMonths(-1);
     var nextMonthDate = viewDate.AddMonths(1);
 
-    // ---  Lấy 5 ca sắp tới cho Sidebar ---
+    // --- Lấy 5 ca sắp tới cho Sidebar ---
     // KHÔI PHỤC: Lấy ca đã duyệt và ĐÃ CHECK-IN
     var upcomingSchedules = Model
         .Where(s => s.Date.Date >= DateTime.Today && 
@@ -33,7 +33,7 @@
         .Take(5)
         .ToList();
         
-    // ---  Helper gán màu ca làm việc (cho Sidebar) ---
+    // --- Helper gán màu ca làm việc (cho Sidebar) ---
     string GetShiftClass(DateTime? checkInTime)
     {
         if (!checkInTime.HasValue) return "shift-other";
@@ -106,6 +106,7 @@
                         int pendingCount = hasWork ? workByDate[d.Date].Count(s => s.Status == "Chưa duyệt") : 0;
                         int approvedCount = hasWork ? workByDate[d.Date].Count(s => s.Status == "Đã duyệt" && (s.Date.Date >= DateTime.Today.Date || !s.CheckInTime.HasValue)) : 0;
                         int doneCount = hasWork ? workByDate[d.Date].Count(s => s.Date.Date < DateTime.Today.Date && s.CheckInTime.HasValue) : 0;
+
                         int totalShifts = hasWork ? workByDate[d.Date].Count() : 0;
                         
                         var cellClass = "cal-cell cal-day" + (isToday ? " today" : "") + (hasWork ? " workday" : "");
@@ -123,12 +124,15 @@
                             @if (hasWork)
                             {
                                 <div class="mt-2 small schedule-summary">
-                                    @if (pendingCount > 0) {
+                                    @if (pendingCount > 0)
+                                    {
                                         <div class="text-warning"><strong>@workByDate[d.Date].Count(s => s.Status == "Chưa duyệt") Chờ duyệt</strong></div>
-                                    } else if (doneCount > 0) {
+                                    }
+                                    else if (doneCount > 0)
+                                    {
                                         <div class="text-success"><strong>@doneCount Đã làm</strong></div>
-                                    } 
-                                    <div class="text-primary">@workByDate[d.Date].Count(s => s.Status == "Đã duyệt") Đã duyệt</div>
+                                    }
+                                    <div class="text-primary">@approvedCount Đã duyệt</div>
                                 </div>
                             }
                         </div>

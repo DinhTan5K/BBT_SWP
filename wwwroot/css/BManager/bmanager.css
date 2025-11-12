@@ -578,6 +578,33 @@ html.dark-mode .btn-edit-target:hover {
     color: var(--brand-dark-color);
 }
 
+/* === EMPLOYEE PERFORMANCE WIDGET === */
+.performance-table .employee-avatar-sm {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background-color: var(--bg-color);
+    color: var(--accent-color);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+    border: 2px solid var(--border-color);
+}
+
+.performance-table .progress {
+    background-color: var(--bg-color);
+}
+
+.performance-table .progress-bar {
+    background-color: var(--blue-color);
+}
+html.dark-mode .performance-table .employee-avatar-sm {
+    border-color: var(--accent-color);
+}
+
 
 /* ==================================
    SỬA LẠI: PROFILE WIDGET & LOGOUT MỚI

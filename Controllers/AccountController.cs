@@ -2,11 +2,13 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
+using start.Data;
 using start.Models;
 using start.Services;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.EntityFrameworkCore;
 namespace start.Controllers
 {
     public class AccountController : Controller
@@ -15,11 +17,13 @@ namespace start.Controllers
         private readonly IProfileService _profileService;
         private readonly IEmailService _emailService;
 
-        public AccountController(IAuthService authService, IProfileService profileService, IEmailService emailService)
+        private readonly ApplicationDbContext _db;
+        public AccountController(IAuthService authService, IProfileService profileService, IEmailService emailService, ApplicationDbContext db)
         {
             _authService = authService;
             _profileService = profileService;
             _emailService = emailService;
+            _db = db;
         }
 
         #region Login
@@ -27,60 +31,74 @@ namespace start.Controllers
         [HttpGet]
         public IActionResult Login() => View();
 
-        [HttpPost]
-        public async Task<IActionResult> Login(string loginId, string password)
+                [HttpPost]
+    public async Task <IActionResult> Login(string loginId, string password)
+    {
+        if (string.IsNullOrWhiteSpace(loginId) || string.IsNullOrWhiteSpace(password))
         {
-            if (string.IsNullOrWhiteSpace(loginId) || string.IsNullOrWhiteSpace(password))
+            ModelState.AddModelError("", "Vui lòng nhập Email/Username và mật khẩu");
+            return View();
+        }
+
+        try
+        {
+            // 1) Ưu tiên Employee (quản trị, nhân sự nội bộ)
+            var emp = _authService.LoginEmployee(loginId, password);
+            if (emp != null)
             {
-                ModelState.AddModelError("", "Vui lòng nhập Email/Username và mật khẩu");
-                return View();
-            }
+                // --- TÁI CẤU TRÚC: HỢP NHẤT LOGIC ĐĂNG NHẬP CHO TẤT CẢ NHÂN VIÊN ---
 
-            try {
-                // 1) Ưu tiên Employee (quản trị, nhân sự nội bộ)
-                var emp = _authService.LoginEmployee(loginId, password);
-                if (emp != null)
+                // 1. Tạo claims (thông tin xác thực) cho nhân viên
+                var claims = new List<Claim>
                 {
-                    // --- TÁI CẤU TRÚC LOGIC ĐĂNG NHẬP CHO TẤT CẢ NHÂN VIÊN ---
-                    // 1. Tạo claims cho nhân viên
-                    var claims = new List<Claim>
-                    {
-                        new Claim(ClaimTypes.NameIdentifier, emp.EmployeeID),
-                        new Claim(ClaimTypes.Name, emp.FullName ?? "User"),
-                        new Claim(ClaimTypes.Role, emp.RoleID ?? "EM"),
-                        new Claim(ClaimTypes.Email, emp.Email ?? ""),
-                        new Claim("EmployeeID", emp.EmployeeID) // Thêm claim EmployeeID để dễ truy cập
-                    };
-                    if (emp.BranchID.HasValue)
-                    {
-                        claims.Add(new Claim("BranchId", emp.BranchID.Value.ToString()));
-                    }
-
-                    // 2. Tạo identity và principal
-                    var claimsIdentity = new ClaimsIdentity(claims, "EmployeeScheme");
-                    var principal = new ClaimsPrincipal(claimsIdentity);
-
-                    // 3. Thực hiện đăng nhập để tạo cookie xác thực
-                    await HttpContext.SignInAsync("EmployeeScheme", principal);
-
-                    // 4. Lưu thông tin cần thiết vào Session (để tương thích với code cũ)
-                    HttpContext.Session.SetString("EmployeeID", emp.EmployeeID);
-                    HttpContext.Session.SetString("EmployeeName", emp.FullName ?? "");
-                    HttpContext.Session.SetString("RoleID", emp.RoleID ?? "EM");
-                    if (emp.BranchID.HasValue)
-                    {
-                        HttpContext.Session.SetString("BranchId", emp.BranchID.Value.ToString());
-                    }
-
-                    // 5. Điều hướng dựa trên vai trò
-                    return emp.RoleID switch
-                    {
-                        "BM" => RedirectToAction("Index", "BManager"),
-                        _ => RedirectToAction("Profile", "Employee"), // Mặc định cho AD, EM, SL, RM và các vai trò khác
-                    };
+                    new Claim(ClaimTypes.NameIdentifier, emp.EmployeeID),
+                    new Claim(ClaimTypes.Name, emp.FullName ?? "User"),
+                    new Claim(ClaimTypes.Role, emp.RoleID ?? "EM"),
+                    new Claim(ClaimTypes.Email, emp.Email ?? ""),
+                    new Claim("EmployeeID", emp.EmployeeID) // Thêm claim EmployeeID để dễ truy cập
+                };
+                if (emp.BranchID.HasValue)
+                {
+                    claims.Add(new Claim("BranchId", emp.BranchID.Value.ToString()));
+                }
+                if (emp.RegionID.HasValue)
+                {
+                    claims.Add(new Claim("RegionID", emp.RegionID.Value.ToString()));
                 }
 
-                var customer = _authService.LoginCustomer(loginId, password);
+                // 2. Tạo identity và principal với scheme "EmployeeScheme"
+                var claimsIdentity = new ClaimsIdentity(claims, "EmployeeScheme");
+                var principal = new ClaimsPrincipal(claimsIdentity);
+
+                // 3. Thực hiện đăng nhập để tạo cookie xác thực
+                await HttpContext.SignInAsync("EmployeeScheme", principal);
+
+                // 4. Lưu thông tin cần thiết vào Session (để tương thích với code cũ)
+                HttpContext.Session.SetString("EmployeeID", emp.EmployeeID);
+                HttpContext.Session.SetString("EmployeeName", emp.FullName ?? "");
+                HttpContext.Session.SetString("RoleID", emp.RoleID ?? "EM"); // Dùng RoleID cho nhất quán
+                if (emp.BranchID.HasValue)
+                {
+                    HttpContext.Session.SetString("BranchId", emp.BranchID.Value.ToString());
+                }
+                // THÊM DÒNG NÀY: Lưu email vào Session để layout có thể truy cập
+                if (!string.IsNullOrEmpty(emp.Email))
+                {
+                    HttpContext.Session.SetString("Email", emp.Email);
+                }
+
+                // 5. Điều hướng dựa trên vai trò
+                return emp.RoleID switch
+                {
+                    "BM" => RedirectToAction("Index", "BManager"),
+                    "RM" => RedirectToAction("RegionHome", "Region"),
+                    "SH" or "SP" => RedirectToAction("Index", "Shipper"),
+                    _ => RedirectToAction("Profile", "Employee"), // Mặc định cho AD, EM, SL và các vai trò khác
+                };
+            }
+
+            // 2) Nếu không phải Employee, thử Customer (người dùng ngoài)
+            var customer = _authService.LoginCustomer(loginId, password);
             if (customer != null)
             {
                 HttpContext.Session.SetInt32("CustomerID", customer.CustomerID);
@@ -92,13 +110,13 @@ namespace start.Controllers
             // 3) Sai thông tin
             ModelState.AddModelError("", "Sai Email/Username hoặc mật khẩu");
             return View();
-            }
-            catch (Exception ex)
-            {
-                ModelState.AddModelError("", ex.Message);
-                return View();
-            }
         }
+        catch (Exception ex)
+        {
+            ModelState.AddModelError("", ex.Message);
+            return View();
+        }
+    }
 
         #endregion
 
