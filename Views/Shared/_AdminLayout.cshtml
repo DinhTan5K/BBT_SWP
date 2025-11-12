@@ -1,0 +1,200 @@
+@using System.Security.Claims
+@{
+    Layout = null;
+    var active = (string?)ViewBag.ActiveMenu ?? "";
+
+    // Đọc role từ ViewBag (ưu tiên), Claims, hoặc Session (fallback), chuẩn hóa in hoa
+    var roleFromViewBag = ViewBag.CurrentRole as string;
+    var roleFromClaims = User?.FindFirst("Role")?.Value ?? User?.FindFirst("RoleID")?.Value;
+    var roleFromSession = Context?.Session?.GetString("RoleID") ?? Context?.Session?.GetString("Role");
+    var roleRaw = roleFromViewBag ?? roleFromClaims ?? roleFromSession;
+    var role = !string.IsNullOrWhiteSpace(roleRaw) ? roleRaw.Trim().ToUpperInvariant() : "";
+
+    // Lấy thông tin employee từ session
+    var empId = Context?.Session?.GetString("EmployeeID");
+    var empName = Context?.Session?.GetString("EmployeeName");
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Admin Panel</title>
+
+    <!-- CSS chuyên biệt cho Admin Panel -->
+    <link rel="stylesheet" href="~/css/Admin/admin.css" />
+    <link rel="shortcut icon" type="image/x-icon" href="https://res.cloudinary.com/do48qpmut/image/upload/v1761655863/rtqvgmhsxpjtavejobfy.png" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
+
+    @* Cho phép view con chèn thêm CSS *@
+    @RenderSection("Styles", required: false)
+</head>
+<body>
+<div class="layout">
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <span class="sidebar-title">Admin Panel</span>
+      </div>
+      <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">
+        <i class="fas fa-chevron-left"></i>
+      </button>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a class="sb-item @(active=="Dashboard" ? "active" : "")" href="@Url.Action("Dashboard","Admin")">
+        <i class="fas fa-chart-line"></i>
+        <span class="sb-text">Tổng quan</span>
+      </a>
+
+      <a class="sb-item @(active=="Profile" ? "active" : "")" href="@Url.Action("Profile","Admin")">
+        <i class="fas fa-user-circle"></i>
+        <span class="sb-text">Hồ sơ của tôi</span>
+      </a>
+
+      <a class="sb-item @(active=="Employees" || active=="Roles" ? "active" : "")" href="@Url.Action("Employees","Admin")">
+        <i class="fas fa-users"></i>
+        <span class="sb-text">Quản lý nhân sự</span>
+      </a>
+
+      <a class="sb-item @(active=="RegionManagers" ? "active" : "")" href="@Url.Action("RegionManagers","Admin")">
+        <i class="fas fa-user-shield"></i>
+        <span class="sb-text">Quản lý Region Manager</span>
+      </a>
+
+      <a class="sb-item @(active=="Products" ? "active" : "")" href="@Url.Action("Products","Admin")">
+        <i class="fas fa-box"></i>
+        <span class="sb-text">Quản lý sản phẩm</span>
+      </a>
+
+      <a class="sb-item @(active=="Orders" ? "active" : "")" href="@Url.Action("Orders","Admin")">
+        <i class="fas fa-shopping-cart"></i>
+        <span class="sb-text">Quản lý đơn hàng</span>
+      </a>
+
+      <a class="sb-item @(active=="Categories" ? "active" : "")" href="@Url.Action("Categories","Admin")">
+        <i class="fas fa-tags"></i>
+        <span class="sb-text">Quản lý danh mục</span>
+      </a>
+
+      <a class="sb-item @(active=="Branches" ? "active" : "")" href="@Url.Action("Branches","Admin")">
+        <i class="fas fa-store"></i>
+        <span class="sb-text">Quản lý chi nhánh</span>
+      </a>
+
+      <a class="sb-item @(active=="Customers" ? "active" : "")" href="@Url.Action("Customers","Admin")">
+        <i class="fas fa-user-friends"></i>
+        <span class="sb-text">Quản lý khách hàng</span>
+      </a>
+
+      <a class="sb-item @(active=="Discounts" ? "active" : "")" href="@Url.Action("Discounts","Admin")">
+        <i class="fas fa-tag"></i>
+        <span class="sb-text">Quản lý mã giảm giá</span>
+      </a>
+
+      <a class="sb-item @(active=="News" ? "active" : "")" href="@Url.Action("News","Admin")">
+        <i class="fas fa-newspaper"></i>
+        <span class="sb-text">Quản lý tin tức</span>
+      </a>
+
+      <a class="sb-item @(active=="Approvals" ? "active" : "")" href="@Url.Action("Approvals","Admin")">
+        <i class="fas fa-check-circle"></i>
+        <span class="sb-text">Duyệt yêu cầu</span>
+      </a>
+
+      <a class="sb-item @(active=="Reports" ? "active" : "")" href="@Url.Action("Reports","Admin")">
+        <i class="fas fa-chart-bar"></i>
+        <span class="sb-text">Báo cáo & Thống kê</span>
+      </a>
+      
+      <hr class="sidebar-divider" />
+
+      <a class="sb-item" href="@Url.Action("Index","Home")">
+        <i class="fas fa-sign-out-alt"></i>
+        <span class="sb-text">Đăng xuất</span>
+      </a>
+    </nav>
+  </aside>
+
+  <main>
+    <div class="wrap">
+      <section class="card">
+        @RenderBody()
+      </section>
+    </div>
+  </main>
+</div>
+
+<script>
+    // Sidebar Toggle Functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        const layout = document.querySelector('.layout');
+        const sidebar = document.getElementById('sidebar');
+        
+        // Load saved state from localStorage
+        const savedState = localStorage.getItem('sidebarCollapsed');
+        if (savedState === 'true') {
+            layout.classList.add('sidebar-collapsed');
+        }
+        
+        // Toggle sidebar
+        if (sidebarToggle) {
+            sidebarToggle.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                layout.classList.toggle('sidebar-collapsed');
+                
+                // Save state to localStorage
+                const isCollapsed = layout.classList.contains('sidebar-collapsed');
+                localStorage.setItem('sidebarCollapsed', isCollapsed.toString());
+            });
+        }
+        
+        // Tooltip for collapsed sidebar items
+        if (layout.classList.contains('sidebar-collapsed')) {
+            const items = document.querySelectorAll('.sb-item');
+            items.forEach(item => {
+                const text = item.querySelector('.sb-text')?.textContent || '';
+                if (text) {
+                    item.setAttribute('title', text);
+                }
+            });
+        }
+        
+        // Update tooltips when sidebar state changes
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.attributeName === 'class') {
+                    const isCollapsed = layout.classList.contains('sidebar-collapsed');
+                    const items = document.querySelectorAll('.sb-item');
+                    items.forEach(item => {
+                        const text = item.querySelector('.sb-text')?.textContent || '';
+                        if (isCollapsed && text) {
+                            item.setAttribute('title', text);
+                        } else {
+                            item.removeAttribute('title');
+                        }
+                    });
+                }
+            });
+        });
+        
+        if (layout) {
+            observer.observe(layout, {
+                attributes: true,
+                attributeFilter: ['class']
+            });
+        }
+    });
+</script>
+
+<!-- Custom Dropdown Component cho Admin -->
+<script src="~/js/admin-dropdown.js"></script>
+
+@* Cho phép view con chèn script riêng *@
+@RenderSection("Scripts", required: false)
+</body>
+</html>

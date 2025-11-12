@@ -12,15 +12,6 @@ public class ProductService : IProductService
         _context = context;
     }
 
-    public List<Product> GetAllProducts()
-    {
-        return _context.Products
-            .Include(p => p.ProductSizes)
-            .Include(p => p.Category)
-            .OrderBy(p => p.CategoryID)
-            .ToList();
-    }
-
     public Product? GetProductById(int id)
     {
         return _context.Products

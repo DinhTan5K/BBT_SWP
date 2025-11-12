@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using start.Models;
 
 public class News
 {
@@ -16,5 +17,9 @@ public class News
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+    // Mã giảm giá đi kèm với tin tức
+    public int? DiscountId { get; set; }
 
+    [ForeignKey(nameof(DiscountId))]
+    public Discount? Discount { get; set; }
 }

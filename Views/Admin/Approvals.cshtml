@@ -1,0 +1,1040 @@
+@model List<Dictionary<string, object>>
+@using start.Models
+@using System.Net
+
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Duyệt yêu cầu";
+}
+
+<style>
+    .approvals-page {
+        padding: 24px;
+        max-width: 1600px;
+        margin: 0 auto;
+    }
+
+    .page-header {
+        margin-bottom: 32px;
+    }
+
+    .page-title {
+        font-size: 32px;
+        font-weight: 700;
+        color: #1a1a1a;
+        margin: 0 0 8px 0;
+        letter-spacing: -0.5px;
+    }
+
+    .page-subtitle {
+        font-size: 15px;
+        color: #6b7280;
+        margin: 0;
+    }
+
+    .controls-bar {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 24px;
+        flex-wrap: wrap;
+        align-items: center;
+        background: #f9fafb;
+        padding: 16px;
+        border-radius: 12px;
+        border: 1px solid #e5e7eb;
+    }
+
+    .filter-btn {
+        padding: 12px 20px;
+        border: 2px solid #e5e7eb;
+        border-radius: 10px;
+        background: white;
+        color: #374151;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        min-width: 160px;
+    }
+
+    .filter-btn:hover {
+        border-color: #6366f1;
+        color: #6366f1;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .filter-btn:focus {
+        outline: none;
+        border-color: #6366f1;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    }
+
+    .filter-btn.active {
+        background: #6366f1;
+        color: white;
+        border-color: #6366f1;
+        box-shadow: 0 2px 4px rgba(99, 102, 241, 0.2);
+    }
+
+    .stats-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        margin-bottom: 32px;
+    }
+
+    .stat-box {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 20px;
+        text-align: center;
+    }
+
+    .stat-box.pending {
+        border-left: 4px solid #f59e0b;
+    }
+
+    .stat-box.approved {
+        border-left: 4px solid #10b981;
+    }
+
+    .stat-box.rejected {
+        border-left: 4px solid #ef4444;
+    }
+
+    .stat-number {
+        font-size: 28px;
+        font-weight: 700;
+        color: #1a1a1a;
+        margin-bottom: 4px;
+    }
+
+    .stat-label {
+        font-size: 13px;
+        color: #6b7280;
+        font-weight: 500;
+    }
+
+    .requests-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .request-item {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 20px;
+        transition: all 0.2s;
+        display: grid;
+        grid-template-columns: auto 1fr auto auto;
+        gap: 20px;
+        align-items: center;
+    }
+
+    .request-item:hover {
+        border-color: #6366f1;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    .request-item.pending {
+        border-left: 4px solid #f59e0b;
+    }
+
+    .request-item.approved {
+        border-left: 4px solid #10b981;
+        opacity: 0.85;
+    }
+
+    .request-item.rejected {
+        border-left: 4px solid #ef4444;
+        opacity: 0.85;
+    }
+
+    .request-type {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .request-type.discount { background: #dbeafe; color: #1e40af; }
+    .request-type.news { background: #fef3c7; color: #92400e; }
+    .request-type.employee { background: #e0e7ff; color: #3730a3; }
+    .request-type.product { background: #fce7f3; color: #9f1239; }
+    .request-type.category { background: #ddd6fe; color: #5b21b6; }
+    .request-type.branch { background: #fef3c7; color: #92400e; }
+
+    .request-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .request-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #1a1a1a;
+        margin-bottom: 6px;
+        word-break: break-word;
+    }
+
+    .request-meta {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+        font-size: 13px;
+        color: #6b7280;
+    }
+
+    .request-meta-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .request-status {
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .request-status.pending {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .request-status.approved {
+        background: #d1fae5;
+        color: #065f46;
+    }
+
+    .request-status.rejected {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .request-actions {
+        display: flex;
+        gap: 8px;
+    }
+
+    .action-btn {
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        border: none;
+        transition: all 0.2s;
+        white-space: nowrap;
+    }
+
+    .action-btn.approve {
+        background: #10b981;
+        color: white;
+    }
+
+    .action-btn.approve:hover {
+        background: #059669;
+    }
+
+    .action-btn.reject {
+        background: #ef4444;
+        color: white;
+    }
+
+    .action-btn.reject:hover {
+        background: #dc2626;
+    }
+
+    .action-btn.view {
+        background: #f3f4f6;
+        color: #374151;
+        border: 1px solid #e5e7eb;
+    }
+
+    .action-btn.view:hover {
+        background: #e5e7eb;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 80px 24px;
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+    }
+
+    .empty-icon {
+        font-size: 64px;
+        color: #d1d5db;
+        margin-bottom: 16px;
+    }
+
+    .empty-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #1a1a1a;
+        margin-bottom: 8px;
+    }
+
+    .empty-text {
+        font-size: 14px;
+        color: #6b7280;
+    }
+
+    .pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 8px;
+        margin-top: 32px;
+    }
+
+    .pagination a,
+    .pagination span {
+        padding: 8px 12px;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        text-decoration: none;
+        color: #374151;
+        font-weight: 500;
+        font-size: 14px;
+        transition: all 0.2s;
+        min-width: 40px;
+        text-align: center;
+    }
+
+    .pagination a:hover {
+        background: #f3f4f6;
+        border-color: #6366f1;
+        color: #6366f1;
+    }
+
+    .pagination span.active {
+        background: #6366f1;
+        color: white;
+        border-color: #6366f1;
+    }
+
+    /* Modal */
+    #approvalModal {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        background: rgba(0, 0, 0, 0.5) !important;
+        z-index: 99999 !important;
+        overflow-y: auto !important;
+        padding: 20px !important;
+        display: none;
+    }
+
+    #approvalModal[style*="display: block"],
+    #approvalModal[style*="display:block"] {
+        display: block !important;
+        z-index: 99999 !important;
+    }
+
+    @@media (max-width: 768px) {
+        .request-item {
+            grid-template-columns: 1fr;
+            gap: 16px;
+        }
+
+        .request-actions {
+            flex-direction: column;
+        }
+
+        .action-btn {
+            width: 100%;
+        }
+    }
+</style>
+
+<div class="approvals-page">
+    <div class="page-header">
+        <h1 class="page-title">Duyệt yêu cầu</h1>
+        <p class="page-subtitle">Xem xét và phê duyệt các yêu cầu từ nhân viên</p>
+    </div>
+
+    <div class="controls-bar">
+        <select class="filter-btn" id="requestTypeFilter" onchange="filterByRequestType()" style="cursor: pointer;">
+            @if (ViewBag.CurrentRequestType == "all" || ViewBag.CurrentRequestType == null)
+            {
+                <option value="all" selected>Tất cả loại</option>
+            }
+            else
+            {
+                <option value="all">Tất cả loại</option>
+            }
+            
+            @if (ViewBag.CurrentRequestType == "discount")
+            {
+                <option value="discount" selected>Mã giảm giá</option>
+            }
+            else
+            {
+                <option value="discount">Mã giảm giá</option>
+            }
+            
+            @if (ViewBag.CurrentRequestType == "news")
+            {
+                <option value="news" selected>Tin tức</option>
+            }
+            else
+            {
+                <option value="news">Tin tức</option>
+            }
+            
+            @if (ViewBag.CurrentRequestType == "employeebranch")
+            {
+                <option value="employeebranch" selected>Nhân viên</option>
+            }
+            else
+            {
+                <option value="employeebranch">Nhân viên</option>
+            }
+            
+            @if (ViewBag.CurrentRequestType == "product")
+            {
+                <option value="product" selected>Sản phẩm</option>
+            }
+            else
+            {
+                <option value="product">Sản phẩm</option>
+            }
+            
+            @if (ViewBag.CurrentRequestType == "category")
+            {
+                <option value="category" selected>Danh mục</option>
+            }
+            else
+            {
+                <option value="category">Danh mục</option>
+            }
+            
+            @if (ViewBag.CurrentRequestType == "branch")
+            {
+                <option value="branch" selected>Chi nhánh</option>
+            }
+            else
+            {
+                <option value="branch">Chi nhánh</option>
+            }
+        </select>
+        <select class="filter-btn" id="statusFilter" onchange="filterByStatus()" style="cursor: pointer;">
+            @if (ViewBag.CurrentStatus == "Tất cả")
+            {
+                <option value="Tất cả" selected>Tất cả trạng thái</option>
+            }
+            else
+            {
+                <option value="Tất cả">Tất cả trạng thái</option>
+            }
+            
+            @if (ViewBag.CurrentStatus == "Pending" || ViewBag.CurrentStatus == null)
+            {
+                <option value="Pending" selected>Chờ duyệt</option>
+            }
+            else
+            {
+                <option value="Pending">Chờ duyệt</option>
+            }
+            
+            @if (ViewBag.CurrentStatus == "Approved")
+            {
+                <option value="Approved" selected>Đã duyệt</option>
+            }
+            else
+            {
+                <option value="Approved">Đã duyệt</option>
+            }
+            
+            @if (ViewBag.CurrentStatus == "Rejected")
+            {
+                <option value="Rejected" selected>Đã từ chối</option>
+            }
+            else
+            {
+                <option value="Rejected">Đã từ chối</option>
+            }
+        </select>
+            </div>
+
+    <div class="stats-row">
+        <div class="stat-box pending">
+            <div class="stat-number">@(ViewBag.TotalPending ?? 0)</div>
+            <div class="stat-label">Chờ duyệt</div>
+        </div>
+        <div class="stat-box approved">
+            <div class="stat-number">@(ViewBag.TotalApproved ?? 0)</div>
+            <div class="stat-label">Đã duyệt</div>
+        </div>
+        <div class="stat-box rejected">
+            <div class="stat-number">@(ViewBag.TotalRejected ?? 0)</div>
+            <div class="stat-label">Đã từ chối</div>
+        </div>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="empty-state">
+            <div class="empty-icon"><i class="fas fa-inbox"></i></div>
+            <div class="empty-title">Không có yêu cầu nào</div>
+            <div class="empty-text">Danh sách yêu cầu sẽ hiển thị tại đây khi có dữ liệu.</div>
+        </div>
+    }
+    else
+    {
+        <div class="requests-list" id="requestsList">
+                @foreach (var item in Model)
+                {
+                    var request = item["Request"];
+                    var requestType = item["Type"].ToString();
+                    
+                    var requestTypeText = "";
+                    if (requestType == "Discount")
+                    {
+                        var dr = (DiscountRequest)request;
+                        requestTypeText = dr.RequestType switch
+                        {
+                            RequestType.Add => "Thêm mới",
+                            RequestType.Edit => "Sửa",
+                            RequestType.Delete => "Xóa",
+                            _ => "Không xác định"
+                        };
+                    }
+                    else if (requestType == "News")
+                    {
+                        var nr = (NewsRequest)request;
+                        requestTypeText = nr.RequestType switch
+                        {
+                            RequestType.Add => "Thêm mới",
+                            RequestType.Edit => "Sửa",
+                            RequestType.Delete => "Xóa",
+                            _ => "Không xác định"
+                        };
+                    }
+                    else if (requestType == "EmployeeBranch")
+                    {
+                        var ebr = (EmployeeBranchRequest)request;
+                        requestTypeText = ebr.RequestType switch
+                        {
+                            RequestType.Add => "Thêm vào chi nhánh",
+                            RequestType.Edit => "Chuyển chi nhánh",
+                            RequestType.Delete => "Xóa khỏi chi nhánh",
+                            _ => "Không xác định"
+                        };
+                    }
+                    else if (requestType == "Product")
+                    {
+                        var pr = (ProductRequest)request;
+                        requestTypeText = pr.RequestType switch
+                        {
+                            RequestType.Add => "Thêm mới",
+                            RequestType.Edit => "Sửa",
+                            RequestType.Delete => "Xóa",
+                            _ => "Không xác định"
+                        };
+                    }
+                    else if (requestType == "Category")
+                    {
+                        var cr = (CategoryRequest)request;
+                        requestTypeText = cr.RequestType switch
+                        {
+                            RequestType.Add => "Thêm mới",
+                            RequestType.Edit => "Sửa",
+                            RequestType.Delete => "Xóa",
+                            _ => "Không xác định"
+                        };
+                    }
+                    else if (requestType == "Branch")
+                    {
+                        var br = (BranchRequest)request;
+                        requestTypeText = br.RequestType switch
+                        {
+                            RequestType.Add => "Thêm mới",
+                            RequestType.Edit => "Sửa",
+                            RequestType.Delete => "Xóa",
+                            _ => "Không xác định"
+                        };
+                    }
+
+                    var status = requestType == "Discount" 
+                        ? ((DiscountRequest)request).Status 
+                        : requestType == "News"
+                        ? ((NewsRequest)request).Status
+                        : requestType == "EmployeeBranch"
+                        ? ((EmployeeBranchRequest)request).Status
+                        : requestType == "Product"
+                        ? ((ProductRequest)request).Status
+                        : requestType == "Category"
+                        ? ((CategoryRequest)request).Status
+                        : ((BranchRequest)request).Status;
+
+                var statusClass = status == RequestStatus.Pending ? "pending" 
+                    : status == RequestStatus.Approved ? "approved" 
+                    : "rejected";
+
+                var statusText = status == RequestStatus.Pending ? "Chờ duyệt"
+                    : status == RequestStatus.Approved ? "Đã duyệt"
+                    : "Đã từ chối";
+
+                    var requestedBy = requestType == "Discount"
+                        ? ((DiscountRequest)request).RequestedByEmployee?.FullName ?? ((DiscountRequest)request).RequestedBy
+                        : requestType == "News"
+                        ? ((NewsRequest)request).RequestedByEmployee?.FullName ?? ((NewsRequest)request).RequestedBy
+                        : requestType == "EmployeeBranch"
+                        ? ((EmployeeBranchRequest)request).RequestedByEmployee?.FullName ?? ((EmployeeBranchRequest)request).RequestedBy
+                        : requestType == "Product"
+                        ? ((ProductRequest)request).RequestedByEmployee?.FullName ?? ((ProductRequest)request).RequestedBy
+                        : requestType == "Category"
+                        ? ((CategoryRequest)request).RequestedByEmployee?.FullName ?? ((CategoryRequest)request).RequestedBy
+                        : ((BranchRequest)request).RequestedByEmployee?.FullName ?? ((BranchRequest)request).RequestedBy;
+
+                    var requestedByEmpId = requestType == "Discount"
+                        ? ((DiscountRequest)request).RequestedBy
+                        : requestType == "News"
+                        ? ((NewsRequest)request).RequestedBy
+                        : requestType == "EmployeeBranch"
+                        ? ((EmployeeBranchRequest)request).RequestedBy
+                        : requestType == "Product"
+                        ? ((ProductRequest)request).RequestedBy
+                        : requestType == "Category"
+                        ? ((CategoryRequest)request).RequestedBy
+                        : ((BranchRequest)request).RequestedBy;
+
+                    var requestedAt = requestType == "Discount"
+                        ? ((DiscountRequest)request).RequestedAt
+                        : requestType == "News"
+                        ? ((NewsRequest)request).RequestedAt
+                        : requestType == "EmployeeBranch"
+                        ? ((EmployeeBranchRequest)request).RequestedAt
+                        : requestType == "Product"
+                        ? ((ProductRequest)request).RequestedAt
+                        : requestType == "Category"
+                        ? ((CategoryRequest)request).RequestedAt
+                        : ((BranchRequest)request).RequestedAt;
+
+                    var requestId = requestType == "Discount"
+                        ? ((DiscountRequest)request).Id
+                        : requestType == "News"
+                        ? ((NewsRequest)request).Id
+                        : requestType == "EmployeeBranch"
+                        ? ((EmployeeBranchRequest)request).Id
+                        : requestType == "Product"
+                        ? ((ProductRequest)request).Id
+                        : requestType == "Category"
+                        ? ((CategoryRequest)request).Id
+                        : ((BranchRequest)request).Id;
+
+                    var contentText = "";
+                    if (requestType == "Discount")
+                    {
+                        var dr = (DiscountRequest)request;
+                        contentText = dr.Code;
+                    }
+                    else if (requestType == "News")
+                    {
+                        var nr = (NewsRequest)request;
+                        contentText = nr.Title;
+                    }
+                    else if (requestType == "EmployeeBranch")
+                    {
+                        var ebr = (EmployeeBranchRequest)request;
+                        
+                        if (ebr.RequestType == RequestType.Edit)
+                        {
+                            var currentBranchName = ebr.Employee?.Branch?.Name ?? (ebr.Employee?.BranchID.HasValue == true ? $"Chi nhánh #{ebr.Employee.BranchID}" : "Chưa có chi nhánh");
+                            var targetBranchName = ebr.Branch?.Name ?? $"Chi nhánh #{ebr.BranchId}";
+                            contentText = $"{currentBranchName} → {targetBranchName}";
+                        }
+                        else if (ebr.RequestType == RequestType.Add)
+                        {
+                            var employeeName = ebr.Employee?.FullName ?? ebr.FullName ?? ebr.EmployeeId ?? "Nhân viên mới";
+                            var branchName = ebr.Branch?.Name ?? $"Chi nhánh #{ebr.BranchId}";
+                            contentText = $"{employeeName} → {branchName}";
+                        }
+                        else if (ebr.RequestType == RequestType.Delete)
+                        {
+                            var employeeName = ebr.Employee?.FullName ?? ebr.EmployeeId ?? "N/A";
+                            var currentBranchName = ebr.Employee?.Branch?.Name ?? (ebr.Employee?.BranchID.HasValue == true ? $"Chi nhánh #{ebr.Employee.BranchID}" : "Chưa có chi nhánh");
+                            contentText = $"Xóa {employeeName} khỏi {currentBranchName}";
+                        }
+                        else
+                        {
+                            var employeeName = ebr.Employee?.FullName ?? ebr.EmployeeId ?? "N/A";
+                            var branchName = ebr.Branch?.Name ?? $"Chi nhánh #{ebr.BranchId}";
+                            contentText = $"{employeeName} → {branchName}";
+                        }
+                    }
+                    else if (requestType == "Product")
+                    {
+                        var pr = (ProductRequest)request;
+                        contentText = pr.ProductName;
+                    }
+                    else if (requestType == "Category")
+                    {
+                        var cr = (CategoryRequest)request;
+                        contentText = cr.CategoryName;
+                    }
+                    else if (requestType == "Branch")
+                    {
+                        var br = (BranchRequest)request;
+                        contentText = br.Name;
+                    }
+                    
+                var typeBadgeClass = requestType.ToLower();
+                if (typeBadgeClass == "employeebranch") typeBadgeClass = "employee";
+                
+                <div class="request-item @statusClass" data-request-id="@requestId" data-search-text="@(contentText + " " + requestedBy + " " + requestTypeText)">
+                    <div class="request-type @typeBadgeClass">
+                        @if (requestType == "Discount") { <i class="fas fa-tag"></i> <span>Mã giảm giá</span> }
+                        else if (requestType == "News") { <i class="fas fa-newspaper"></i> <span>Tin tức</span> }
+                        else if (requestType == "EmployeeBranch") { <i class="fas fa-user"></i> <span>Nhân viên</span> }
+                        else if (requestType == "Product") { <i class="fas fa-box"></i> <span>Sản phẩm</span> }
+                        else if (requestType == "Category") { <i class="fas fa-tags"></i> <span>Danh mục</span> }
+                        else if (requestType == "Branch") { <i class="fas fa-store"></i> <span>Chi nhánh</span> }
+                    </div>
+                    
+                    <div class="request-info">
+                        <div class="request-title">@contentText</div>
+                        @if (requestType == "News")
+                        {
+                            var nr = (NewsRequest)request;
+                            if (nr.DiscountId.HasValue && nr.Discount != null)
+                            {
+                                <div style="margin-top: 10px; display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 10px; border-left: 4px solid #f59e0b; font-size: 13px; font-weight: 600; color: #92400e; box-shadow: 0 2px 4px rgba(245, 158, 11, 0.15);">
+                                    <i class="fas fa-ticket-alt" style="font-size: 16px; color: #f59e0b;"></i>
+                                    <span style="font-weight: 700; color: #1a1a1a;">@nr.Discount.Code</span>
+                                    @if (nr.Discount.Type == DiscountType.Percentage)
+                                    {
+                                        <span style="color: #059669; font-weight: 700;">(@nr.Discount.Percent.ToString("F2")%)</span>
+                                    }
+                                    else if (nr.Discount.Type == DiscountType.FixedAmount && nr.Discount.Amount.HasValue)
+                                    {
+                                        <span style="color: #059669; font-weight: 700;">(@nr.Discount.Amount.Value.ToString("N0") đ)</span>
+                                    }
+                                    @if (nr.Discount.IsActive)
+                                    {
+                                        <span style="background: #10b981; color: white; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; margin-left: 4px;">
+                                            <i class="fas fa-check-circle" style="font-size: 9px;"></i> Active
+                                        </span>
+                                    }
+                                </div>
+                            }
+                        }
+                        <div class="request-meta">
+                            <div class="request-meta-item">
+                                <i class="fas fa-tag" style="font-size: 11px;"></i>
+                                <span>@requestTypeText</span>
+                            </div>
+                            <div class="request-meta-item">
+                                <i class="fas fa-user" style="font-size: 11px;"></i>
+                                <span>@requestedBy (@requestedByEmpId)</span>
+                            </div>
+                            <div class="request-meta-item">
+                                <i class="fas fa-clock" style="font-size: 11px;"></i>
+                                <span>@requestedAt.ToString("dd/MM/yyyy HH:mm")</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="request-status @statusClass">@statusText</div>
+                    
+                    <div class="request-actions">
+                            @if (status == RequestStatus.Pending)
+                            {
+                            <button class="action-btn approve" 
+                                    onclick="openApprovalModal(@requestId, 'approve', '@requestType.ToLower()', '@WebUtility.HtmlEncode(contentText)', '@WebUtility.HtmlEncode(requestTypeText)', event)">
+                                <i class="fas fa-check"></i> Duyệt
+                                    </button>
+                            <button class="action-btn reject" 
+                                    onclick="openApprovalModal(@requestId, 'reject', '@requestType.ToLower()', '@WebUtility.HtmlEncode(contentText)', '@WebUtility.HtmlEncode(requestTypeText)', event)">
+                                <i class="fas fa-times"></i> Từ chối
+                                    </button>
+                        }
+                        <a href="@Url.Action("ViewApproval", "Admin", new { id = requestId, type = requestType.ToLower() })" class="action-btn view">
+                            <i class="fas fa-eye"></i> Chi tiết
+                        </a>
+                    </div>
+            </div>
+        }
+    </div>
+    }
+
+    @* Pagination *@
+    @{
+        var currentPage = ViewBag.CurrentPage ?? 1;
+        var totalPages = ViewBag.TotalPages ?? 1;
+        var totalItems = ViewBag.TotalCount ?? 0;
+        var pageSize = ViewBag.PageSize ?? 20;
+    }
+    
+    @if (totalPages > 1)
+    {
+        <div class="pagination">
+            @if (currentPage > 1)
+            {
+                <a href="@Url.Action("Approvals", "Admin", new { page = currentPage - 1, status = ViewBag.CurrentStatus, requestType = ViewBag.CurrentRequestType })">
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+            }
+
+            @for (int i = Math.Max(1, currentPage - 2); i <= Math.Min(totalPages, currentPage + 2); i++)
+            {
+                if (i == currentPage)
+                {
+                    <span class="active">@i</span>
+                }
+                else
+                {
+                    <a href="@Url.Action("Approvals", "Admin", new { page = i, status = ViewBag.CurrentStatus, requestType = ViewBag.CurrentRequestType })">@i</a>
+                }
+            }
+
+            @if (currentPage < totalPages)
+            {
+                <a href="@Url.Action("Approvals", "Admin", new { page = currentPage + 1, status = ViewBag.CurrentStatus, requestType = ViewBag.CurrentRequestType })">
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+            }
+        </div>
+        <div style="text-align: center; color: #6b7280; font-size: 14px; margin-top: 12px;">
+            Hiển thị @((currentPage - 1) * pageSize + 1)-@(Math.Min(currentPage * pageSize, totalItems)) trong tổng số @totalItems yêu cầu
+        </div>
+    }
+</div>
+
+<div style="display: none;">@Html.AntiForgeryToken()</div>
+
+<!-- Modal Duyệt/Từ chối -->
+<div id="approvalModal">
+    <div style="max-width: 520px; margin: 40px auto; background: #ffffff; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); overflow: hidden; position: relative; z-index: 100000;">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 24px 24px 20px 24px; background: #f8f9fa; border-bottom: 1px solid #e9ecef;">
+            <h3 id="modalTitle" style="font-size: 22px; font-weight: 700; color: #212529; margin: 0; letter-spacing: -0.3px;"></h3>
+            <button onclick="closeApprovalModal()" 
+                    style="background: none; border: none; font-size: 28px; color: #6c757d; cursor: pointer; padding: 0; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 8px; transition: all 0.2s;"
+                    onmouseover="this.style.background='#e9ecef'; this.style.color='#212529';"
+                    onmouseout="this.style.background='none'; this.style.color='#6c757d';">
+                &times;
+            </button>
+        </div>
+        
+        <form id="approvalForm" style="padding: 24px;">
+            <input type="hidden" id="requestId" />
+            <input type="hidden" id="actionType" />
+            <input type="hidden" id="requestType" />
+            
+            <div id="requestContentDiv" style="margin-bottom: 24px; padding: 16px; background: #f8f9fa; border-radius: 12px; border-left: 4px solid #6c757d;">
+                <div style="font-size: 12px; font-weight: 700; color: #6c757d; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">NỘI DUNG</div>
+                <div id="requestContentText" style="font-size: 15px; color: #212529; font-weight: 500; line-height: 1.5;"></div>
+            </div>
+            
+            <div id="rejectionReasonDiv" style="margin-bottom: 24px; display: none;">
+                <label style="display: block; margin-bottom: 10px; font-weight: 600; color: #212529; font-size: 14px;">Lý do từ chối</label>
+                <textarea id="rejectionReason" rows="4" 
+                          style="width: 100%; padding: 12px 16px; border: 2px solid #e9ecef; border-radius: 10px; font-size: 14px; resize: vertical; font-family: inherit; color: #212529; transition: all 0.2s; box-sizing: border-box;"
+                          placeholder="Nhập lý do từ chối (tùy chọn)"
+                          onfocus="this.style.borderColor='#dc2626'; this.style.outline='none';"
+                          onblur="this.style.borderColor='#e9ecef';"></textarea>
+            </div>
+
+            <div style="display: flex; gap: 12px; justify-content: flex-end; padding-top: 8px;">
+                <button type="button" onclick="closeApprovalModal()" 
+                        style="padding: 12px 24px; background: transparent; color: #6c757d; border: 2px solid #e9ecef; border-radius: 10px; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.2s;"
+                        onmouseover="this.style.background='#f8f9fa'; this.style.borderColor='#dee2e6'; this.style.color='#212529';"
+                        onmouseout="this.style.background='transparent'; this.style.borderColor='#e9ecef'; this.style.color='#6c757d';">
+                    Hủy
+                </button>
+                <button type="submit" id="submitBtn"
+                        style="padding: 12px 28px; background: #10b981; color: white; border: none; border-radius: 10px; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);"
+                        onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 12px rgba(16, 185, 129, 0.4)';"
+                        onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(16, 185, 129, 0.3)';">
+                    Duyệt
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Filter functions
+        function filterByStatus() {
+            const status = document.getElementById('statusFilter').value;
+            const requestType = document.getElementById('requestTypeFilter').value;
+            window.location.href = '@Url.Action("Approvals", "Admin")?status=' + status + '&requestType=' + requestType;
+        }
+
+        function filterByRequestType() {
+            const status = document.getElementById('statusFilter').value;
+            const requestType = document.getElementById('requestTypeFilter').value;
+            window.location.href = '@Url.Action("Approvals", "Admin")?status=' + status + '&requestType=' + requestType;
+        }
+
+        // Modal functions
+        function openApprovalModal(requestId, actionType, requestType, contentText, requestTypeText, event) {
+            if (event) {
+                event.stopPropagation();
+                event.preventDefault();
+            }
+            
+            const modal = document.getElementById('approvalModal');
+            if (!modal) return;
+            
+            document.getElementById('requestId').value = requestId || '';
+            document.getElementById('actionType').value = actionType || '';
+            document.getElementById('requestType').value = requestType || '';
+            
+            modal.style.display = 'block';
+            modal.style.zIndex = '99999';
+            modal.style.position = 'fixed';
+            modal.style.top = '0';
+            modal.style.left = '0';
+            modal.style.width = '100%';
+            modal.style.height = '100%';
+            
+            document.body.style.overflow = 'hidden';
+            
+            const contentDiv = document.getElementById('requestContentText');
+            if (contentDiv) {
+                let displayText = contentText || 'Nội dung yêu cầu';
+                const textarea = document.createElement('textarea');
+                textarea.innerHTML = displayText;
+                displayText = textarea.value;
+                
+                if (requestTypeText) {
+                    const textarea2 = document.createElement('textarea');
+                    textarea2.innerHTML = requestTypeText;
+                    const decodedTypeText = textarea2.value;
+                    displayText = decodedTypeText + ': ' + displayText;
+                }
+                contentDiv.textContent = displayText;
+            }
+            
+            if (actionType === 'approve') {
+                document.getElementById('modalTitle').textContent = 'Duyệt yêu cầu';
+                document.getElementById('rejectionReasonDiv').style.display = 'none';
+                document.getElementById('submitBtn').textContent = 'Duyệt';
+                document.getElementById('submitBtn').style.background = '#10b981';
+                document.getElementById('submitBtn').style.boxShadow = '0 2px 8px rgba(16, 185, 129, 0.3)';
+            } else {
+                document.getElementById('modalTitle').textContent = 'Từ chối yêu cầu';
+                document.getElementById('rejectionReasonDiv').style.display = 'block';
+                document.getElementById('submitBtn').textContent = 'Từ chối';
+                document.getElementById('submitBtn').style.background = '#dc2626';
+                document.getElementById('submitBtn').style.boxShadow = '0 2px 8px rgba(220, 38, 38, 0.3)';
+            }
+        }
+
+        function closeApprovalModal() {
+            const modal = document.getElementById('approvalModal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+            document.getElementById('rejectionReason').value = '';
+            document.body.style.overflow = '';
+        }
+
+        document.getElementById('approvalForm')?.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const requestId = document.getElementById('requestId').value;
+            const actionType = document.getElementById('actionType').value;
+            const requestType = document.getElementById('requestType').value;
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+            
+            try {
+                let url, body;
+                
+                if (actionType === 'approve') {
+                    if (requestType === 'news') {
+                        url = `@Url.Action("ApproveNewsRequest", "Admin")/${requestId}`;
+                    } else if (requestType === 'employeebranch') {
+                        url = `@Url.Action("ApproveEmployeeBranchRequest", "Admin")/${requestId}`;
+                    } else if (requestType === 'product') {
+                        url = `@Url.Action("ApproveProductRequest", "Admin")/${requestId}`;
+                    } else if (requestType === 'category') {
+                        url = `@Url.Action("ApproveCategoryRequest", "Admin")/${requestId}`;
+                    } else if (requestType === 'branch') {
+                        url = `@Url.Action("ApproveBranchRequest", "Admin")/${requestId}`;
+                    } else {
+                        url = `@Url.Action("ApproveDiscountRequest", "Admin")/${requestId}`;
+                    }
+                    body = `__RequestVerificationToken=${encodeURIComponent(token)}`;
+                } else {
+                    if (requestType === 'news') {
+                        url = `@Url.Action("RejectNewsRequest", "Admin")/${requestId}`;
+                    } else if (requestType === 'employeebranch') {
+                        url = `@Url.Action("RejectEmployeeBranchRequest", "Admin")/${requestId}`;
+                    } else if (requestType === 'product') {
+                        url = `@Url.Action("RejectProductRequest", "Admin")/${requestId}`;
+                    } else if (requestType === 'category') {
+                        url = `@Url.Action("RejectCategoryRequest", "Admin")/${requestId}`;
+                    } else if (requestType === 'branch') {
+                        url = `@Url.Action("RejectBranchRequest", "Admin")/${requestId}`;
+                    } else {
+                        url = `@Url.Action("RejectDiscountRequest", "Admin")/${requestId}`;
+                    }
+                    const reason = document.getElementById('rejectionReason').value || '';
+                    body = `__RequestVerificationToken=${encodeURIComponent(token)}&rejectionReason=${encodeURIComponent(reason)}`;
+                }
+                
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: body
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    alert(data.message);
+                    location.reload();
+                } else {
+                    alert(data.message || 'Có lỗi xảy ra');
+                }
+            } catch (error) {
+                alert('Có lỗi xảy ra: ' + error.message);
+            }
+        });
+
+        document.getElementById('approvalModal')?.addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeApprovalModal();
+            }
+        });
+        
+        const modalContent = document.querySelector('#approvalModal > div');
+        if (modalContent) {
+            modalContent.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+        }
+        
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                const modal = document.getElementById('approvalModal');
+                if (modal && modal.style.display === 'block') {
+                    closeApprovalModal();
+                }
+            }
+        });
+    </script>
+}

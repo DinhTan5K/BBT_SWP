@@ -1,0 +1,516 @@
+@model start.Models.Employee
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Chi tiết nhân viên";
+
+    var avatar = !string.IsNullOrWhiteSpace(Model.AvatarUrl)
+         ? Url.Content(Model.AvatarUrl) 
+        : Url.Content("https://res.cloudinary.com/do48qpmut/image/upload/v1761645429/uploads/tdppvgyas8bhvfs7lton.png");
+
+    // Lấy tên vai trò từ Role object nếu có, nếu không thì dùng mapping
+    var roleText = Model.Role?.RoleName ?? 
+                  (Model.RoleID == "AD" ? "Quản trị"
+                  : Model.RoleID == "SL" ? "Trưởng ca"
+                  : Model.RoleID == "BM" ? "Quản lý chi nhánh"
+                  : Model.RoleID == "RM" ? "Quản lý vùng"
+                  : Model.RoleID == "MK" ? "Marketing"
+                  : Model.RoleID == "SP" ? "Shipper"
+                  : Model.RoleID == "EM" ? "Nhân viên"
+                  : "Nhân viên");
+}
+
+<div style="padding: 24px;">
+    <div style="margin-bottom: 20px;">
+        <a href="@Url.Action("Employees","Admin")" 
+           style="display: inline-flex; align-items: center; gap: 8px; color: var(--admin-primary); text-decoration: none; font-weight: 500;">
+            <i class="fas fa-arrow-left"></i> Quay lại danh sách
+        </a>
+    </div>
+
+    <div class="profile-head">
+        <div class="avatar"><img src="@avatar" alt="avatar"></div>
+        <div>
+            <h3 class="name">@Model.FullName</h3>
+            <div class="position">@roleText</div>
+        </div>
+    </div>
+
+    <div style="margin-top: 32px; display: grid; gap: 20px;">
+        <div style="padding: 20px; background: var(--card); border: 1px solid var(--line); border-radius: 12px;">
+            <h4 style="font-size: 18px; font-weight: 600; margin-bottom: 16px; color: var(--ink);">Thông tin cá nhân</h4>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px;">
+                <div>
+                    <div style="font-size: 13px; color: var(--muted); margin-bottom: 4px;">Mã nhân viên</div>
+                    <div style="font-weight: 600; color: var(--ink);">@Model.EmployeeID</div>
+                </div>
+                <div>
+                    <div style="font-size: 13px; color: var(--muted); margin-bottom: 4px;">Email</div>
+                    <div style="color: var(--ink);">@(Model.Email ?? "-")</div>
+                </div>
+                <div>
+                    <div style="font-size: 13px; color: var(--muted); margin-bottom: 4px;">Số điện thoại</div>
+                    <div style="color: var(--ink);">@(Model.PhoneNumber ?? "-")</div>
+                </div>
+                <div>
+                    <div style="font-size: 13px; color: var(--muted); margin-bottom: 4px;">Ngày sinh</div>
+                    <div style="color: var(--ink);">@(Model.DateOfBirth?.ToString("dd/MM/yyyy") ?? "-")</div>
+                </div>
+                <div>
+                    <div style="font-size: 13px; color: var(--muted); margin-bottom: 4px;">Giới tính</div>
+                    <div style="color: var(--ink);">@(Model.Gender ?? "-")</div>
+                </div>
+                <div>
+                    <div style="font-size: 13px; color: var(--muted); margin-bottom: 4px;">Quốc tịch</div>
+                    <div style="color: var(--ink);">@(Model.Nationality ?? "-")</div>
+                </div>
+                <div>
+                    <div style="font-size: 13px; color: var(--muted); margin-bottom: 4px;">Dân tộc</div>
+                    <div style="color: var(--ink);">@(Model.Ethnicity ?? "-")</div>
+                </div>
+                <div>
+                    <div style="font-size: 13px; color: var(--muted); margin-bottom: 4px;">Ngày vào làm</div>
+                    <div style="color: var(--ink);">@Model.HireDate.ToString("dd/MM/yyyy")</div>
+                </div>
+            </div>
+        </div>
+
+        @if (Model.Branch != null)
+        {
+            <div style="padding: 20px; background: var(--card); border: 1px solid var(--line); border-radius: 12px;">
+                <h4 style="font-size: 18px; font-weight: 600; margin-bottom: 16px; color: var(--ink);">Chi nhánh</h4>
+                <div>
+                    <div style="font-size: 16px; font-weight: 600; color: var(--ink); margin-bottom: 8px;">@Model.Branch.Name</div>
+                    <div style="color: var(--muted);">@Model.Branch.Address</div>
+                </div>
+            </div>
+        }
+
+        <div style="padding: 20px; background: var(--card); border: 1px solid var(--line); border-radius: 12px;">
+            <h4 style="font-size: 18px; font-weight: 600; margin-bottom: 16px; color: var(--ink);">Trạng thái</h4>
+            <div>
+                @if (Model.IsActive)
+                {
+                    <span style="display: inline-block; padding: 6px 16px; background: #d1fae5; color: #065f46; border-radius: 999px; font-size: 14px; font-weight: 500;">
+                        <i class="fas fa-check"></i> Đang làm việc
+                    </span>
+                }
+                else
+                {
+                    <span style="display: inline-block; padding: 6px 16px; background: #fee2e2; color: #991b1b; border-radius: 999px; font-size: 14px; font-weight: 500;">
+                        <i class="fas fa-times"></i> Đã nghỉ
+                    </span>
+                }
+            </div>
+        </div>
+
+        <!-- Hợp đồng -->
+        <div style="padding: 20px; background: var(--card); border: 1px solid var(--line); border-radius: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h4 style="font-size: 18px; font-weight: 600; color: var(--ink); margin: 0;">Hợp đồng lao động</h4>
+                <button type="button" id="btnCreateContract" data-employee-id="@Model.EmployeeID"
+                        style="padding: 8px 16px; background: var(--admin-primary, #4f46e5); color: white; border: none; border-radius: 8px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s;">
+                    <i class="fas fa-plus"></i> Tạo hợp đồng
+                </button>
+            </div>
+            
+            @if (ViewBag.CurrentContract != null)
+            {
+                var contract = ViewBag.CurrentContract as start.Models.Contract;
+                <div style="padding: 16px; background: var(--bg); border-radius: 8px;">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+                        <div>
+                            <div style="font-size: 13px; color: var(--muted); margin-bottom: 4px;">Số hợp đồng</div>
+                            <div style="font-weight: 600; color: var(--ink);">@contract.ContractNumber</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 13px; color: var(--muted); margin-bottom: 4px;">Loại hợp đồng</div>
+                            <div style="color: var(--ink);">@contract.ContractType</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 13px; color: var(--muted); margin-bottom: 4px;">Ngày bắt đầu</div>
+                            <div style="color: var(--ink);">@contract.StartDate.ToString("dd/MM/yyyy")</div>
+                        </div>
+                        @if (contract.EndDate.HasValue)
+                        {
+                            <div>
+                                <div style="font-size: 13px; color: var(--muted); margin-bottom: 4px;">Ngày kết thúc</div>
+                                <div style="color: var(--ink);">@contract.EndDate.Value.ToString("dd/MM/yyyy")</div>
+                            </div>
+                        }
+                        <div>
+                            <div style="font-size: 13px; color: var(--muted); margin-bottom: 4px;">Cách tính lương</div>
+                            <div style="color: var(--ink);">@contract.PaymentType</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 13px; color: var(--muted); margin-bottom: 4px;">Mức lương</div>
+                            <div style="font-weight: 600; color: var(--ink);">@contract.BaseRate.ToString("N0") VNĐ/@(contract.PaymentType == "Tháng" ? "tháng" : "giờ")</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 13px; color: var(--muted); margin-bottom: 4px;">Trạng thái</div>
+                            @if (contract.Status == "Hiệu lực")
+                            {
+                                <span style="display: inline-block; padding: 4px 12px; background: #d1fae5; color: #065f46; border-radius: 999px; font-size: 13px; font-weight: 500;">
+                                    <i class="fas fa-check-circle"></i> Hiệu lực
+                                </span>
+                            }
+                            else
+                            {
+                                <span style="display: inline-block; padding: 4px 12px; background: #fee2e2; color: #991b1b; border-radius: 999px; font-size: 13px; font-weight: 500;">
+                                    <i class="fas fa-times-circle"></i> Hết hạn
+                                </span>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div style="padding: 24px; text-align: center; background: var(--bg); border-radius: 8px; color: var(--muted);">
+                    <i class="fas fa-file-contract" style="font-size: 32px; margin-bottom: 8px; opacity: 0.5;"></i>
+                    <div>Chưa có hợp đồng lao động</div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Modal Tạo Hợp đồng -->
+<div id="createContractModal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 600px;">
+        <div class="modal-header">
+            <h3>Tạo hợp đồng lao động</h3>
+            <button onclick="closeCreateContractModal()" class="modal-close">&times;</button>
+        </div>
+        <form id="createContractForm">
+            <div class="modal-body">
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 6px; font-weight: 600; color: var(--ink); font-size: 14px;">
+                        Số hợp đồng *
+                    </label>
+                    <input type="text" name="contractNumber" required
+                           style="width: 100%; padding: 10px; border: 2px solid var(--line); border-radius: 8px; font-size: 14px;"
+                           placeholder="VD: HD-2024-001" />
+                </div>
+
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 6px; font-weight: 600; color: var(--ink); font-size: 14px;">
+                        Loại hợp đồng *
+                    </label>
+                    <select name="contractType" required
+                            style="width: 100%; padding: 10px; border: 2px solid var(--line); border-radius: 8px; font-size: 14px;">
+                        <option value="">-- Chọn loại hợp đồng --</option>
+                        <option value="Thử việc">Thử việc</option>
+                        <option value="1 năm">1 năm</option>
+                        <option value="Vô thời hạn">Vô thời hạn</option>
+                    </select>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+                    <div>
+                        <label style="display: block; margin-bottom: 6px; font-weight: 600; color: var(--ink); font-size: 14px;">
+                            Ngày bắt đầu *
+                        </label>
+                        <input type="date" name="startDate" required
+                               style="width: 100%; padding: 10px; border: 2px solid var(--line); border-radius: 8px; font-size: 14px;" />
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 6px; font-weight: 600; color: var(--ink); font-size: 14px;">
+                            Ngày kết thúc
+                        </label>
+                        <input type="date" name="endDate"
+                               style="width: 100%; padding: 10px; border: 2px solid var(--line); border-radius: 8px; font-size: 14px;" />
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 6px; font-weight: 600; color: var(--ink); font-size: 14px;">
+                        Cách thức tính lương *
+                    </label>
+                    <select name="paymentType" required id="paymentTypeSelect"
+                            style="width: 100%; padding: 10px; border: 2px solid var(--line); border-radius: 8px; font-size: 14px;">
+                        <option value="">-- Chọn cách tính lương --</option>
+                        <option value="Tháng">Tháng</option>
+                        <option value="Giờ">Giờ</option>
+                    </select>
+                </div>
+
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 6px; font-weight: 600; color: var(--ink); font-size: 14px;">
+                        Mức lương cơ bản *
+                    </label>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <input type="number" name="baseRate" required step="0.01" min="0"
+                               style="flex: 1; padding: 10px; border: 2px solid var(--line); border-radius: 8px; font-size: 14px;"
+                               placeholder="Nhập mức lương" />
+                        <span id="paymentTypeLabel" style="color: var(--muted); font-size: 14px; white-space: nowrap;">VNĐ/tháng</span>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 6px; font-weight: 600; color: var(--ink); font-size: 14px;">
+                        Trạng thái *
+                    </label>
+                    <select name="status" required
+                            style="width: 100%; padding: 10px; border: 2px solid var(--line); border-radius: 8px; font-size: 14px;">
+                        <option value="Hiệu lực" selected>Hiệu lực</option>
+                        <option value="Hết hạn">Hết hạn</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" onclick="closeCreateContractModal()" class="btn-cancel">
+                    Hủy
+                </button>
+                <button type="submit" class="btn-submit">
+                    <i class="fas fa-save"></i> Tạo hợp đồng
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.6);
+        z-index: 99999;
+        overflow-y: auto;
+        backdrop-filter: blur(4px);
+    }
+
+    .modal-content {
+        max-width: 600px;
+        margin: 60px auto;
+        background: white;
+        border-radius: 16px;
+        padding: 32px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        animation: modalSlideIn 0.3s ease-out;
+    }
+
+    @@keyframes modalSlideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 2px solid #f3f4f6;
+    }
+
+    .modal-header h3 {
+        font-size: 22px;
+        font-weight: 600;
+        color: #1a1a1a;
+        margin: 0;
+    }
+
+    .modal-close {
+        background: none;
+        border: none;
+        font-size: 28px;
+        color: #6b7280;
+        cursor: pointer;
+        padding: 0;
+        width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        transition: all 0.2s;
+    }
+
+    .modal-close:hover {
+        background: #f3f4f6;
+        color: #1a1a1a;
+    }
+
+    .modal-footer {
+        display: flex;
+        gap: 12px;
+        justify-content: flex-end;
+        margin-top: 24px;
+        padding-top: 20px;
+        border-top: 2px solid #f3f4f6;
+    }
+
+    .btn-cancel {
+        padding: 12px 24px;
+        background: white;
+        color: #374151;
+        border: 2px solid #e5e7eb;
+        border-radius: 10px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn-cancel:hover {
+        border-color: var(--admin-primary, #4f46e5);
+        color: var(--admin-primary, #4f46e5);
+        background: #f5f7ff;
+    }
+
+    .btn-submit {
+        padding: 12px 24px;
+        background: var(--admin-primary, #4f46e5);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-submit:hover {
+        background: var(--admin-primary-hover, #4338ca);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+</style>
+
+<script>
+    // Đảm bảo DOM đã load xong
+    document.addEventListener('DOMContentLoaded', function() {
+        // Button tạo contract
+        const btnCreateContract = document.getElementById('btnCreateContract');
+        if (btnCreateContract) {
+            btnCreateContract.addEventListener('click', function() {
+                const employeeId = this.getAttribute('data-employee-id');
+                if (employeeId) {
+                    openCreateContractModal(employeeId);
+                } else {
+                    console.error('Employee ID not found!');
+                    alert('Không tìm thấy mã nhân viên. Vui lòng tải lại trang.');
+                }
+            });
+        }
+
+        // Update payment type label
+        const paymentTypeSelect = document.getElementById('paymentTypeSelect');
+        if (paymentTypeSelect) {
+            paymentTypeSelect.addEventListener('change', function() {
+                const label = document.getElementById('paymentTypeLabel');
+                if (label) {
+                    if (this.value === 'Giờ') {
+                        label.textContent = 'VNĐ/giờ';
+                    } else {
+                        label.textContent = 'VNĐ/tháng';
+                    }
+                }
+            });
+        }
+
+        // Handle form submit
+        const createContractForm = document.getElementById('createContractForm');
+        if (createContractForm) {
+            createContractForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(this);
+                const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+                formData.append('__RequestVerificationToken', token);
+
+                try {
+                    const response = await fetch('@Url.Action("CreateContract", "Admin")', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const data = await response.json();
+                    if (data.success) {
+                        alert(data.message);
+                        location.reload();
+                    } else {
+                        alert(data.message || 'Có lỗi xảy ra');
+                    }
+                } catch (error) {
+                    alert('Có lỗi xảy ra: ' + error.message);
+                }
+            });
+        }
+
+        // Close modal when clicking outside
+        const modal = document.getElementById('createContractModal');
+        if (modal) {
+            modal.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeCreateContractModal();
+                }
+            });
+        }
+
+        // Close modal on Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeCreateContractModal();
+            }
+        });
+    });
+
+    // Functions to open/close modal (cần global để có thể gọi từ onclick)
+    function openCreateContractModal(employeeId) {
+        console.log('Opening modal for employee:', employeeId);
+        const modal = document.getElementById('createContractModal');
+        if (!modal) {
+            console.error('Modal not found!');
+            alert('Không tìm thấy form. Vui lòng tải lại trang.');
+            return;
+        }
+        
+        modal.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+        
+        // Set employeeId vào form
+        const form = document.getElementById('createContractForm');
+        if (form) {
+            // Xóa input cũ nếu có
+            const oldInput = form.querySelector('input[name="employeeId"]');
+            if (oldInput) {
+                oldInput.remove();
+            }
+            
+            // Tạo input mới
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'employeeId';
+            input.value = employeeId;
+            form.appendChild(input);
+        }
+    }
+
+    function closeCreateContractModal() {
+        const modal = document.getElementById('createContractModal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+        document.body.style.overflow = '';
+        
+        const form = document.getElementById('createContractForm');
+        if (form) {
+            form.reset();
+        }
+    }
+</script>
+
+<div style="display: none;">@Html.AntiForgeryToken()</div>

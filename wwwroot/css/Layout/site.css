@@ -74,6 +74,9 @@ body {
     font-family: 'Montserrat', Arial Black, Arial, sans-serif;
     font-weight: 900;
     position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
     align-items: center;
     justify-content: space-between;
     height: 70px;
@@ -81,6 +84,7 @@ body {
     background: var(--mt-surface);
     border-bottom: 1px solid rgba(0, 0, 0, 0.06);
     box-shadow: var(--mt-shadow);
+    z-index: 1000;
 }
 
 

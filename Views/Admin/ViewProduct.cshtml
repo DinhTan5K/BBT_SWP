@@ -1,0 +1,312 @@
+@model Product
+@using start.Models
+
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Chi tiết sản phẩm";
+}
+
+<style>
+    .product-detail-container {
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+    .product-image-wrapper {
+        position: relative;
+        overflow: hidden;
+        border-radius: 16px;
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    }
+    .product-image-wrapper img {
+        transition: transform 0.3s ease;
+    }
+    .product-image-wrapper:hover img {
+        transform: scale(1.05);
+    }
+    .info-card {
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+        transition: all 0.3s ease;
+    }
+    .info-card:hover {
+        box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+        transform: translateY(-2px);
+    }
+    .size-card {
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        border: 2px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 24px;
+        text-align: center;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+    }
+    .size-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(0,0,0,0.05), transparent);
+        transition: left 0.5s;
+    }
+    .size-card:hover::before {
+        left: 100%;
+    }
+    .size-card:hover {
+        border-color: var(--admin-primary);
+        transform: translateY(-8px) scale(1.02);
+        box-shadow: 0 12px 32px rgba(0,0,0,0.15);
+    }
+    .stat-card {
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 20px;
+        transition: all 0.3s ease;
+    }
+    .stat-card:hover {
+        border-color: var(--admin-primary);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+        transform: translateY(-4px);
+    }
+</style>
+
+<div class="product-detail-container" style="padding: 24px;">
+    <!-- Breadcrumb -->
+    <div style="margin-bottom: 24px;">
+        @{
+            var returnUrl = ViewBag.ReturnUrl as string;
+            var backUrl = !string.IsNullOrEmpty(returnUrl) ? returnUrl : Url.Action("Products", "Admin");
+            var backText = !string.IsNullOrEmpty(returnUrl) ? "Quay lại danh mục" : "Quay lại danh sách sản phẩm";
+        }
+        <a href="@backUrl" 
+           style="display: inline-flex; align-items: center; gap: 10px; padding: 12px 24px; background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 10px; text-decoration: none; font-weight: 500; transition: all 0.3s ease;"
+           onmouseover="this.style.background='var(--card)'; this.style.borderColor='var(--admin-primary)'; this.style.color='var(--admin-primary)'; this.style.transform='translateX(-4px)';"
+           onmouseout="this.style.background='var(--bg)'; this.style.borderColor='var(--line)'; this.style.color='var(--ink)'; this.style.transform='translateX(0)';">
+            <i class="fas fa-arrow-left"></i> 
+            <span>@backText</span>
+        </a>
+    </div>
+
+    <!-- Main Product Card -->
+    <div style="background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); border: 1px solid #e2e8f0; border-radius: 20px; padding: 32px; margin-bottom: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.06);">
+        <!-- Header -->
+        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 32px; padding-bottom: 24px; border-bottom: 2px solid #e2e8f0;">
+            <div style="flex: 1;">
+                <h1 style="font-size: 32px; font-weight: 800; margin-bottom: 16px; color: #1e293b; letter-spacing: -0.5px; line-height: 1.2;">
+                    @Model.ProductName
+                </h1>
+                <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 8px 16px; background: var(--bg); border: 1px solid var(--line); border-radius: 10px;">
+                        <i class="fas fa-tag" style="color: var(--admin-primary); font-size: 14px;"></i>
+                        <span style="color: var(--ink); font-size: 14px; font-weight: 700; letter-spacing: 0.3px;">
+                            @(Model.Category?.CategoryName ?? "Chưa phân loại")
+                        </span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 8px 16px; background: #f1f5f9; border-radius: 10px;">
+                        <i class="fas fa-hashtag" style="color: #64748b; font-size: 14px;"></i>
+                        <span style="color: #475569; font-size: 14px; font-weight: 600;">
+                            ID: @Model.ProductID
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <span style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px; @(Model.IsActive ? "background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); color: #065f46;" : "background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); color: #991b1b;") border-radius: 12px; font-size: 14px; font-weight: 700; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                    <i class="fas @(Model.IsActive ? "fa-check-circle" : "fa-times-circle")"></i>
+                    @(Model.IsActive ? "Đang bán" : "Ngừng bán")
+                </span>
+            </div>
+        </div>
+
+        <!-- Image and Info Grid -->
+        <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 32px; align-items: start;">
+            <!-- Product Image -->
+            <div class="product-image-wrapper">
+                @if (!string.IsNullOrEmpty(Model.Image_Url))
+                {
+                    <img src="@Url.Content(Model.Image_Url)" alt="@Model.ProductName" 
+                         style="width: 100%; height: auto; display: block; border-radius: 16px;">
+                }
+                else
+                {
+                    <div style="width: 100%; aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px;">
+                        <i class="fas fa-image" style="font-size: 80px; opacity: 0.2; color: #94a3b8; margin-bottom: 16px;"></i>
+                        <div style="color: #94a3b8; font-size: 16px; font-weight: 500;">Chưa có hình ảnh</div>
+                    </div>
+                }
+            </div>
+
+            <!-- Product Info -->
+            <div>
+                <div class="info-card">
+                    <h3 style="font-size: 20px; font-weight: 700; margin-bottom: 20px; color: #1e293b; display: flex; align-items: center; gap: 10px;">
+                        <div style="width: 4px; height: 24px; background: var(--admin-primary); border-radius: 2px;"></div>
+                        <span>Thông tin sản phẩm</span>
+                    </h3>
+                    
+                    <div style="display: flex; flex-direction: column; gap: 20px;">
+                        <div>
+                            <div style="font-size: 12px; color: #64748b; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Tên sản phẩm</div>
+                            <div style="font-weight: 700; color: #1e293b; font-size: 18px; line-height: 1.4;">@Model.ProductName</div>
+                        </div>
+                        
+                        <div>
+                            <div style="font-size: 12px; color: #64748b; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Danh mục</div>
+                            <div>
+                                <span style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; font-size: 14px; font-weight: 700;">
+                                    <i class="fas fa-folder" style="font-size: 12px; color: var(--admin-primary);"></i>
+                                    @(Model.Category?.CategoryName ?? "Chưa phân loại")
+                                </span>
+                            </div>
+                        </div>
+                        
+                        @if (!string.IsNullOrEmpty(Model.Description))
+                        {
+                            <div>
+                                <div style="font-size: 12px; color: #64748b; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Mô tả</div>
+                                <div style="font-weight: 400; color: #334155; line-height: 1.7; padding: 16px; background: #ffffff; border-radius: 10px; border: 1px solid #e2e8f0; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);">
+                                    @Model.Description
+                                </div>
+                            </div>
+                        }
+                        
+                        <div>
+                            <div style="font-size: 12px; color: #64748b; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Trạng thái</div>
+                            <div>
+                                <span style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; @(Model.IsActive ? "background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); color: #065f46;" : "background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); color: #991b1b;") border-radius: 10px; font-size: 14px; font-weight: 700; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                                    <i class="fas @(Model.IsActive ? "fa-check-circle" : "fa-times-circle")"></i>
+                                    @(Model.IsActive ? "Đang bán" : "Ngừng bán")
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sizes and Prices -->
+    @if (Model.ProductSizes != null && Model.ProductSizes.Any())
+    {
+        <div style="background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); border: 1px solid #e2e8f0; border-radius: 20px; padding: 32px; margin-bottom: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.06);">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 28px; padding-bottom: 20px; border-bottom: 2px solid #e2e8f0;">
+                <div style="width: 4px; height: 32px; background: var(--admin-primary); border-radius: 2px;"></div>
+                <div>
+                    <h3 style="font-size: 24px; font-weight: 800; color: #1e293b; margin: 0; letter-spacing: -0.5px;">Kích thước và giá</h3>
+                    <div style="font-size: 14px; color: #64748b; margin-top: 4px; font-weight: 500;">
+                        <i class="fas fa-ruler-combined" style="margin-right: 6px;"></i>
+                        @Model.ProductSizes.Count() size có sẵn
+                    </div>
+                </div>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px;">
+                @foreach (var size in Model.ProductSizes.OrderBy(s => s.Size))
+                {
+                    <div class="size-card">
+                        <div style="font-size: 32px; font-weight: 900; color: var(--admin-primary); margin-bottom: 12px; letter-spacing: -1px;">
+                            @size.Size
+                        </div>
+                        <div style="font-size: 24px; font-weight: 800; color: #059669; margin-top: 8px;">
+                            @size.Price.ToString("N0") đ
+                        </div>
+                        <div style="margin-top: 12px; padding-top: 12px; border-top: 1px dashed #e2e8f0;">
+                            <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px;">Giá bán</div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+    else
+    {
+        <div style="background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); border: 1px solid #e2e8f0; border-radius: 20px; padding: 48px; margin-bottom: 24px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.06);">
+            <div style="width: 80px; height: 80px; margin: 0 auto 20px; background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 24px rgba(251,191,36,0.2);">
+                <i class="fas fa-exclamation-circle" style="font-size: 40px; color: #f59e0b;"></i>
+            </div>
+            <h4 style="font-size: 20px; font-weight: 700; color: #1e293b; margin-bottom: 8px;">Chưa có kích thước và giá</h4>
+            <p style="color: #64748b; font-size: 14px; margin: 0;">Sản phẩm này chưa được cấu hình kích thước và giá bán</p>
+        </div>
+    }
+
+    <!-- Statistics -->
+    <div style="background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); border: 1px solid #e2e8f0; border-radius: 20px; padding: 32px; box-shadow: 0 10px 40px rgba(0,0,0,0.06);">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 28px; padding-bottom: 20px; border-bottom: 2px solid #e2e8f0;">
+            <div style="width: 4px; height: 32px; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); border-radius: 2px;"></div>
+            <div>
+                <h3 style="font-size: 24px; font-weight: 800; color: #1e293b; margin: 0; letter-spacing: -0.5px;">Thông tin bổ sung</h3>
+                <div style="font-size: 14px; color: #64748b; margin-top: 4px; font-weight: 500;">
+                    <i class="fas fa-chart-bar" style="margin-right: 6px;"></i>
+                    Tổng quan sản phẩm
+                </div>
+            </div>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+            <div class="stat-card">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                    <div style="width: 48px; height: 48px; background: var(--bg); border: 1px solid var(--line); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-hashtag" style="color: var(--admin-primary); font-size: 20px;"></i>
+                    </div>
+                    <div>
+                        <div style="font-size: 12px; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Mã sản phẩm</div>
+                        <div style="font-weight: 800; color: #1e293b; font-size: 20px; margin-top: 2px;">#@Model.ProductID</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                    <div style="width: 48px; height: 48px; background: var(--bg); border: 1px solid var(--line); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-ruler-combined" style="color: var(--admin-primary); font-size: 20px;"></i>
+                    </div>
+                    <div>
+                        <div style="font-size: 12px; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Số lượng size</div>
+                        <div style="font-weight: 800; color: #1e293b; font-size: 20px; margin-top: 2px;">@(Model.ProductSizes?.Count ?? 0) size</div>
+                    </div>
+                </div>
+            </div>
+            
+            @{
+                var minPrice = Model.ProductSizes?.Any() == true ? Model.ProductSizes.Min(ps => ps.Price) : 0;
+                var maxPrice = Model.ProductSizes?.Any() == true ? Model.ProductSizes.Max(ps => ps.Price) : 0;
+            }
+            @if (minPrice > 0)
+            {
+                <div class="stat-card">
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                        <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(5,150,105,0.2);">
+                            <i class="fas fa-arrow-down" style="color: #059669; font-size: 20px;"></i>
+                        </div>
+                        <div>
+                            <div style="font-size: 12px; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Giá từ</div>
+                            <div style="font-weight: 800; color: #059669; font-size: 20px; margin-top: 2px;">@minPrice.ToString("N0") đ</div>
+                        </div>
+                    </div>
+                </div>
+                @if (maxPrice > minPrice)
+                {
+                    <div class="stat-card">
+                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                            <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(5,150,105,0.2);">
+                                <i class="fas fa-arrow-up" style="color: #059669; font-size: 20px;"></i>
+                            </div>
+                            <div>
+                                <div style="font-size: 12px; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Giá đến</div>
+                                <div style="font-weight: 800; color: #059669; font-size: 20px; margin-top: 2px;">@maxPrice.ToString("N0") đ</div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+</div>

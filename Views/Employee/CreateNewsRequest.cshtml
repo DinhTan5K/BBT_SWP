@@ -1,0 +1,392 @@
+@model start.Models.Employee
+@{
+    Layout = "~/Views/Shared/_MarketingLayout.cshtml";
+    ViewData["Title"] = "Tạo yêu cầu tin tức";
+    var titleValue = (string?)ViewBag.TitleValue ?? "";
+    var contentValue = (string?)ViewBag.ContentValue ?? "";
+    var discountIdValue = ViewBag.DiscountIdValue as int?;
+    var activeDiscounts = ViewBag.ActiveDiscounts as dynamic ?? new List<dynamic>();
+    var role = (Model?.RoleID ?? "").Trim().ToUpperInvariant();
+}
+
+<link rel="stylesheet" href='@Url.Content("~/css/employee/profile.css")' />
+<style>
+    .mk-form-container {
+        padding: 32px;
+        max-width: 900px;
+        margin: 0 auto;
+    }
+    .mk-header {
+        margin-bottom: 32px;
+        padding-bottom: 20px;
+        border-bottom: 2px solid #fef3c7;
+    }
+    .mk-header h2 {
+        font-size: 28px;
+        font-weight: 700;
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin: 0 0 8px 0;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .mk-header p {
+        color: #6b7280;
+        font-size: 15px;
+        margin: 0;
+    }
+    .mk-form-group {
+        margin-bottom: 24px;
+    }
+    .mk-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 600;
+        color: #111827;
+        margin-bottom: 10px;
+        font-size: 14px;
+    }
+    .mk-label i {
+        color: #f59e0b;
+        font-size: 16px;
+    }
+    .mk-input, .mk-textarea {
+        width: 100%;
+        padding: 12px 16px;
+        border: 2px solid #e5e7eb;
+        border-radius: 10px;
+        font-size: 14px;
+        transition: all 0.2s ease;
+        background: #fff;
+    }
+    .mk-input:focus, .mk-textarea:focus {
+        outline: none;
+        border-color: #f59e0b;
+        box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+    }
+    .mk-textarea {
+        min-height: 180px;
+        resize: vertical;
+        font-family: inherit;
+    }
+    .mk-image-preview {
+        margin-top: 12px;
+        border-radius: 10px;
+        overflow: hidden;
+        border: 2px solid #e5e7eb;
+        display: none;
+        position: relative;
+    }
+    .mk-image-preview img {
+        width: 100%;
+        max-height: 300px;
+        object-fit: cover;
+        display: block;
+    }
+    .mk-image-preview.show {
+        display: block;
+    }
+    .mk-file-input-wrapper {
+        position: relative;
+    }
+    .mk-file-input {
+        width: 100%;
+        padding: 12px 16px;
+        border: 2px dashed #e5e7eb;
+        border-radius: 10px;
+        background: #fafafa;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 14px;
+    }
+    .mk-file-input:hover {
+        border-color: #f59e0b;
+        background: #fffbf0;
+    }
+    .mk-file-input:focus {
+        outline: none;
+        border-color: #f59e0b;
+        box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+    }
+    .mk-file-input input[type="file"] {
+        position: absolute;
+        opacity: 0;
+        width: 100%;
+        height: 100%;
+        cursor: pointer;
+    }
+    .mk-file-name {
+        margin-top: 8px;
+        font-size: 13px;
+        color: #6b7280;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .mk-file-name i {
+        color: #f59e0b;
+    }
+    .mk-actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 32px;
+        padding-top: 24px;
+        border-top: 2px solid #fef3c7;
+    }
+    .mk-btn {
+        padding: 12px 24px;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: none;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .mk-btn-cancel {
+        background: #f3f4f6;
+        color: #374151;
+        border: 2px solid #e5e7eb;
+    }
+    .mk-btn-cancel:hover {
+        background: #e5e7eb;
+        transform: translateY(-1px);
+    }
+    .mk-btn-submit {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        color: white;
+        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+    }
+    .mk-btn-submit:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(245, 158, 11, 0.4);
+    }
+    .mk-alert {
+        padding: 14px 18px;
+        border-radius: 10px;
+        margin-bottom: 24px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        border-left: 4px solid;
+    }
+    .mk-alert-error {
+        background: #fef2f2;
+        color: #991b1b;
+        border-color: #ef4444;
+    }
+    .mk-alert i {
+        font-size: 18px;
+    }
+    .mk-section-divider {
+        height: 1px;
+        background: linear-gradient(90deg, transparent, #fef3c7, transparent);
+        margin: 24px 0;
+    }
+    .mk-hint {
+        font-size: 12px;
+        color: #9ca3af;
+        margin-top: 6px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .mk-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        background: #fef3c7;
+        color: #92400e;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        margin-left: 8px;
+    }
+    .sb-item.mk-active {
+        background: rgba(255, 255, 255, 0.2);
+        box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.3);
+    }
+</style>
+
+<div class="mk-form-container">
+            <div class="mk-header">
+                <h2>
+                    <i class="fas fa-newspaper"></i>
+                    Tạo yêu cầu tin tức
+                </h2>
+                <p>Thiết kế và gửi yêu cầu đăng tin tức mới. Admin sẽ xem xét và phê duyệt yêu cầu của bạn.</p>
+            </div>
+
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <div class="mk-alert mk-alert-error">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span>Vui lòng kiểm tra lại các trường nhập và điền đầy đủ thông tin bắt buộc.</span>
+                </div>
+            }
+
+            <form method="post" action="@Url.Action("CreateNewsRequest","Employee")" id="newsForm" enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+                
+                <div class="mk-form-group">
+                    <label class="mk-label">
+                        <i class="fas fa-heading"></i>
+                        Tiêu đề tin tức *
+                    </label>
+                    <input name="title" value="@titleValue" required
+                           class="mk-input"
+                           placeholder="Nhập tiêu đề hấp dẫn cho tin tức..."
+                           maxlength="200" />
+                    @Html.ValidationMessage("title", null, new { style="color:#ef4444; font-size: 13px; margin-top: 6px; display: block;" })
+                    <div class="mk-hint">
+                        <i class="fas fa-info-circle"></i>
+                        Tiêu đề nên ngắn gọn, rõ ràng và thu hút người đọc
+                    </div>
+                </div>
+
+                <div class="mk-section-divider"></div>
+
+                <div class="mk-form-group">
+                    <label class="mk-label">
+                        <i class="fas fa-align-left"></i>
+                        Nội dung tin tức *
+                    </label>
+                    <textarea name="content" required
+                              class="mk-textarea"
+                              placeholder="Viết nội dung chi tiết cho tin tức. Bạn có thể sử dụng định dạng HTML cơ bản..."
+                              maxlength="5000">@contentValue</textarea>
+                    @Html.ValidationMessage("content", null, new { style="color:#ef4444; font-size: 13px; margin-top: 6px; display: block;" })
+                    <div class="mk-hint">
+                        <i class="fas fa-info-circle"></i>
+                        Nội dung càng chi tiết và hấp dẫn càng tốt. Hãy kiểm tra chính tả trước khi gửi.
+                    </div>
+                </div>
+
+                <div class="mk-section-divider"></div>
+
+                <div class="mk-form-group">
+                    <label class="mk-label">
+                        <i class="fas fa-tag"></i>
+                        Mã giảm giá đi kèm
+                        <span class="mk-badge">Tùy chọn</span>
+                    </label>
+                    <select name="discountId" class="mk-select" id="discountSelect">
+                        <option value="">-- Không chọn mã giảm giá --</option>
+                        @foreach (var discount in activeDiscounts)
+                        {
+                            var typeInt = (int)discount.Type;
+                            var discountText = typeInt == 0 ? $"{discount.Code} - Giảm {discount.Percent}%"
+                                : typeInt == 1 ? $"{discount.Code} - Giảm {discount.Amount:N0} VNĐ"
+                                : typeInt == 2 ? $"{discount.Code} - Miễn phí ship"
+                                : typeInt == 3 ? $"{discount.Code} - Giảm {discount.Amount:N0} VNĐ phí ship"
+                                : typeInt == 4 ? $"{discount.Code} - Giảm {discount.Percent}% phí ship"
+                                : discount.Code;
+                            <option value="@discount.Id" selected="@(discountIdValue == discount.Id)">@discountText</option>
+                        }
+                    </select>
+                    @Html.ValidationMessage("discountId", null, new { style="color:#ef4444; font-size: 13px; margin-top: 6px; display: block;" })
+                    <div class="mk-hint">
+                        <i class="fas fa-info-circle"></i>
+                        Chọn mã giảm giá để người đọc tin tức có thể sử dụng. Chỉ hiển thị các mã đang active.
+                    </div>
+                </div>
+
+                <div class="mk-section-divider"></div>
+
+                <div class="mk-form-group">
+                    <label class="mk-label">
+                        <i class="fas fa-image"></i>
+                        Ảnh đại diện
+                        <span class="mk-badge">Tùy chọn</span>
+                    </label>
+                    <div class="mk-file-input-wrapper">
+                        <div class="mk-file-input">
+                            <input type="file" name="imageFile" id="imageFileInput" accept="image/jpeg,image/jpg,image/png,image/gif,image/webp" />
+                            <div style="display: flex; align-items: center; gap: 12px; pointer-events: none;">
+                                <i class="fas fa-cloud-upload-alt" style="font-size: 24px; color: #f59e0b;"></i>
+                                <div>
+                                    <div style="font-weight: 600; color: #111827;">Chọn ảnh để upload</div>
+                                    <div style="font-size: 12px; color: #6b7280; margin-top: 2px;">JPG, PNG, GIF, WEBP (tối đa 5MB)</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mk-file-name" id="fileName" style="display: none;">
+                        <i class="fas fa-check-circle"></i>
+                        <span id="fileNameText"></span>
+                    </div>
+                    @Html.ValidationMessage("imageFile", null, new { style="color:#ef4444; font-size: 13px; margin-top: 6px; display: block;" })
+                    <div class="mk-hint">
+                        <i class="fas fa-info-circle"></i>
+                        Ảnh sẽ được upload lên Cloudinary tự động. Chọn ảnh chất lượng cao để hiển thị đẹp nhất.
+                    </div>
+                    <div class="mk-image-preview" id="imagePreview">
+                        <img id="previewImg" src="" alt="Preview" />
+                    </div>
+                </div>
+
+                <div class="mk-actions">
+                    <a href="@Url.Action("Profile","Employee")" class="mk-btn mk-btn-cancel">
+                        <i class="fas fa-times"></i>
+                        Hủy
+                    </a>
+                    <button type="submit" class="mk-btn mk-btn-submit">
+                        <i class="fas fa-paper-plane"></i>
+                        Gửi yêu cầu
+                    </button>
+                </div>
+            </form>
+</div>
+
+<script>
+    const imageFileInput = document.getElementById('imageFileInput');
+    const imagePreview = document.getElementById('imagePreview');
+    const previewImg = document.getElementById('previewImg');
+    const fileName = document.getElementById('fileName');
+    const fileNameText = document.getElementById('fileNameText');
+
+    imageFileInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            // Validate file type
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+            if (!allowedTypes.includes(file.type)) {
+                alert('Chỉ chấp nhận file ảnh: JPG, PNG, GIF, WEBP.');
+                this.value = '';
+                return;
+            }
+
+            // Validate file size (5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                alert('Kích thước file không được vượt quá 5MB.');
+                this.value = '';
+                return;
+            }
+
+            // Show file name
+            fileNameText.textContent = file.name;
+            fileName.style.display = 'flex';
+
+            // Preview image
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                previewImg.src = e.target.result;
+                imagePreview.classList.add('show');
+            };
+            reader.readAsDataURL(file);
+        } else {
+            imagePreview.classList.remove('show');
+            fileName.style.display = 'none';
+        }
+    });
+</script>
+
+

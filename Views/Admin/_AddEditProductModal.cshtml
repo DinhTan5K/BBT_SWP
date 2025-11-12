@@ -1,0 +1,182 @@
+@model Product
+@using start.Models
+@{
+    var categories = ViewBag.Categories as List<ProductCategory> ?? new List<ProductCategory>();
+    var isEdit = Model.ProductID > 0;
+    var productSizes = Model.ProductSizes?.ToList() ?? new List<ProductSize>();
+}
+
+<style>
+    .form-label { 
+        display: block; 
+        margin-bottom: 8px; 
+        font-weight: 600; 
+        color: #1f2937; 
+        font-size: 14px;
+    }
+    .form-control, .form-select { 
+        width: 100%; 
+        padding: 10px 14px; 
+        border: 1px solid #d1d5db; 
+        border-radius: 8px; 
+        font-size: 14px; 
+        transition: all 0.2s;
+        background: #fff;
+    }
+    .form-control:hover, .form-select:hover {
+        border-color: #9ca3af;
+    }
+    .form-control:focus, .form-select:focus { 
+        outline: none; 
+        border-color: #6366f1; 
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); 
+    }
+    .mb-3 { margin-bottom: 20px; }
+    .mt-2 { margin-top: 8px; }
+    .size-row {
+        display: grid;
+        grid-template-columns: 100px 1fr;
+        gap: 12px;
+        align-items: center;
+        padding: 12px;
+        background: #f9fafb;
+        border-radius: 8px;
+        border: 1px solid #e5e7eb;
+    }
+    .size-label {
+        font-weight: 600;
+        color: #374151;
+        font-size: 14px;
+    }
+    .price-input {
+        padding: 10px 14px;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        font-size: 14px;
+        width: 100%;
+    }
+    .price-input:focus {
+        outline: none;
+        border-color: #6366f1;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    }
+    .sizes-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+</style>
+<div class="modal-overlay" id="productModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; overflow-y: auto;">
+    <div class="modal-dialog" style="max-width: 800px; margin: 50px auto; background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+        <div class="modal-content" style="padding: 0;">
+            <div class="modal-header" style="padding: 20px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
+                <h5 class="modal-title" id="productModalLabel" style="margin: 0; font-size: 20px; font-weight: 600;">@(isEdit ? "Sửa sản phẩm" : "Thêm sản phẩm mới")</h5>
+                <button type="button" class="btn-close-modal" onclick="closeProductModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #666;">&times;</button>
+            </div>
+            <form id="productForm" enctype="multipart/form-data" onsubmit="return false;">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="ProductID" value="@Model.ProductID" />
+                <div class="modal-body" style="padding: 20px;">
+                    <div class="mb-3">
+                        <label class="form-label">Tên sản phẩm <span style="color: red;">*</span></label>
+                        <input type="text" class="form-control" name="ProductName" id="ProductName" value="@(Model?.ProductName ?? "")" required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Danh mục <span style="color: red;">*</span></label>
+                        <select class="form-select" name="CategoryID" id="CategoryID" required>
+                            <option value="">-- Chọn danh mục --</option>
+                            @foreach (var cat in categories)
+                            {
+                                @if (Model?.CategoryID == cat.CategoryID)
+                                {
+                                    <option value="@cat.CategoryID" selected>@cat.CategoryName</option>
+                                }
+                                else
+                                {
+                                    <option value="@cat.CategoryID">@cat.CategoryName</option>
+                                }
+                            }
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Mô tả</label>
+                        <textarea class="form-control" name="Description" id="Description" rows="3">@(Model?.Description ?? "")</textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Hình ảnh</label>
+                        @if (isEdit && !string.IsNullOrEmpty(Model.Image_Url))
+                        {
+                            <div style="margin-bottom: 8px;">
+                                <img src="@Model.Image_Url" alt="@Model.ProductName" style="width: 100px; height: 100px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line);" />
+                            </div>
+                        }
+                        <input type="file" class="form-control" name="imageFile" accept="image/*" />
+                        <small class="text-muted">Chọn ảnh mới để thay thế (nếu đang sửa)</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Trạng thái</label>
+                        <div>
+                            @if (Model?.IsActive == true)
+                            {
+                                <input type="checkbox" name="IsActive" value="true" checked id="isActive" />
+                            }
+                            else
+                            {
+                                <input type="checkbox" name="IsActive" value="true" id="isActive" />
+                            }
+                            <label for="isActive" style="margin-left: 8px;">Đang bán</label>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Kích thước và Giá</label>
+                        <div class="sizes-grid" id="sizesContainer">
+                            @{
+                                var sizeS = productSizes.FirstOrDefault(s => s.Size.ToUpper() == "S");
+                                var sizeM = productSizes.FirstOrDefault(s => s.Size.ToUpper() == "M");
+                                var sizeL = productSizes.FirstOrDefault(s => s.Size.ToUpper() == "L");
+                            }
+                            
+                            <div class="size-row">
+                                <span class="size-label">Size S:</span>
+                                <input type="number" class="price-input" name="prices" placeholder="Nhập giá cho size S" 
+                                       value="@(sizeS?.Price.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "")" 
+                                       min="0" step="1000" />
+                                <input type="hidden" name="sizes" value="S" />
+                            </div>
+                            
+                            <div class="size-row">
+                                <span class="size-label">Size M:</span>
+                                <input type="number" class="price-input" name="prices" placeholder="Nhập giá cho size M" 
+                                       value="@(sizeM?.Price.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "")" 
+                                       min="0" step="1000" />
+                                <input type="hidden" name="sizes" value="M" />
+                            </div>
+                            
+                            <div class="size-row">
+                                <span class="size-label">Size L:</span>
+                                <input type="number" class="price-input" name="prices" placeholder="Nhập giá cho size L" 
+                                       value="@(sizeL?.Price.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "")" 
+                                       min="0" step="1000" />
+                                <input type="hidden" name="sizes" value="L" />
+                            </div>
+                        </div>
+                        <small style="color: #6b7280; font-size: 12px; display: block; margin-top: 8px;">
+                            * Vui lòng nhập giá cho các size (có thể để trống nếu không có size đó)
+                        </small>
+                    </div>
+                </div>
+                <div class="modal-footer" style="padding: 20px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 12px;">
+                    <button type="button" class="btn btn-secondary" onclick="closeProductModal()" style="padding: 8px 16px; background: #6b7280; color: white; border: none; border-radius: 6px; cursor: pointer;">Đóng</button>
+                    <button type="submit" class="btn btn-primary" style="padding: 8px 16px; background: var(--admin-primary, #6366f1); color: white; border: none; border-radius: 6px; cursor: pointer;">@(isEdit ? "Cập nhật" : "Thêm mới")</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+

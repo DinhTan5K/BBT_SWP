@@ -10,9 +10,11 @@ public class EmployeeProfileService : IEmployeeProfileService
    private readonly ApplicationDbContext _db;
     private readonly IAuthService _auth;
     private readonly IWebHostEnvironment _env;
-    public EmployeeProfileService(ApplicationDbContext db, IAuthService auth, IWebHostEnvironment env)
+    private readonly ICloudinaryService _cloudinaryService;
+    
+    public EmployeeProfileService(ApplicationDbContext db, IAuthService auth, IWebHostEnvironment env, ICloudinaryService cloudinaryService)
     {
-        _db = db; _auth = auth; _env = env;
+        _db = db; _auth = auth; _env = env; _cloudinaryService = cloudinaryService;
     }
 
     public Employee? GetById(string employeeId)
@@ -74,23 +76,18 @@ public class EmployeeProfileService : IEmployeeProfileService
         var e = _db.Employees.FirstOrDefault(x => x.EmployeeID == employeeId);
         if (e == null) return false;
 
-        // Xoá ảnh cũ nếu là file trong uploads
-        if (!string.IsNullOrEmpty(e.AvatarUrl) && e.AvatarUrl.StartsWith("/uploads/avatars/", StringComparison.OrdinalIgnoreCase))
-        {
-            var old = Path.Combine(_env.WebRootPath, e.AvatarUrl.TrimStart('/').Replace('/', Path.DirectorySeparatorChar));
-            if (File.Exists(old)) File.Delete(old);
-        }
+        // Upload lên Cloudinary
+        var cloudinaryUrl = await _cloudinaryService.UploadImageAsync(avatar, "uploads/avatars");
+        
+        if (string.IsNullOrEmpty(cloudinaryUrl))
+            return false;
 
-        var ext = Path.GetExtension(avatar.FileName);
-        var fileName = $"emp_{e.EmployeeID}_{Guid.NewGuid():N}{ext}";
-        var folder = Path.Combine(_env.WebRootPath, "uploads", "avatars");
-        Directory.CreateDirectory(folder);
-        var full = Path.Combine(folder, fileName);
+        // Xóa avatar cũ trên Cloudinary nếu có (nếu là URL Cloudinary)
+        // Note: Có thể cải thiện thêm bằng cách lưu public_id để xóa chính xác hơn
+        // Hiện tại chỉ update URL mới, không xóa ảnh cũ để tránh lỗi
 
-        using (var fs = new FileStream(full, FileMode.Create))
-            await avatar.CopyToAsync(fs);
-
-        e.AvatarUrl = "/uploads/avatars/" + fileName;
+        // Update DB với URL từ Cloudinary
+        e.AvatarUrl = cloudinaryUrl;
         _db.SaveChanges();
         return true;
     }

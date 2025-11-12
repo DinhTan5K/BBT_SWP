@@ -1,20 +1,23 @@
 using System.Net;
 using System.Net.Mail;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using start.Data;
 using start.Models;
 using start.Models.ViewModels;
+using start.Services;
 
 public class PayrollService : IPayrollService
 {
     private readonly ApplicationDbContext _db;
     private readonly IAuthService _auth;
     private readonly IWebHostEnvironment _env;
+    private readonly IServiceProvider _serviceProvider;
 
-    public PayrollService(ApplicationDbContext db, IAuthService auth, IWebHostEnvironment env)
+    public PayrollService(ApplicationDbContext db, IAuthService auth, IWebHostEnvironment env, IServiceProvider serviceProvider)
 
     {
-        _db = db; _auth = auth; _env = env;
+        _db = db; _auth = auth; _env = env; _serviceProvider = serviceProvider;
     }
 
    // Services/EmployeeProfileService.cs
@@ -43,6 +46,29 @@ public class PayrollService : IPayrollService
         decimal plannedHours = scheduledShifts * HOURS_PER_SHIFT;
         decimal potentialBaseSalary = plannedHours * slr.HourlyRateAtTimeOfCalc;
 
+        // ===== NEW: KPI Bonus cho Marketing =====
+        var employee = await _db.Employees.FirstOrDefaultAsync(e => e.EmployeeID == employeeId);
+        if (employee?.RoleID == "MK")
+        {
+            var kpiService = _serviceProvider.GetService<IMarketingKPIService>();
+            if (kpiService != null)
+            {
+                var kpi = await kpiService.GetKPIAsync(employeeId, year, month);
+                if (kpi == null)
+                {
+                    // Nếu chưa có KPI, tính và lưu
+                    kpi = await kpiService.CalculateAndSaveKPIAsync(employeeId, year, month);
+                }
+                
+                // Cập nhật Bonus trong Salary nếu có KPI bonus và chưa được cập nhật
+                if (kpi != null && kpi.KPIBonus > 0 && slr.Bonus != kpi.KPIBonus)
+                {
+                    slr.Bonus = kpi.KPIBonus;
+                    await _db.SaveChangesAsync();
+                }
+            }
+        }
+
         return new MonthlySalaryVm(
             slr.EmployeeID,
             slr.Employee?.FullName,
@@ -51,7 +77,7 @@ public class PayrollService : IPayrollService
             slr.TotalHoursWorked,
             slr.HourlyRateAtTimeOfCalc,
             slr.BaseSalary,
-            slr.Bonus,
+            slr.Bonus, // Bonus đã bao gồm KPI bonus nếu có
             slr.Penalty,
             slr.TotalSalary,
             slr.Status,

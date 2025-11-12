@@ -1,0 +1,211 @@
+@model List<Product>
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Quản lý sản phẩm";
+    // ViewBag.ActiveMenu đã được set trong Controller, không cần set lại ở đây
+}
+
+<div style="padding: 24px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+        <h2 style="font-size: 24px; font-weight: 600; color: var(--ink); margin: 0;">
+            Danh sách sản phẩm
+        </h2>
+        <div style="display: flex; gap: 12px; align-items: center;">
+            <a href="@Url.Action("Approvals", "Admin", new { requestType = "product" })" 
+               style="padding: 10px 20px; background: var(--admin-primary); color: white; border: none; border-radius: 8px; font-weight: 500; text-decoration: none; display: inline-block;">
+                <i class="fas fa-check-circle"></i> Duyệt yêu cầu sản phẩm
+            </a>
+            <div class="admin-filter-search">
+                <input type="text" id="searchProduct" placeholder="Tìm kiếm sản phẩm...">
+            </div>
+        </div>
+    </div>
+
+    <div style="background: var(--card); border: 1px solid var(--line); border-radius: 12px; overflow: hidden;">
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background: var(--bg); border-bottom: 2px solid var(--line);">
+                    <th style="padding: 16px; text-align: left; font-weight: 600; color: var(--ink);">Hình ảnh</th>
+                    <th style="padding: 16px; text-align: left; font-weight: 600; color: var(--ink);">Tên sản phẩm</th>
+                    <th style="padding: 16px; text-align: left; font-weight: 600; color: var(--ink);">Danh mục</th>
+                    <th style="padding: 16px; text-align: left; font-weight: 600; color: var(--ink);">Giá</th>
+                    <th style="padding: 16px; text-align: center; font-weight: 600; color: var(--ink);">Trạng thái</th>
+                    <th style="padding: 16px; text-align: center; font-weight: 600; color: var(--ink);">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody id="productTableBody">
+                @foreach (var product in Model)
+                {
+                    var minPrice = product.ProductSizes.Any() ? product.ProductSizes.Min(ps => ps.Price) : 0;
+                    var maxPrice = product.ProductSizes.Any() ? product.ProductSizes.Max(ps => ps.Price) : 0;
+                    var priceText = minPrice == maxPrice 
+                        ? minPrice.ToString("N0") + " đ" 
+                        : minPrice.ToString("N0") + " - " + maxPrice.ToString("N0") + " đ";
+                    
+                    <tr style="border-bottom: 1px solid var(--line);" 
+                        data-name="@product.ProductName?.ToLower()" 
+                        data-category="@product.Category?.CategoryName?.ToLower()">
+                        <td style="padding: 16px;">
+                            @if (!string.IsNullOrEmpty(product.Image_Url))
+                            {
+                                <img src="@Url.Content(product.Image_Url)" alt="@product.ProductName" 
+                                     style="width: 70px; height: 70px; object-fit: cover; border-radius: 10px; border: 2px solid var(--line); box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: transform 0.2s;"
+                                     onmouseover="this.style.transform='scale(1.05)';"
+                                     onmouseout="this.style.transform='scale(1)';">
+                            }
+                            else
+                            {
+                                <div style="width: 70px; height: 70px; background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: var(--muted); border: 2px solid var(--line);">
+                                    <i class="fas fa-image" style="font-size: 24px; opacity: 0.5;"></i>
+                                </div>
+                            }
+                        </td>
+                        <td style="padding: 16px;">
+                            <div style="color: var(--ink); font-weight: 600; font-size: 15px; margin-bottom: 4px;">@product.ProductName</div>
+                            @if (!string.IsNullOrEmpty(product.Description))
+                            {
+                                <div style="color: var(--muted); font-size: 12px; line-height: 1.4; max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="@product.Description">
+                                    @(product.Description.Length > 50 ? product.Description.Substring(0, 50) + "..." : product.Description)
+                                </div>
+                            }
+                        </td>
+                        <td style="padding: 16px;">
+                            <span style="display: inline-block; padding: 6px 12px; background: #e0e7ff; color: #3730a3; border-radius: 6px; font-size: 13px; font-weight: 500;">
+                                @(product.Category?.CategoryName ?? "Chưa phân loại")
+                            </span>
+                        </td>
+                        <td style="padding: 16px;">
+                            <div style="color: var(--ink); font-weight: 700; font-size: 15px; color: #059669;">@priceText</div>
+                            @if (product.ProductSizes.Any())
+                            {
+                                <div style="color: var(--muted); font-size: 11px; margin-top: 4px;">
+                                    @product.ProductSizes.Count() size
+                                </div>
+                            }
+                        </td>
+                        <td style="padding: 16px; text-align: center;">
+                            @if (product.IsActive)
+                            {
+                                <span style="display: inline-block; padding: 4px 12px; background: #d1fae5; color: #065f46; border-radius: 999px; font-size: 13px; font-weight: 500;">
+                                    Đang bán
+                                </span>
+                            }
+                            else
+                            {
+                                <span style="display: inline-block; padding: 4px 12px; background: #fee2e2; color: #991b1b; border-radius: 999px; font-size: 13px; font-weight: 500;">
+                                    Ngừng bán
+                                </span>
+                            }
+                        </td>
+                        <td style="padding: 16px; text-align: center;">
+                            <a href="@Url.Action("ViewProduct", "Admin", new { id = product.ProductID })" 
+                               title="Xem chi tiết sản phẩm"
+                               style="padding: 8px 16px; background: #3b82f6; color: white; border-radius: 8px; text-decoration: none; font-size: 13px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s;"
+                               onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(59,130,246,0.3)'; this.style.background='#2563eb';"
+                               onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'; this.style.background='#3b82f6';">
+                                <i class="fas fa-eye"></i>
+                                <span>Chi tiết</span>
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        @if (!Model.Any())
+        {
+            <div style="padding: 48px; text-align: center; color: var(--muted);">
+                <div style="font-size: 48px; margin-bottom: 16px; color: var(--admin-muted);"><i class="fas fa-box"></i></div>
+                <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">Chưa có sản phẩm nào</h3>
+                <p>Danh sách sản phẩm sẽ hiển thị tại đây.</p>
+            </div>
+        }
+    </div>
+
+    @* Pagination *@
+    @{
+        var currentPage = ViewBag.CurrentPage ?? 1;
+        var totalPages = ViewBag.TotalPages ?? 1;
+        var totalItems = ViewBag.TotalItems ?? 0;
+        var pageSize = ViewBag.PageSize ?? 20;
+    }
+    
+    @if (totalPages > 1)
+    {
+        <div style="display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 24px; padding: 20px;">
+            @if (currentPage > 1)
+            {
+                <a href="@Url.Action("Products", "Admin", new { page = currentPage - 1 })" 
+                   style="padding: 8px 16px; background: var(--card); border: 1px solid var(--line); border-radius: 6px; color: var(--ink); text-decoration: none; font-weight: 500; transition: all 0.2s;">
+                    <i class="fas fa-chevron-left"></i> Trước
+                </a>
+            }
+
+            @for (int i = Math.Max(1, currentPage - 2); i <= Math.Min(totalPages, currentPage + 2); i++)
+            {
+                if (i == currentPage)
+                {
+                    <span style="padding: 8px 16px; background: var(--admin-primary); color: white; border-radius: 6px; font-weight: 600;">
+                        @i
+                    </span>
+                }
+                else
+                {
+                    <a href="@Url.Action("Products", "Admin", new { page = i })" 
+                       style="padding: 8px 16px; background: var(--card); border: 1px solid var(--line); border-radius: 6px; color: var(--ink); text-decoration: none; font-weight: 500; transition: all 0.2s;">
+                        @i
+                    </a>
+                }
+            }
+
+            @if (currentPage < totalPages)
+            {
+                <a href="@Url.Action("Products", "Admin", new { page = currentPage + 1 })" 
+                   style="padding: 8px 16px; background: var(--card); border: 1px solid var(--line); border-radius: 6px; color: var(--ink); text-decoration: none; font-weight: 500; transition: all 0.2s;">
+                    Sau <i class="fas fa-chevron-right"></i>
+                </a>
+            }
+        </div>
+        <div style="text-align: center; color: var(--muted); font-size: 14px; margin-top: 8px;">
+            Hiển thị @((currentPage - 1) * pageSize + 1)-@(Math.Min(currentPage * pageSize, totalItems)) trong tổng số @totalItems sản phẩm
+        </div>
+    }
+</div>
+
+<div style="display: none;">@Html.AntiForgeryToken()</div>
+
+@section Scripts {
+    <script>
+        // Hàm chuẩn hóa text tiếng Việt (bỏ dấu)
+        function normalizeText(str) {
+            if (!str) return '';
+            return str
+                .toLowerCase()
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "")
+                .replace(/đ/g, "d")
+                .replace(/Đ/g, "d")
+                .trim();
+        }
+
+        // Tìm kiếm sản phẩm
+        document.getElementById('searchProduct')?.addEventListener('input', function(e) {
+            const searchTerm = normalizeText(e.target.value);
+            const rows = document.querySelectorAll('#productTableBody tr');
+            
+            rows.forEach(row => {
+                const name = row.getAttribute('data-name') || '';
+                const category = row.getAttribute('data-category') || '';
+                
+                const normalizedName = normalizeText(name);
+                const normalizedCategory = normalizeText(category);
+                
+                if (normalizedName.includes(searchTerm) || normalizedCategory.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+    </script>
+}

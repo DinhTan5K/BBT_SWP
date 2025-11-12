@@ -35,6 +35,7 @@ body { background-color: var(--bg-color); font-family: var(--font-main)}
 .summary-total span { font-weight: 700; font-size: 1.1rem; color: var(--brand-dark); }
 .status-badge { padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 0.8rem; color: #fff; min-width: 110px; text-align: center; }
 .status-badge.status-đã-xác-nhận { background-color: var(--success-color); }
+.status-badge.status-đang-giao { background-color: var(--brand-dark); }
 .status-badge.status-đã-giao{ background-color: var(--success-color); }
 .status-badge.status-chờ-xác-nhận { background-color: var(--pending-color); }
 .status-badge.status-đã-hủy { background-color: var(--cancelled-color); }

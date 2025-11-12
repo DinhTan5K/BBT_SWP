@@ -1,0 +1,407 @@
+@model start.Models.ViewModels.MarketingKPIVm
+@using start.Models
+@{
+    Layout = "~/Views/Shared/_MarketingLayout.cshtml";
+    var emp = ViewBag.Employee as Employee;
+    var avatar = !string.IsNullOrWhiteSpace(emp?.AvatarUrl)
+         ? Url.Content(emp.AvatarUrl) 
+        : Url.Content("https://res.cloudinary.com/do48qpmut/image/upload/v1761645429/uploads/tdppvgyas8bhvfs7lton.png");
+    var role = (emp?.RoleID ?? "").Trim().ToUpperInvariant();
+    var year = ViewBag.Year as int? ?? DateTime.Now.Year;
+    var month = ViewBag.Month as int? ?? DateTime.Now.Month;
+}
+
+<link rel="stylesheet" href='@Url.Content("~/css/employee/profile.css")' />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+<style>
+    .kpi-container {
+        padding: 24px;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .kpi-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 32px;
+        padding-bottom: 20px;
+        border-bottom: 2px solid #fef3c7;
+    }
+
+    .kpi-header h1 {
+        font-size: 28px;
+        font-weight: 700;
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin: 0;
+    }
+
+    .month-navigation {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .month-nav-btn {
+        padding: 8px 16px;
+        background: white;
+        border: 2px solid #f59e0b;
+        border-radius: 8px;
+        color: #f59e0b;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+
+    .month-nav-btn:hover {
+        background: #f59e0b;
+        color: white;
+    }
+
+    .month-display {
+        font-size: 18px;
+        font-weight: 600;
+        color: #374151;
+        min-width: 150px;
+        text-align: center;
+    }
+
+    .kpi-score-card {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        border-radius: 16px;
+        padding: 32px;
+        color: white;
+        text-align: center;
+        margin-bottom: 32px;
+        box-shadow: 0 8px 24px rgba(245, 158, 11, 0.3);
+    }
+
+    .kpi-score-card.achieved {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        box-shadow: 0 8px 24px rgba(16, 185, 129, 0.3);
+    }
+
+    .kpi-score-card.not-achieved {
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        box-shadow: 0 8px 24px rgba(239, 68, 68, 0.3);
+    }
+
+    .kpi-score-value {
+        font-size: 64px;
+        font-weight: 700;
+        margin: 16px 0;
+    }
+
+    .kpi-score-label {
+        font-size: 18px;
+        opacity: 0.9;
+        margin-bottom: 8px;
+    }
+
+    .kpi-status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 8px;
+        font-weight: 600;
+        margin-top: 12px;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 20px;
+        margin-bottom: 32px;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        border-left: 4px solid #f59e0b;
+    }
+
+    .stat-card h3 {
+        font-size: 16px;
+        font-weight: 600;
+        color: #6b7280;
+        margin: 0 0 16px 0;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .stat-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+        border-bottom: 1px solid #f3f4f6;
+    }
+
+    .stat-row:last-child {
+        border-bottom: none;
+    }
+
+    .stat-label {
+        font-size: 14px;
+        color: #6b7280;
+    }
+
+    .stat-value {
+        font-size: 16px;
+        font-weight: 600;
+        color: #1a1a1a;
+    }
+
+    .stat-value.approved {
+        color: #10b981;
+    }
+
+    .stat-value.rejected {
+        color: #ef4444;
+    }
+
+    .stat-value.pending {
+        color: #f59e0b;
+    }
+
+    .rate-bar {
+        width: 100%;
+        height: 8px;
+        background: #e5e7eb;
+        border-radius: 4px;
+        overflow: hidden;
+        margin-top: 8px;
+    }
+
+    .rate-bar-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+        transition: width 0.3s ease;
+    }
+
+    .bonus-card {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        border-radius: 12px;
+        padding: 24px;
+        color: white;
+        text-align: center;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+
+    .bonus-card h3 {
+        font-size: 18px;
+        font-weight: 600;
+        margin: 0 0 16px 0;
+        opacity: 0.9;
+    }
+
+    .bonus-amount {
+        font-size: 36px;
+        font-weight: 700;
+        margin: 8px 0;
+    }
+
+    .bonus-info {
+        font-size: 14px;
+        opacity: 0.8;
+        margin-top: 8px;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .empty-state i {
+        font-size: 64px;
+        color: #d1d5db;
+        margin-bottom: 16px;
+    }
+
+    .empty-state h3 {
+        font-size: 20px;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 8px;
+    }
+
+    .empty-state p {
+        font-size: 14px;
+        color: #6b7280;
+    }
+</style>
+
+<div class="kpi-container">
+        <div class="kpi-header">
+            <h1>
+                <i class="fas fa-trophy"></i>
+                KPI & Lương Marketing
+            </h1>
+            <div class="month-navigation">
+                <a href="@Url.Action("MarketingKPI", "Employee", new { year = ViewBag.PreviousYear, month = ViewBag.PreviousMonth })" class="month-nav-btn">
+                    <i class="fas fa-chevron-left"></i> Tháng trước
+                </a>
+                <div class="month-display">@month/@year</div>
+                <a href="@Url.Action("MarketingKPI", "Employee", new { year = ViewBag.NextYear, month = ViewBag.NextMonth })" class="month-nav-btn">
+                    Tháng sau <i class="fas fa-chevron-right"></i>
+                </a>
+            </div>
+        </div>
+
+        @if (Model != null)
+        {
+            <!-- KPI Score Card -->
+            <div class="kpi-score-card @(Model.IsKPIAchieved ? "achieved" : "not-achieved")">
+                <div class="kpi-score-label">Điểm KPI</div>
+                <div class="kpi-score-value">@Model.KPIScore.ToString("F1")</div>
+                <div class="kpi-status-badge">
+                    @if (Model.IsKPIAchieved)
+                    {
+                        <i class="fas fa-check-circle"></i>
+                        <span>Đạt KPI (Mục tiêu: @Model.TargetScore%)</span>
+                    }
+                    else
+                    {
+                        <i class="fas fa-times-circle"></i>
+                        <span>Chưa đạt KPI (Mục tiêu: @Model.TargetScore%)</span>
+                    }
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <!-- News Requests Stats -->
+                <div class="stat-card">
+                    <h3><i class="fas fa-newspaper"></i> Tin Tức</h3>
+                    <div class="stat-row">
+                        <span class="stat-label">Tổng yêu cầu</span>
+                        <span class="stat-value">@Model.TotalNewsRequests</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Đã duyệt</span>
+                        <span class="stat-value approved">@Model.ApprovedNewsRequests</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Đã từ chối</span>
+                        <span class="stat-value rejected">@Model.RejectedNewsRequests</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Chờ duyệt</span>
+                        <span class="stat-value pending">@Model.PendingNewsRequests</span>
+                    </div>
+                    <div style="margin-top: 12px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                            <span class="stat-label">Tỷ lệ duyệt</span>
+                            <span class="stat-value approved">@Model.NewsApproveRate.ToString("F1")%</span>
+                        </div>
+                        <div class="rate-bar">
+                            <div class="rate-bar-fill" style="width: @Model.NewsApproveRate%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Discount Requests Stats -->
+                <div class="stat-card">
+                    <h3><i class="fas fa-tag"></i> Mã Giảm Giá</h3>
+                    <div class="stat-row">
+                        <span class="stat-label">Tổng yêu cầu</span>
+                        <span class="stat-value">@Model.TotalDiscountRequests</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Đã duyệt</span>
+                        <span class="stat-value approved">@Model.ApprovedDiscountRequests</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Đã từ chối</span>
+                        <span class="stat-value rejected">@Model.RejectedDiscountRequests</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Chờ duyệt</span>
+                        <span class="stat-value pending">@Model.PendingDiscountRequests</span>
+                    </div>
+                    <div style="margin-top: 12px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                            <span class="stat-label">Tỷ lệ duyệt</span>
+                            <span class="stat-value approved">@Model.DiscountApproveRate.ToString("F1")%</span>
+                        </div>
+                        <div class="rate-bar">
+                            <div class="rate-bar-fill" style="width: @Model.DiscountApproveRate%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Overall Stats -->
+                <div class="stat-card">
+                    <h3><i class="fas fa-chart-pie"></i> Tổng Quan</h3>
+                    <div class="stat-row">
+                        <span class="stat-label">Tổng yêu cầu</span>
+                        <span class="stat-value">@Model.TotalRequests</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Đã duyệt</span>
+                        <span class="stat-value approved">@Model.TotalApproved</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Đã từ chối</span>
+                        <span class="stat-value rejected">@Model.TotalRejected</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Chờ duyệt</span>
+                        <span class="stat-value pending">@Model.TotalPending</span>
+                    </div>
+                    <div style="margin-top: 12px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                            <span class="stat-label">Tỷ lệ duyệt tổng</span>
+                            <span class="stat-value approved">@Model.OverallApproveRate.ToString("F1")%</span>
+                        </div>
+                        <div class="rate-bar">
+                            <div class="rate-bar-fill" style="width: @Model.OverallApproveRate%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bonus Card -->
+            @if (Model.KPIBonus > 0)
+            {
+                <div class="bonus-card">
+                    <h3><i class="fas fa-gift"></i> Thưởng KPI</h3>
+                    <div class="bonus-amount">@Model.KPIBonus.ToString("N0") VNĐ</div>
+                    <div class="bonus-info">
+                        Dựa trên điểm KPI: @Model.KPIScore.ToString("F1")/100
+                        @if (Model.KPIScore >= 90)
+                        {
+                            <span> (Thưởng 15% lương cơ bản)</span>
+                        }
+                        else if (Model.KPIScore >= 80)
+                        {
+                            <span> (Thưởng 10% lương cơ bản)</span>
+                        }
+                        else if (Model.KPIScore >= 70)
+                        {
+                            <span> (Thưởng 5% lương cơ bản)</span>
+                        }
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="empty-state">
+                <i class="fas fa-chart-line"></i>
+                <h3>Chưa có dữ liệu KPI</h3>
+                <p>Chưa có yêu cầu nào trong tháng @month/@year. Hãy tạo yêu cầu để bắt đầu tính KPI!</p>
+            </div>
+        }
+    </div>
+

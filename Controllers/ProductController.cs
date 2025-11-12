@@ -1,7 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 using start.Models;
 using start.Data;
 using start.DTOs.Product;
+using Microsoft.AspNetCore.Authentication;
 
 public class ProductController : Controller
 {
@@ -14,10 +17,24 @@ public class ProductController : Controller
         _db = db;
     }
 
+    // Helper method để lấy CustomerID từ Claims (CustomerScheme) - không bắt buộc đăng nhập
+    private int? GetCustomerId()
+    {
+        // Try to authenticate with CustomerScheme
+        var authResult = HttpContext.AuthenticateAsync("CustomerScheme").Result;
+        if (authResult?.Succeeded == true)
+        {
+            var userIdClaim = authResult.Principal?.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (int.TryParse(userIdClaim, out int customerId))
+                return customerId;
+        }
+        return null;
+    }
+
     public IActionResult Product()
     {
         // Initial load - only show empty state, products will load via AJAX
-        int? customerId = HttpContext.Session.GetInt32("CustomerID");
+        int? customerId = GetCustomerId();
         List<int> wishIds = new List<int>();
         if (customerId.HasValue)
         {
@@ -30,7 +47,7 @@ public class ProductController : Controller
     [HttpGet]
     public IActionResult FilterProducts([FromQuery] ProductFilterRequest request)
     {
-        int? customerId = HttpContext.Session.GetInt32("CustomerID");
+        int? customerId = GetCustomerId();
         List<int> wishIds = new List<int>();
         if (customerId.HasValue)
         {

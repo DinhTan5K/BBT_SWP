@@ -1,6 +1,16 @@
 @model start.Models.Employee
 @{
-    Layout = null;
+    // Kiểm tra role để dùng layout phù hợp
+    var role = (Model?.RoleID ?? "").Trim().ToUpperInvariant();
+    
+    if (role == "MK")
+    {
+        Layout = "~/Views/Shared/_MarketingLayout.cshtml";
+    }
+    else
+    {
+        Layout = "~/Views/Shared/_EmployeeLayout.cshtml";
+    }
 
     var avatar = !string.IsNullOrWhiteSpace(Model.AvatarUrl)
          ? Url.Content(Model.AvatarUrl) 
@@ -10,45 +20,19 @@
                        : Model.RoleID == "SL" ? "Trưởng ca"
                        : Model.RoleID == "BM" ? "Quản lý chi nhánh"
                        : Model.RoleID == "RM" ? "Quản lý vùng"
+                       : Model.RoleID == "MK" ? "Marketing"
                        : "Nhân viên");
 
-     var role = (Model?.RoleID ?? "").Trim().ToUpperInvariant();
-
+    ViewBag.ActiveMenu = "Profile";
 }
 
-<link rel="stylesheet" href='@Url.Content("~/css/employee/profile.css")' />
-
-<div class="layout">
-  <aside class="sidebar">
-    <div class="sb-title">Menu</div>
-    <a class="sb-item active" href="#">Hồ sơ của tôi</a>
-
-   @if (role=="EM" || role=="SL")
-{
-  <a class="sb-item @(ViewBag.ActiveMenu=="DayOff" ? "active" : "")"
-     href="@Url.Action("DayOff","Employee")">Quản lý ngày nghỉ</a>
+@section Styles {
+    <link rel="stylesheet" href='@Url.Content("~/css/employee/profile.css")' />
 }
 
-     <a class="sb-item @(ViewBag.ActiveMenu=="Schedule" ? "active" : "")"
-   href="@Url.Action("Schedule","Employee")">
-  Lịch làm
-</a>
-
-    <a class="sb-item @(ViewBag.ActiveMenu=="EditProfile" ? "active" : "")"
-   href="@Url.Action("EditProfile","Employee")">
-  Chỉnh sửa thông tin cá nhân
-</a>
- <a class="sb-item @(ViewBag.ActiveMenu=="EditProfile" ? "active" : "")"
-   href="@Url.Action("Index","Home")">
-  Đăng xuất
-</a>
-  </aside>
-
-  <main>
-
-    <div class="wrap">
-      <section class="card">
-       <div class="profile-head">
+<div class="wrap">
+  <section class="card">
+    <div class="profile-head">
           <div class="avatar"><img src="@avatar" alt="avatar"></div>
           <div>
             <h3 class="name">@Model.FullName</h3>
@@ -111,8 +95,6 @@
               <th>SĐT khẩn cấp 2</th><td>@Model.EmergencyPhone2</td>
             </tr>
           </table>
-        </div>
-      </section>
     </div>
-  </main>
+  </section>
 </div>

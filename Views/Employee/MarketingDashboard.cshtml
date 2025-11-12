@@ -1,0 +1,1095 @@
+@model List<Dictionary<string, object>>
+@using start.Models
+@{
+    Layout = "~/Views/Shared/_MarketingLayout.cshtml";
+    var emp = ViewBag.Employee as Employee;
+    var avatar = !string.IsNullOrWhiteSpace(emp?.AvatarUrl)
+         ? Url.Content(emp.AvatarUrl) 
+        : Url.Content("https://res.cloudinary.com/do48qpmut/image/upload/v1761645429/uploads/tdppvgyas8bhvfs7lton.png");
+    var role = (emp?.RoleID ?? "").Trim().ToUpperInvariant();
+}
+
+<link rel="stylesheet" href='@Url.Content("~/css/employee/profile.css")' />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+<style>
+    .mk-dashboard {
+        padding: 24px;
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
+    .mk-stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-bottom: 32px;
+    }
+
+    .mk-chart-section {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 24px;
+    }
+
+    @@media (max-width: 768px) {
+        .mk-chart-section {
+            grid-template-columns: 1fr;
+        }
+        
+        .mk-stats-grid {
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        }
+
+    }
+
+    .mk-stat-card {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        border-radius: 16px;
+        padding: 24px;
+        color: white;
+        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .mk-stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 20px rgba(245, 158, 11, 0.4);
+    }
+
+    .mk-stat-card.pending {
+        background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+    }
+
+    .mk-stat-card.approved {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+
+    .mk-stat-card.approved:hover {
+        box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
+    }
+
+    .mk-stat-card.rejected {
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+    }
+
+    .mk-stat-card.rejected:hover {
+        box-shadow: 0 8px 20px rgba(239, 68, 68, 0.4);
+    }
+
+    .mk-stat-icon {
+        font-size: 32px;
+        margin-bottom: 12px;
+        opacity: 0.9;
+    }
+
+    .mk-stat-value {
+        font-size: 36px;
+        font-weight: 700;
+        margin-bottom: 8px;
+    }
+
+    .mk-stat-label {
+        font-size: 14px;
+        opacity: 0.9;
+        font-weight: 500;
+    }
+
+    .mk-filters {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 24px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+
+    .mk-filter-group {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .mk-filter-label {
+        font-size: 14px;
+        font-weight: 600;
+        color: #374151;
+    }
+
+    .mk-filter-select {
+        padding: 8px 12px;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 14px;
+        background: white;
+        color: #374151;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .mk-filter-select:hover {
+        border-color: #f59e0b;
+    }
+
+    .mk-filter-select:focus {
+        outline: none;
+        border-color: #f59e0b;
+        box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+    }
+
+    .mk-requests-list {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .mk-request-card {
+        background: white;
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        transition: all 0.2s;
+        border-left: 4px solid #e5e7eb;
+    }
+
+    .mk-request-card:hover {
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+        transform: translateY(-2px);
+    }
+
+    .mk-request-card.pending {
+        border-left-color: #fbbf24;
+    }
+
+    .mk-request-card.approved {
+        border-left-color: #10b981;
+    }
+
+    .mk-request-card.rejected {
+        border-left-color: #ef4444;
+    }
+
+    .mk-request-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 16px;
+    }
+
+    .mk-request-type {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        background: #f3f4f6;
+        color: #374151;
+    }
+
+    .mk-request-type.news {
+        background: #dbeafe;
+        color: #1e40af;
+    }
+
+    .mk-request-type.discount {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .mk-status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .mk-status-badge.pending {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .mk-status-badge.approved {
+        background: #d1fae5;
+        color: #065f46;
+    }
+
+    .mk-status-badge.rejected {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .mk-request-content {
+        margin-bottom: 12px;
+    }
+
+    .mk-request-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #1a1a1a;
+        margin-bottom: 8px;
+    }
+
+    .mk-request-meta {
+        display: flex;
+        gap: 24px;
+        flex-wrap: wrap;
+        font-size: 13px;
+        color: #6b7280;
+    }
+
+    .mk-request-meta-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .mk-request-meta-item i {
+        color: #9ca3af;
+    }
+
+    .mk-rejection-reason {
+        margin-top: 12px;
+        padding: 12px;
+        background: #fee2e2;
+        border-left: 4px solid #ef4444;
+        border-radius: 8px;
+        font-size: 13px;
+        color: #991b1b;
+    }
+
+    .mk-rejection-reason strong {
+        display: block;
+        margin-bottom: 4px;
+        font-weight: 600;
+    }
+
+    .mk-empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .mk-empty-state i {
+        font-size: 64px;
+        color: #d1d5db;
+        margin-bottom: 16px;
+    }
+
+    .mk-empty-state h3 {
+        font-size: 20px;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 8px;
+    }
+
+    .mk-empty-state p {
+        font-size: 14px;
+        color: #6b7280;
+    }
+
+    .mk-pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 8px;
+        margin-top: 32px;
+    }
+
+    .mk-pagination-btn {
+        padding: 8px 16px;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        background: white;
+        color: #374151;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .mk-pagination-btn:hover:not(:disabled) {
+        border-color: #f59e0b;
+        color: #f59e0b;
+    }
+
+    .mk-pagination-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .mk-pagination-btn.active {
+        background: #f59e0b;
+        border-color: #f59e0b;
+        color: white;
+    }
+
+    .mk-pagination-info {
+        font-size: 14px;
+        color: #6b7280;
+        margin: 0 16px;
+    }
+
+    @@keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Timeline CSS */
+    .mk-timeline-container {
+        background: white;
+        border-radius: 16px;
+        padding: 28px;
+        margin-bottom: 32px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        position: relative;
+        z-index: 1;
+        overflow: visible;
+        border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .mk-timeline {
+        position: relative;
+        padding-left: 50px;
+        overflow: visible;
+    }
+
+    .mk-timeline-item {
+        position: relative;
+        padding-bottom: 28px;
+        padding-left: 0;
+        min-height: 60px;
+        isolation: isolate;
+        z-index: 1;
+    }
+
+    .mk-timeline-item:last-child {
+        padding-bottom: 0;
+        min-height: auto;
+    }
+
+    .mk-timeline-line {
+        position: absolute;
+        left: 19px;
+        top: 32px;
+        bottom: -4px;
+        width: 2px;
+        background: #e5e7eb;
+        z-index: 0;
+    }
+
+    .mk-timeline-item:last-child .mk-timeline-line {
+        display: none;
+    }
+
+    .mk-timeline-dot {
+        position: absolute;
+        left: 12px;
+        top: 15px;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        border: 3px solid white;
+        box-shadow: 0 0 0 2px currentColor, 0 2px 4px rgba(0,0,0,0.1);
+        z-index: 15;
+        background: currentColor;
+        pointer-events: none;
+    }
+
+    .mk-timeline-content {
+        position: relative;
+        z-index: 10;
+        background: transparent;
+        padding: 8px 0;
+        margin-left: 35px;
+        width: calc(100% - 20px);
+        padding-right: 16px;
+    }
+
+    .mk-timeline-badges {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-bottom: 6px;
+        position: relative;
+        z-index: 2;
+    }
+
+    .mk-timeline-date {
+        font-size: 12px;
+        color: #6b7280;
+        font-weight: 600;
+        margin-right: 4px;
+        white-space: nowrap;
+    }
+
+    .mk-timeline-status-badge {
+        font-size: 11px;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-weight: 600;
+        white-space: nowrap;
+        display: inline-block;
+        position: relative;
+        z-index: 2;
+    }
+
+    .mk-timeline-type-badge {
+        font-size: 11px;
+        padding: 4px 10px;
+        border-radius: 12px;
+        background: #f3f4f6;
+        color: #374151;
+        font-weight: 600;
+        white-space: nowrap;
+        display: inline-block;
+        position: relative;
+        z-index: 2;
+    }
+
+    .mk-timeline-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: #1a1a1a;
+        margin-top: 4px;
+        line-height: 1.5;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        position: relative;
+        z-index: 2;
+        padding-right: 8px;
+    }
+
+    @@media (max-width: 768px) {
+        .mk-timeline {
+            padding-left: 40px;
+        }
+        
+        .mk-timeline-content {
+            margin-left: 12px;
+            width: calc(100% - 12px);
+        }
+        
+        .mk-timeline-badges {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 6px;
+        }
+        
+        .mk-timeline-title {
+            font-size: 13px;
+        }
+    }
+</style>
+
+<div class="mk-dashboard">
+        <!-- Thông báo thành công -->
+        @if (TempData["ok"] != null)
+        {
+            <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 16px 20px; border-radius: 12px; margin-bottom: 24px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); display: flex; align-items: center; gap: 12px; animation: slideDown 0.3s ease-out;">
+                <i class="fas fa-check-circle" style="font-size: 20px;"></i>
+                <span style="font-weight: 500;">@TempData["ok"]</span>
+            </div>
+        }
+
+        <!-- Thông báo lỗi -->
+        @if (TempData["err"] != null)
+        {
+            <div style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; padding: 16px 20px; border-radius: 12px; margin-bottom: 24px; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3); display: flex; align-items: center; gap: 12px; animation: slideDown 0.3s ease-out;">
+                <i class="fas fa-exclamation-circle" style="font-size: 20px;"></i>
+                <span style="font-weight: 500;">@TempData["err"]</span>
+            </div>
+        }
+
+        <!-- Banner Header -->
+        <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); border-radius: 20px; padding: 40px; margin-bottom: 32px; color: white; position: relative; overflow: hidden; box-shadow: 0 8px 24px rgba(245, 158, 11, 0.3);">
+            <div style="position: relative; z-index: 2;">
+                <h1 style="font-size: 32px; font-weight: 800; margin-bottom: 12px; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <i class="fas fa-chart-line" style="margin-right: 12px;"></i>
+                    Dashboard Yêu Cầu Marketing
+                </h1>
+                <p style="font-size: 16px; opacity: 0.95; font-weight: 500;">
+                    Theo dõi và quản lý các chiến dịch marketing của bạn
+                </p>
+            </div>
+            <div style="position: absolute; right: -50px; top: -50px; width: 200px; height: 200px; background: rgba(255,255,255,0.1); border-radius: 50%; z-index: 1;"></div>
+            <div style="position: absolute; right: 100px; bottom: -30px; width: 150px; height: 150px; background: rgba(255,255,255,0.08); border-radius: 50%; z-index: 1;"></div>
+        </div>
+
+        <!-- Thống kê tổng quan -->
+        <div class="mk-stats-grid">
+            <div class="mk-stat-card pending">
+                <div class="mk-stat-icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="mk-stat-value">@ViewBag.TotalPending</div>
+                <div class="mk-stat-label">Chờ duyệt (Tổng)</div>
+                @if (ViewBag.MonthPending != null)
+                {
+                    <div style="font-size: 12px; opacity: 0.8; margin-top: 4px;">
+                        Tháng @ViewBag.CurrentMonth/@ViewBag.CurrentYear: @ViewBag.MonthPending
+                    </div>
+                }
+            </div>
+            <div class="mk-stat-card approved">
+                <div class="mk-stat-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="mk-stat-value">@ViewBag.TotalApproved</div>
+                <div class="mk-stat-label">Đã duyệt (Tổng)</div>
+                @if (ViewBag.MonthApproved != null)
+                {
+                    <div style="font-size: 12px; opacity: 0.8; margin-top: 4px;">
+                        Tháng @ViewBag.CurrentMonth/@ViewBag.CurrentYear: @ViewBag.MonthApproved
+                    </div>
+                }
+            </div>
+            <div class="mk-stat-card rejected">
+                <div class="mk-stat-icon">
+                    <i class="fas fa-times-circle"></i>
+                </div>
+                <div class="mk-stat-value">@ViewBag.TotalRejected</div>
+                <div class="mk-stat-label">Đã từ chối (Tổng)</div>
+                @if (ViewBag.MonthRejected != null)
+                {
+                    <div style="font-size: 12px; opacity: 0.8; margin-top: 4px;">
+                        Tháng @ViewBag.CurrentMonth/@ViewBag.CurrentYear: @ViewBag.MonthRejected
+                    </div>
+                }
+            </div>
+            @if (ViewBag.CurrentKPI != null)
+            {
+                var kpi = ViewBag.CurrentKPI as start.Models.ViewModels.MarketingKPIVm;
+                <div class="mk-stat-card" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);">
+                    <div class="mk-stat-icon">
+                        <i class="fas fa-trophy"></i>
+                    </div>
+                    <div class="mk-stat-value">@kpi.KPIScore.ToString("F1")</div>
+                    <div class="mk-stat-label">KPI Tháng @ViewBag.CurrentMonth/@ViewBag.CurrentYear</div>
+                    <div style="font-size: 12px; opacity: 0.9; margin-top: 4px; font-weight: 600;">
+                        @(kpi.IsKPIAchieved ? "✓ Đạt KPI" : "✗ Chưa đạt")
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Biểu đồ KPI và Card chiến dịch nổi bật -->
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; margin-bottom: 32px;" class="mk-chart-section">
+            <!-- Biểu đồ KPI theo tháng -->
+            <div style="background: white; border-radius: 16px; padding: 28px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); border: 1px solid rgba(0, 0, 0, 0.05);">
+                <h3 style="font-size: 20px; font-weight: 700; color: #1a1a1a; margin-bottom: 24px; display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-chart-line" style="color: #f59e0b; font-size: 22px;"></i>
+                    Biểu đồ KPI 6 tháng gần nhất
+                </h3>
+                <canvas id="kpiChart" style="max-height: 300px;"></canvas>
+            </div>
+
+            <!-- Card chiến dịch nổi bật -->
+            <div style="background: white; border-radius: 16px; padding: 28px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); border: 1px solid rgba(0, 0, 0, 0.05);">
+                <h3 style="font-size: 20px; font-weight: 700; color: #1a1a1a; margin-bottom: 24px; display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-star" style="color: #f59e0b; font-size: 22px;"></i>
+                    Chiến dịch nổi bật
+                </h3>
+                @if (ViewBag.LatestApprovedNews != null)
+                {
+                    var news = ViewBag.LatestApprovedNews as start.Models.NewsRequest;
+                    <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 14px; padding: 24px; border-left: 5px solid #f59e0b; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15); transition: transform 0.2s;">
+                        <div style="font-size: 13px; color: #92400e; font-weight: 700; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">
+                            <i class="fas fa-newspaper"></i> Tin tức được duyệt gần nhất
+                        </div>
+                        <div style="font-size: 18px; font-weight: 800; color: #1a1a1a; margin-bottom: 14px; line-height: 1.4;">
+                            @news.Title
+                        </div>
+                        <div style="font-size: 13px; color: #6b7280; margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
+                            <i class="fas fa-calendar-check" style="color: #f59e0b;"></i> 
+                            Duyệt: @(news.ReviewedAt?.ToString("dd/MM/yyyy HH:mm") ?? news.RequestedAt.ToString("dd/MM/yyyy HH:mm"))
+                        </div>
+                        @if (!string.IsNullOrEmpty(news.ImageUrl))
+                        {
+                            <img src="@news.ImageUrl" alt="@news.Title" style="width: 100%; border-radius: 10px; margin-top: 14px; max-height: 160px; object-fit: cover; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div style="text-align: center; padding: 50px 20px; color: #9ca3af; background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%); border-radius: 14px;">
+                        <i class="fas fa-inbox" style="font-size: 56px; margin-bottom: 16px; opacity: 0.4;"></i>
+                        <p style="font-size: 15px; font-weight: 500;">Chưa có chiến dịch nào</p>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Bộ lọc nâng cao -->
+        <div class="mk-filters">
+            <div class="mk-filter-group">
+                <label class="mk-filter-label">Tháng:</label>
+                <select class="mk-filter-select" id="monthFilter" onchange="applyFilters()">
+                    @for (int m = 1; m <= 12; m++)
+                    {
+                        if (ViewBag.CurrentMonth == m)
+                        {
+                            <option value="@m" selected>Tháng @m</option>
+                        }
+                        else
+                        {
+                            <option value="@m">Tháng @m</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="mk-filter-group">
+                <label class="mk-filter-label">Năm:</label>
+                <select class="mk-filter-select" id="yearFilter" onchange="applyFilters()">
+                    @for (int y = DateTime.Now.Year - 2; y <= DateTime.Now.Year + 1; y++)
+                    {
+                        if (ViewBag.CurrentYear == y)
+                        {
+                            <option value="@y" selected>@y</option>
+                        }
+                        else
+                        {
+                            <option value="@y">@y</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="mk-filter-group">
+                <label class="mk-filter-label">Loại yêu cầu:</label>
+                <select class="mk-filter-select" id="requestTypeFilter" onchange="applyFilters()">
+                    @if (ViewBag.CurrentRequestType == "all") { <option value="all" selected>Tất cả</option> } else { <option value="all">Tất cả</option> }
+                    @if (ViewBag.CurrentRequestType == "news") { <option value="news" selected>Tin tức</option> } else { <option value="news">Tin tức</option> }
+                    @if (ViewBag.CurrentRequestType == "discount") { <option value="discount" selected>Mã giảm giá</option> } else { <option value="discount">Mã giảm giá</option> }
+                </select>
+            </div>
+            <div class="mk-filter-group">
+                <label class="mk-filter-label">Trạng thái:</label>
+                <select class="mk-filter-select" id="statusFilter" onchange="applyFilters()">
+                    @if (ViewBag.CurrentStatus == "all") { <option value="all" selected>Tất cả</option> } else { <option value="all">Tất cả</option> }
+                    @if (ViewBag.CurrentStatus == "Pending") { <option value="Pending" selected>Chờ duyệt</option> } else { <option value="Pending">Chờ duyệt</option> }
+                    @if (ViewBag.CurrentStatus == "Approved") { <option value="Approved" selected>Đã duyệt</option> } else { <option value="Approved">Đã duyệt</option> }
+                    @if (ViewBag.CurrentStatus == "Rejected") { <option value="Rejected" selected>Đã từ chối</option> } else { <option value="Rejected">Đã từ chối</option> }
+                </select>
+            </div>
+        </div>
+
+        <!-- Timeline lịch sử yêu cầu -->
+        @if (ViewBag.TimelineRequests != null && ((List<Dictionary<string, object>>)ViewBag.TimelineRequests).Count > 0)
+        {
+            <div class="mk-timeline-container">
+                <h3 style="font-size: 20px; font-weight: 700; color: #1a1a1a; margin-bottom: 24px; display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-history" style="color: #f59e0b; font-size: 22px;"></i>
+                    Timeline lịch sử yêu cầu (10 gần nhất)
+                </h3>
+                <div class="mk-timeline">
+                    @{
+                        var timelineList = ViewBag.TimelineRequests as List<Dictionary<string, object>>;
+                        int index = 0;
+                    }
+                    @foreach (var item in timelineList)
+                    {
+                        var request = item["Request"];
+                        var requestType = item["Type"].ToString();
+                        var status = (RequestStatus)item["Status"];
+                        var requestedAt = (DateTime)item["RequestedAt"];
+                        var isLast = index == timelineList.Count - 1;
+                        
+                        var statusColor = status switch
+                        {
+                            RequestStatus.Pending => "#fbbf24",
+                            RequestStatus.Approved => "#10b981",
+                            RequestStatus.Rejected => "#ef4444",
+                            _ => "#9ca3af"
+                        };
+
+                        var statusText = status == RequestStatus.Pending ? "Chờ duyệt" : status == RequestStatus.Approved ? "Đã duyệt" : "Đã từ chối";
+                        var typeText = requestType == "News" ? "📰 Tin tức" : "🏷️ Mã giảm giá";
+
+                        string title = "";
+                        if (requestType == "News")
+                        {
+                            var nr = (NewsRequest)request;
+                            title = nr.Title;
+                        }
+                        else if (requestType == "Discount")
+                        {
+                            var dr = (DiscountRequest)request;
+                            title = $"Mã giảm giá: {dr.Code}";
+                        }
+
+                        <div class="mk-timeline-item">
+                            <!-- Timeline line -->
+                            @if (!isLast)
+                            {
+                                <div class="mk-timeline-line"></div>
+                            }
+                            
+                            <!-- Timeline dot -->
+                            <div class="mk-timeline-dot" style="color: @statusColor;"></div>
+                            
+                            <!-- Timeline content -->
+                            <div class="mk-timeline-content">
+                                <div class="mk-timeline-badges">
+                                    <span class="mk-timeline-date">@requestedAt.ToString("dd/MM/yyyy HH:mm")</span>
+                                    <span class="mk-timeline-status-badge" style="background: @statusColor; color: white;">
+                                        @statusText
+                                    </span>
+                                    <span class="mk-timeline-type-badge">
+                                        @typeText
+                                    </span>
+                                </div>
+                                <div class="mk-timeline-title">
+                                    @title
+                                </div>
+                            </div>
+                        </div>
+                        index++;
+                    }
+                </div>
+            </div>
+        }
+
+        <!-- Danh sách requests -->
+        @if (Model != null && Model.Count > 0)
+        {
+            <div class="mk-requests-list">
+                @foreach (var item in Model)
+                {
+                    var request = item["Request"];
+                    var requestType = item["Type"].ToString();
+                    var status = (RequestStatus)item["Status"];
+                    var requestedAt = (DateTime)item["RequestedAt"];
+                    var requestTypeEnum = (RequestType)item["RequestType"];
+
+                    var statusClass = status switch
+                    {
+                        RequestStatus.Pending => "pending",
+                        RequestStatus.Approved => "approved",
+                        RequestStatus.Rejected => "rejected",
+                        _ => "pending"
+                    };
+
+                    var statusText = status switch
+                    {
+                        RequestStatus.Pending => "Chờ duyệt",
+                        RequestStatus.Approved => "Đã duyệt",
+                        RequestStatus.Rejected => "Đã từ chối",
+                        _ => "Không xác định"
+                    };
+
+                    var requestTypeText = requestTypeEnum switch
+                    {
+                        RequestType.Add => "Thêm mới",
+                        RequestType.Edit => "Sửa",
+                        RequestType.Delete => "Xóa",
+                        _ => "Không xác định"
+                    };
+
+                    string title = "";
+                    string code = "";
+                    string reviewedBy = "";
+                    DateTime? reviewedAt = null;
+                    string rejectionReason = "";
+                    decimal discountPercent = 0;
+                    decimal? discountAmount = null;
+                    DateTime? startDate = null;
+                    DateTime? endDate = null;
+                    int? usageLimit = null;
+                    start.Models.DiscountType? discountType = null;
+
+                    if (requestType == "News")
+                    {
+                        var nr = (NewsRequest)request;
+                        title = nr.Title;
+                        reviewedBy = nr.ReviewedByEmployee?.FullName ?? nr.ReviewedBy ?? "";
+                        reviewedAt = nr.ReviewedAt;
+                        rejectionReason = nr.RejectionReason ?? "";
+                    }
+                    else if (requestType == "Discount")
+                    {
+                        var dr = (DiscountRequest)request;
+                        code = dr.Code;
+                        title = $"Mã giảm giá: {dr.Code}";
+                        reviewedBy = dr.ReviewedByEmployee?.FullName ?? dr.ReviewedBy ?? "";
+                        reviewedAt = dr.ReviewedAt;
+                        rejectionReason = dr.RejectionReason ?? "";
+                        discountPercent = dr.Percent;
+                        discountAmount = dr.Amount;
+                        startDate = dr.StartAt;
+                        endDate = dr.EndAt;
+                        usageLimit = dr.UsageLimit;
+                        discountType = dr.Type;
+                    }
+
+                    <div class="mk-request-card @statusClass">
+                        <div class="mk-request-header">
+                            <div class="mk-request-type @(requestType.ToLower())">
+                                @if (requestType == "News")
+                                {
+                                    <i class="fas fa-newspaper"></i>
+                                    <span>Tin tức</span>
+                                }
+                                else
+                                {
+                                    <i class="fas fa-tag"></i>
+                                    <span>Mã giảm giá</span>
+                                }
+                            </div>
+                            <div class="mk-status-badge @statusClass">
+                                <i class="fas fa-@(status == RequestStatus.Pending ? "clock" : status == RequestStatus.Approved ? "check-circle" : "times-circle")"></i>
+                                @statusText
+                            </div>
+                        </div>
+
+                        <div class="mk-request-content">
+                            <div class="mk-request-title">@title</div>
+                            <div class="mk-request-meta">
+                                <div class="mk-request-meta-item">
+                                    <i class="fas fa-layer-group"></i>
+                                    <span>@requestTypeText</span>
+                                </div>
+                                <div class="mk-request-meta-item">
+                                    <i class="fas fa-calendar"></i>
+                                    <span>@requestedAt.ToString("dd/MM/yyyy HH:mm")</span>
+                                </div>
+                                @if (!string.IsNullOrEmpty(reviewedBy))
+                                {
+                                    <div class="mk-request-meta-item">
+                                        <i class="fas fa-user-check"></i>
+                                        <span>Duyệt bởi: @reviewedBy</span>
+                                    </div>
+                                    @if (reviewedAt.HasValue)
+                                    {
+                                        <div class="mk-request-meta-item">
+                                            <i class="fas fa-calendar-check"></i>
+                                            <span>@reviewedAt.Value.ToString("dd/MM/yyyy HH:mm")</span>
+                                        </div>
+                                    }
+                                }
+                            </div>
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(rejectionReason))
+                        {
+                            <div class="mk-rejection-reason">
+                                <strong><i class="fas fa-exclamation-triangle"></i> Lý do từ chối:</strong>
+                                @rejectionReason
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+
+            <!-- Pagination -->
+            @if (ViewBag.TotalPages > 1)
+            {
+                <div class="mk-pagination">
+                    @if (ViewBag.CurrentPage > 1)
+                    {
+                        <button class="mk-pagination-btn" onclick="goToPage(@(ViewBag.CurrentPage - 1))">
+                            <i class="fas fa-chevron-left"></i> Trước
+                        </button>
+                    }
+                    else
+                    {
+                        <button class="mk-pagination-btn" disabled>
+                            <i class="fas fa-chevron-left"></i> Trước
+                        </button>
+                    }
+
+                    <span class="mk-pagination-info">
+                        Trang @ViewBag.CurrentPage / @ViewBag.TotalPages (@ViewBag.TotalCount yêu cầu)
+                    </span>
+
+                    @if (ViewBag.CurrentPage < ViewBag.TotalPages)
+                    {
+                        <button class="mk-pagination-btn" onclick="goToPage(@(ViewBag.CurrentPage + 1))">
+                            Sau <i class="fas fa-chevron-right"></i>
+                        </button>
+                    }
+                    else
+                    {
+                        <button class="mk-pagination-btn" disabled>
+                            Sau <i class="fas fa-chevron-right"></i>
+                        </button>
+                    }
+                </div>
+            }
+        }
+        else
+        {
+            <div class="mk-empty-state">
+                <i class="fas fa-inbox"></i>
+                <h3>Chưa có yêu cầu nào</h3>
+                <p>Bạn chưa tạo yêu cầu nào. Hãy tạo yêu cầu tin tức hoặc mã giảm giá để bắt đầu!</p>
+            </div>
+        }
+    </div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+    // Biểu đồ KPI
+    @{
+        var kpiChartDataJson = System.Text.Json.JsonSerializer.Serialize(ViewBag.KPIChartData, new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase });
+    }
+    const kpiChartData = @Html.Raw(kpiChartDataJson);
+    
+    const kpiCtx = document.getElementById('kpiChart');
+    if (kpiCtx && kpiChartData) {
+        new Chart(kpiCtx, {
+            type: 'line',
+            data: {
+                labels: kpiChartData.map(d => d.month),
+                datasets: [{
+                    label: 'Điểm KPI',
+                    data: kpiChartData.map(d => d.kpiScore),
+                    borderColor: '#f59e0b',
+                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 6,
+                    pointBackgroundColor: '#f59e0b',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2
+                }, {
+                    label: 'Số request đã duyệt',
+                    data: kpiChartData.map(d => d.approvedCount),
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 6,
+                    pointBackgroundColor: '#10b981',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    yAxisID: 'y1'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 15,
+                            font: {
+                                size: 12,
+                                weight: '600'
+                            }
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        padding: 12,
+                        titleFont: {
+                            size: 14,
+                            weight: '600'
+                        },
+                        bodyFont: {
+                            size: 13
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            callback: function(value) {
+                                return value + ' điểm';
+                            },
+                            font: {
+                                size: 11
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return value + ' requests';
+                            },
+                            font: {
+                                size: 11
+                            }
+                        },
+                        grid: {
+                            drawOnChartArea: false
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            font: {
+                                size: 11
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function applyFilters() {
+        const requestType = document.getElementById('requestTypeFilter').value;
+        const status = document.getElementById('statusFilter').value;
+        const month = document.getElementById('monthFilter').value;
+        const year = document.getElementById('yearFilter').value;
+        
+        const params = new URLSearchParams();
+        if (requestType !== 'all') params.append('requestType', requestType);
+        if (status !== 'all') params.append('status', status);
+        params.append('month', month);
+        params.append('year', year);
+        
+        window.location.href = '@Url.Action("MarketingDashboard", "Employee")?' + params.toString();
+    }
+
+    function goToPage(page) {
+        const requestType = document.getElementById('requestTypeFilter')?.value || 'all';
+        const status = document.getElementById('statusFilter')?.value || 'all';
+        const month = document.getElementById('monthFilter')?.value || '@ViewBag.CurrentMonth';
+        const year = document.getElementById('yearFilter')?.value || '@ViewBag.CurrentYear';
+        
+        const params = new URLSearchParams();
+        if (requestType !== 'all') params.append('requestType', requestType);
+        if (status !== 'all') params.append('status', status);
+        params.append('month', month);
+        params.append('year', year);
+        params.append('page', page);
+        
+        window.location.href = '@Url.Action("MarketingDashboard", "Employee")?' + params.toString();
+    }
+</script>
+
