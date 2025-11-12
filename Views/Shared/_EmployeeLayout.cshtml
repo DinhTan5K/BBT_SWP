@@ -20,6 +20,8 @@
     @* Cho phép view con chèn thêm CSS *@
     @RenderSection("Styles", required: false)
 </head>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
 <body>
 <div class="layout">
 
@@ -29,7 +31,7 @@
     <a class="sb-item @(active=="Profile" ? "active" : "")"
        href="@Url.Action("Profile","Employee")">Hồ sơ của tôi</a>
 
-    @if (role is "EM" or "SL" or "NV")
+    @if (role is "EM" or "SL" or "SH")
     {
       <a class="sb-item @(ViewBag.ActiveMenu=="DayOff" ? "active" : "")"
          href="@Url.Action("DayOff","Employee")">
@@ -45,6 +47,13 @@
        href="@Url.Action("EditProfile","Employee")">Chỉnh sửa thông tin cá nhân</a>
         <a class="sb-item @(active=="" ? "active" : "")"
        href="@Url.Action("Index","Home")">Đăng xuất</a>
+     @if (role == "SH")
+  {
+      <a class="sb-item @(ViewBag.ActiveMenu=="MyOrders" ? "active" : "")"
+         href="@Url.Action("MyOrders","Shipper")">
+          ▶Quản lý đơn hàng
+      </a>
+    }
   </aside>
 
   <main>

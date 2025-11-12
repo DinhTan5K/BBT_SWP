@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using start.Models;
 
 namespace start.Data
@@ -34,6 +35,15 @@ namespace start.Data
         public DbSet<DayOffRequest> DayOffRequests => Set<DayOffRequest>();
         public DbSet<ProductCategory> ProductCategories { get; set; }
         public DbSet<News> News { get; set; }
+        public DbSet<Attendance> Attendances { get; set; }
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+
+          
+             modelBuilder.Entity<WorkSchedule>()
+                        .ToTable(tb => tb.HasTrigger("dbo.trg_AfterWorkScheduleChange"));
+        }
 
     }
 }

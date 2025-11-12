@@ -39,28 +39,31 @@ namespace start.Controllers
         {
             // 1) Ưu tiên Employee (quản trị, nhân sự nội bộ)
             var emp = _authService.LoginEmployee(loginId, password);
-            if (emp != null)
-            {
-                // set session cho Employee
-                HttpContext.Session.SetString("EmployeeID", emp.EmployeeID);
-                HttpContext.Session.SetString("EmployeeName", emp.FullName ?? "");
-                    HttpContext.Session.SetString("Role", emp.RoleID ?? "EM");
-                if (emp.BranchID.HasValue) // Kiểm tra nếu nhân viên có chi nhánh
-        {
-            HttpContext.Session.SetString("BranchId", emp.BranchID.Value.ToString());
-        }
+                if (emp != null)
+                {
+                    // set session cho Employee
+                    HttpContext.Session.SetString("EmployeeID", emp.EmployeeID);
+                    HttpContext.Session.SetString("EmployeeName", emp.FullName ?? "");
+                    HttpContext.Session.SetString("RoleID", emp.RoleID ?? "EM"); // ✅ sửa key thành RoleID
 
-                // điều hướng theo role nội bộ
-                if (emp.RoleID == "AD")         // Admin
-                    return RedirectToAction("Profile", "Employee");
-            else if (emp.RoleID?.Equals("EM", StringComparison.OrdinalIgnoreCase) == true)
-        return RedirectToAction("Profile", "Employee"); // <-- đúng controller
-                else if (emp.RoleID == "SL")    // Shift Leader (nếu có)
-                    return RedirectToAction("Profile", "Employee");
-                else if (emp.RoleID == "BM")    // Branch Manager (nếu có)
-                    return RedirectToAction("Index", "BManager");
-                else if (emp.RoleID == "RM")    // Region Manager (nếu có)
-                    return RedirectToAction("Profile", "Employee");
+                    if (emp.BranchID.HasValue) // Kiểm tra nếu nhân viên có chi nhánh
+                    {
+                        HttpContext.Session.SetString("BranchId", emp.BranchID.Value.ToString());
+                    }
+
+                    // điều hướng theo role nội bộ
+                    if (emp.RoleID == "AD")         // Admin
+                        return RedirectToAction("Profile", "Employee");
+                    else if (emp.RoleID?.Equals("EM", StringComparison.OrdinalIgnoreCase) == true)
+                        return RedirectToAction("Profile", "Employee"); // <-- đúng controller
+                    else if (emp.RoleID == "SL")    // Shift Leader (nếu có)
+                        return RedirectToAction("Profile", "Employee");
+                    else if (emp.RoleID == "BM")    // Branch Manager (nếu có)
+                        return RedirectToAction("Profile", "Employee");
+                    else if (emp.RoleID == "RM")    // Region Manager (nếu có)
+                        return RedirectToAction("Profile", "Employee");
+                    else if (emp.RoleID == "SH")    // ✅ Shipper mới thêm
+    return RedirectToAction("MyOrders", "Shipper");
             }
 
             // 2) Nếu không phải Employee, thử Customer (người dùng ngoài)

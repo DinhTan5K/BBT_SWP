@@ -24,11 +24,25 @@
         .ToDictionary(g => g.Key, g => g.ToList());
 
     string[] dowHeaders = new[] { "T2", "T3", "T4", "T5", "T6", "T7", "CN" };
+
+    // Lấy thông tin từ ViewBag
+    var todayCheckIn = ViewBag.TodayCheckIn as start.Models.Attendance;
+    var todaySchedules = ViewBag.TodaySchedules as List<WorkSchedule> ?? new List<WorkSchedule>();
+    var employeeId = ViewBag.EmployeeId as string ?? "";
 }
 
 
 
 <div class="card shadow-sm mb-3">
+
+@if (TempData["err"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show mt-3 text-center" role="alert">
+        <i class="fas fa-exclamation-triangle me-2"></i>@TempData["err"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
   <div class="card-header calendar-header">
     <div>
       <div class="fw-semibold">Lịch làm việc tháng @month/@year</div>
@@ -131,6 +145,167 @@ for (int i = 0; i < pad; i++)
 
   <div class="card-footer text-muted small">
     Tổng số ca: @Model.Items.Count
-    <button type="button" class="btn btn-primary btn-print print-hidden" </button>
+    
   </div>
 </div>
+
+@* ==== CHECK-IN / CHECK-OUT SECTION ==== *@
+@if (!string.IsNullOrEmpty(employeeId))
+{
+    @if (TempData["ok"] != null && !Context.Request.Query.ContainsKey("ok"))
+{
+    <div class="alert alert-success alert-dismissible fade show mt-3 text-center" role="alert">
+        <i class="fas fa-check-circle me-2"></i>@TempData["ok"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+
+    var hasCheckIn = todayCheckIn != null;
+    var hasCheckOut = todayCheckIn?.CheckOutTime != null;
+    var hasWorkSchedule = todaySchedules != null && todaySchedules.Any();
+
+    <div class="card shadow-sm mb-3 print-hidden attendance-card">
+        <div class="card-header attendance-header">
+            <h5 class="mb-0">
+                <i class="fas fa-clock"></i> Check-in/Check-out hôm nay
+            </h5>
+        </div>
+        <div class="card-body attendance-body">
+            @if (!hasWorkSchedule)
+            {
+                <div class="alert alert-warning d-flex align-items-center">
+                    <i class="fas fa-exclamation-triangle fa-2x me-3"></i>
+                    <div>
+                        <strong>Hôm nay bạn không có ca làm việc.</strong><br />
+                        <small class="text-muted">Vui lòng liên hệ quản lý để được phân ca.</small>
+                    </div>
+                </div>
+            }
+            else
+            {
+                var firstSchedule = todaySchedules.First();
+                var shiftTimeDisplay = start.Services.ShiftTimeHelper.GetShiftTimeDisplay(firstSchedule.Shift);
+
+                if (hasCheckIn && hasCheckOut)
+                {
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-double"></i> 
+                        <strong>Đã hoàn thành ca làm việc</strong><br />
+                        <small>
+                            Check-in: @todayCheckIn.CheckInTime.ToString("HH:mm:ss") –
+                            Check-out: @todayCheckIn.CheckOutTime?.ToString("HH:mm:ss")
+                        </small>
+                    </div>
+                }
+                else if (hasCheckIn && !hasCheckOut)
+                {
+                    <div class="alert alert-info d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="fas fa-check-circle"></i> 
+                            Đã check-in lúc <strong>@todayCheckIn.CheckInTime.ToString("HH:mm:ss")</strong>
+                        </div>
+                        <button class="btn btn-checkout btn-sm"
+        onclick="openCheckModal(false, @firstSchedule.WorkScheduleID)">
+    <i class="fas fa-sign-out-alt me-1"></i> Check-out
+</button>
+
+
+                    </div>
+                }
+                else
+{
+    <div class="checkin-section text-center">
+        <p class="text-muted mb-2">
+            <i class="fas fa-info-circle"></i>
+            Ca hôm nay: <strong>@firstSchedule.Shift</strong> 
+            (<span>@shiftTimeDisplay</span>)
+        </p>
+        <button class="btn btn-primary btn-lg w-100"
+                onclick="openCheckModal(true, @firstSchedule.WorkScheduleID)">
+            <i class="fas fa-sign-in-alt"></i> Check-in cho ca @firstSchedule.Shift
+        </button>
+    </div>
+}
+
+            }
+        </div>
+    </div>
+}
+
+@* ==== MODAL CONTAINER (nơi server load modal vào) ==== *@
+<div id="checkModalContainer"></div>
+
+<script>
+async function openCheckModal(isCheckIn, workScheduleId) {
+    try {
+        console.log('openCheckModal called with workScheduleId:', workScheduleId);
+        const url = isCheckIn ? `/Employee/CheckIn/${workScheduleId ?? ''}` : `/Employee/CheckOut`;
+        console.log('Fetching URL:', url);
+        const response = await fetch(url);
+        const html = await response.text();
+        console.log('Full HTML response length:', html.length);
+        console.log('HTML received (first 500 chars):', html.substring(0, 500));
+        
+        // Kiểm tra xem có video element không
+        if (!html.includes('id="video"')) {
+            console.error('❌ Video element NOT FOUND in HTML response!');
+            console.log('Full HTML:', html);
+        } else {
+            console.log('✅ Video element found in HTML');
+        }
+
+        let container = document.getElementById('checkModalContainer');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'checkModalContainer';
+            document.body.appendChild(container);
+        }
+        container.innerHTML = html;
+        console.log('HTML inserted');
+
+        // Tìm và thực thi script nếu có
+        const scripts = container.querySelectorAll('script');
+        console.log('Found scripts:', scripts.length);
+        scripts.forEach((oldScript, index) => {
+            console.log(`Executing script ${index}:`, oldScript.innerHTML.substring(0, 100));
+            const newScript = document.createElement('script');
+            Array.from(oldScript.attributes).forEach(attr => {
+                newScript.setAttribute(attr.name, attr.value);
+            });
+            newScript.appendChild(document.createTextNode(oldScript.innerHTML));
+            oldScript.parentNode.replaceChild(newScript, oldScript);
+        });
+
+        const modalElement = document.getElementById('checkInModal');
+        if (modalElement) {
+            const modal = new bootstrap.Modal(modalElement);
+            
+            // Đăng ký sự kiện camera khi modal được hiển thị
+            // Khi modal hiển thị xong → đợi 300ms rồi bật camera (tránh đơ)
+modalElement.addEventListener('shown.bs.modal', function () {
+    setTimeout(() => {
+        if (window.modalCamera && window.modalCamera.init) {
+            window.modalCamera.init();
+        }
+    }, 300);
+}, { once: true });
+            
+            // Cleanup khi modal đóng
+            modalElement.addEventListener('hidden.bs.modal', function () {
+                if (window.modalCamera && window.modalCamera.stop) {
+                    window.modalCamera.stop();
+                }
+            }, { once: true });
+            
+            modal.show();
+            console.log('Modal show() called');
+        } else {
+            console.error('Modal element not found');
+        }
+    } catch (err) {
+        console.error('Error loading modal:', err);
+        alert('Lỗi khi tải giao diện Check-in/Check-out.');
+    }
+}
+</script>

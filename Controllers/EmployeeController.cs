@@ -3,6 +3,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Antiforgery;
 using start.Models;      
 using start.Data;           // Employee, EditEmployeeProfile
 using start.Services;               // IEmployeeProfileService
@@ -17,8 +18,8 @@ namespace start.Controllers
         private readonly IScheduleService _s;
         private readonly IPayrollService _p;
         private readonly ApplicationDbContext _db;
-
         private readonly IDayOffService _dayoff;
+        private readonly IAttendanceService _attendanceService;
         // Controllers/EmployeeController.cs (thêm ngay sau CurrentEmpId)
 // CHỈNH
 private string? CurrentRole =>
@@ -28,15 +29,16 @@ private string? CurrentRole =>
 
 // CHO PHÉP: NV | EM | SL
 private bool CanAccessDayOff() =>
-    CurrentRole is "NV" or "EM" or "SL";
+    CurrentRole is "SH" or "EM" or "SL";
 
-        public EmployeeController(ApplicationDbContext db, IEmployeeProfileService svc, IScheduleService s, IPayrollService p, IDayOffService dayoff)
+        public EmployeeController(ApplicationDbContext db, IEmployeeProfileService svc, IScheduleService s, IPayrollService p, IDayOffService dayoff, IAttendanceService attendanceService)
         {
             _db = db;
             _svc = svc;
             _s = s;
             _p = p;
             _dayoff = dayoff;
+            _attendanceService = attendanceService;
         }
        
 
@@ -170,7 +172,7 @@ private bool CanAccessDayOff() =>
             return View("Contract", contract);  // model = Contract
         }
         [HttpGet("Schedule/{id?}")]
-        public IActionResult Schedule(string? id, int? month, int? year)
+        public async Task<IActionResult> Schedule(string? id, int? month, int? year)
         {
             id ??= HttpContext.Session.GetString("EmployeeID");
             if (string.IsNullOrEmpty(id)) return RedirectToAction("Login", "Account");
@@ -181,9 +183,53 @@ private bool CanAccessDayOff() =>
 
             var dto = _s.GetMonthSchedule(id, m, y);
 
-            // Có thể dùng dto trực tiếp trong view thay vì tạo VM riêng
+            // Lấy thông tin check-in hôm nay
+           // Lấy thông tin check-in hôm nay
+// Lấy thông tin check-in hôm nay
+var tomorrow = today.AddDays(1);
+
+var todayCheckIn = await _db.Attendances
+    .AsNoTracking()
+    .FirstOrDefaultAsync(a =>
+        a.EmployeeID == id &&
+        a.CheckInTime >= today &&
+        a.CheckInTime < tomorrow);
+
+
+
+
+            
+            // Lấy ca làm việc hôm nay - query trực tiếp từ database (không phụ thuộc vào tháng được chọn)
+            // Lấy tất cả ca của nhân viên và filter ở memory để debug
+            var allSchedules = await _db.WorkSchedules
+                .Where(w => w.EmployeeID == id)
+                .ToListAsync();
+            
+            var todaySchedules = allSchedules
+                .Where(w => w.WorkDate.Date == today.Date)
+                .ToList();
+            
+            // Debug: Log để kiểm tra
+            System.Diagnostics.Debug.WriteLine($"=== DEBUG CHECK-IN ===");
+            System.Diagnostics.Debug.WriteLine($"EmployeeID: {id}, Today: {today:yyyy-MM-dd}");
+            System.Diagnostics.Debug.WriteLine($"Tổng số ca: {allSchedules.Count}");
+            foreach (var s in allSchedules.Take(5))
+            {
+                System.Diagnostics.Debug.WriteLine($"  Ca ID={s.WorkScheduleID}, Date={s.WorkDate:yyyy-MM-dd}, Shift={s.Shift}");
+            }
+            System.Diagnostics.Debug.WriteLine($"Số ca hôm nay: {todaySchedules.Count}");
+
             ViewBag.ActiveMenu = "Profile";
             ViewBag.ActiveTab = "schedule";
+            ViewBag.TodayCheckIn = todayCheckIn;
+            ViewBag.TodaySchedules = todaySchedules;
+            ViewBag.EmployeeId = id;
+            if (!string.IsNullOrEmpty(Request.Query["ok"]))
+{
+    TempData["ok"] = Request.Query["ok"].ToString();
+}
+
+
             return View("Schedule", dto); // Views/Employee/Schedule.cshtml @model MonthScheduleDto
         }
  [HttpGet("salary")]
@@ -277,7 +323,191 @@ public async Task<IActionResult> DayOffSubmit(DayOffOneDayVm vm)
     return RedirectToAction("DayOff", new { id = vm.EmployeeID });
 }
 
+        // GET: Check-in/Check-out Modal
+     
+[HttpGet("CheckIn/{workScheduleId?}")]
+public async Task<IActionResult> CheckIn(int? workScheduleId)
+{
+    var empId = CurrentEmpId;
+    if (string.IsNullOrEmpty(empId))
+    return PartialView("_CheckInModal", new { canStart = false, message = "Vui lòng đăng nhập.", isCheckIn = true, workScheduleId });
 
 
+    var emp = await _db.Employees.FindAsync(empId);
+    if (emp == null)
+        return PartialView("_CheckInModal", new { canStart = false, message = "Không tìm thấy nhân viên.", isCheckIn = true });
+
+    if (string.IsNullOrEmpty(emp.AvatarUrl))
+        return PartialView("_CheckInModal", new { canStart = false, message = "Bạn chưa có ảnh đại diện để nhận diện khuôn mặt. Vui lòng cập nhật trong Edit Profile.", isCheckIn = true });
+
+    var today = DateTime.Today;
+
+    WorkSchedule? schedule = null;
+    if (workScheduleId.HasValue)
+    {
+        schedule = await _db.WorkSchedules
+            .FirstOrDefaultAsync(w => w.WorkScheduleID == workScheduleId.Value && w.EmployeeID == empId);
+    }
+    if (schedule == null)
+    {
+        schedule = await _db.WorkSchedules
+            .FirstOrDefaultAsync(w => w.EmployeeID == empId && w.WorkDate.Date == today);
+    }
+
+    if (schedule == null)
+        return PartialView("_CheckInModal", new { canStart = false, message = $"Hôm nay ({today:dd/MM/yyyy}) bạn không có ca làm việc.", isCheckIn = true });
+
+    // 🔽🔽🔽 Chính là 2 đoạn bạn hỏi ở đây 🔽🔽🔽
+    var now = DateTime.Now;
+    if (!ShiftTimeHelper.CanCheckIn(now, schedule.WorkDate, schedule.Shift, out var msg))
+        return PartialView("_CheckInModal", new { canStart = false, message = msg, isCheckIn = true });
+
+    var already = await _attendanceService.GetTodayCheckInAsync(empId);
+    if (already != null)
+        return PartialView("_CheckInModal", new { canStart = false, message = "Bạn đã check-in hôm nay. Vui lòng check-out trước.", isCheckIn = true });
+    // 🔼🔼🔼 Hết 2 đoạn kiểm tra này 🔼🔼🔼
+
+    // ✅ Nếu qua được hết mấy bước trên thì render modal có video
+    return PartialView("_CheckInModal", new
+    {
+        canStart = true,
+        message = "",
+        isCheckIn = true,
+        workScheduleId = schedule.WorkScheduleID
+    });
+}
+
+[HttpGet("CheckOut/{workScheduleId?}")]
+public async Task<IActionResult> CheckOut(int? workScheduleId)
+{
+    var empId = CurrentEmpId;
+    if (string.IsNullOrEmpty(empId))
+        return PartialView("_CheckInModal", new { canStart = false, message = "Vui lòng đăng nhập.", isCheckIn = false, workScheduleId });
+
+    var checkIn = await _attendanceService.GetTodayCheckInAsync(empId);
+    if (checkIn == null)
+        return PartialView("_CheckInModal", new { canStart = false, message = "Bạn chưa check-in hôm nay.", isCheckIn = false, workScheduleId });
+
+    if (checkIn.CheckOutTime != null)
+        return PartialView("_CheckInModal", new { canStart = false, message = "Bạn đã check-out rồi.", isCheckIn = false, workScheduleId });
+
+    // ✅ Lấy workScheduleId nếu null
+    var wsId = workScheduleId ?? await _db.WorkSchedules
+        .Where(w => w.EmployeeID == empId && w.WorkDate == DateTime.Today)
+        .Select(w => (int?)w.WorkScheduleID)
+        .FirstOrDefaultAsync();
+
+    // ✅ Render modal cho Check-out
+    return PartialView("_CheckInModal", new
+    {
+        canStart = true,
+        message = "",
+        isCheckIn = false,
+        workScheduleId = wsId
+    });
+}
+
+
+
+
+        // POST: Process Check-in
+        [HttpPost("DoCheckIn")]
+[IgnoreAntiforgeryToken]// Tạm thời bỏ qua để test, sau này có thể dùng [ValidateAntiForgeryToken] với cấu hình đúng
+        public async Task<IActionResult> ProcessCheckIn([FromBody] CheckInRequest request)
+        {
+            var employeeId = CurrentEmpId;
+            if (string.IsNullOrEmpty(employeeId))
+                return Json(new { success = false, message = "Vui lòng đăng nhập." });
+
+            if (string.IsNullOrEmpty(request.ImageBase64))
+                return Json(new { success = false, message = "Không có ảnh để xử lý." });
+
+            var (success, message, attendance) = await _attendanceService.CheckInAsync(
+                employeeId, 
+                request.WorkScheduleId, 
+                request.ImageBase64);
+
+            if (success)
+            {
+                TempData["ok"] = message;
+                return Json(new { success = true, message = message });
+            }
+
+            return Json(new { success = false, message = message });
+        }
+
+        // POST: Process Check-out
+        [HttpPost("DoCheckOut")]
+[IgnoreAntiforgeryToken] // Tạm thời bỏ qua để test
+        public async Task<IActionResult> ProcessCheckOut([FromBody] CheckInRequest request)
+        {
+            var employeeId = CurrentEmpId;
+            if (string.IsNullOrEmpty(employeeId))
+                return Json(new { success = false, message = "Vui lòng đăng nhập." });
+
+            if (string.IsNullOrEmpty(request.ImageBase64))
+                return Json(new { success = false, message = "Không có ảnh để xử lý." });
+
+            var (success, message, attendance) = await _attendanceService.CheckOutAsync(
+                employeeId, 
+                request.ImageBase64);
+
+            if (success)
+            {
+                TempData["ok"] = message;
+                return Json(new { success = true, message = message });
+            }
+
+            return Json(new { success = false, message = message });
+        }
+
+        // POST: Upload Face Image
+        [HttpPost("UploadFaceImage")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UploadFaceImage(IFormFile faceImage)
+        {
+            var employeeId = CurrentEmpId;
+            if (string.IsNullOrEmpty(employeeId))
+                return Json(new { success = false, message = "Vui lòng đăng nhập." });
+
+            if (faceImage == null || faceImage.Length == 0)
+                return Json(new { success = false, message = "File ảnh không hợp lệ." });
+
+            var success = await _attendanceService.UploadFaceImageAsync(employeeId, faceImage);
+            if (success)
+            {
+                TempData["ok"] = "Đã cập nhật ảnh khuôn mặt.";
+                return Json(new { success = true, message = "Đã cập nhật ảnh khuôn mặt thành công." });
+            }
+
+            return Json(new { success = false, message = "Cập nhật ảnh khuôn mặt thất bại." });
+        }
+
+        // GET: Attendance History
+        [HttpGet("Attendance")]
+        public async Task<IActionResult> Attendance(string? id, DateTime? fromDate, DateTime? toDate)
+        {
+            id ??= CurrentEmpId;
+            if (string.IsNullOrEmpty(id))
+                return RedirectToAction("Login", "Account");
+
+            fromDate ??= DateTime.Today.AddDays(-30);
+            toDate ??= DateTime.Today;
+
+            var history = await _attendanceService.GetAttendanceHistoryAsync(id, fromDate, toDate);
+            ViewBag.ActiveMenu = "Profile";
+            ViewBag.ActiveTab = "attendance";
+            ViewBag.FromDate = fromDate;
+            ViewBag.ToDate = toDate;
+
+            return View("Attendance", history);
+        }
+    }
+
+    // Request models
+    public class CheckInRequest
+    {
+        public int? WorkScheduleId { get; set; }
+        public string? ImageBase64 { get; set; }
     }
 }

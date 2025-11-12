@@ -28,7 +28,6 @@
       </div>
       <input type="file" name="avatar" id="avatarFile" accept="image/*" hidden />
       <button type="submit" class="btn btn-primary" id="btnUploadAvatar" style="display:none">Tải lên</button>
-
   </form>
    <div class="tabs-left">
     <a class="tab active" href="#">Chỉnh sửa</a>
@@ -86,6 +85,47 @@
         <span asp-validation-for="EmergencyPhone2" class="vld"></span>
       </div>
     </div>
+
+    <h3 class="section-title">ẢNH KHUÔN MẶT CHO CHECK-IN</h3>
+
+<div class="ep-face-wrap mb-4">
+    @if (emp != null && (emp.RoleID == "EM" || emp.RoleID == "SL"))
+    {
+        if (string.IsNullOrEmpty(emp.AvatarUrl))
+        {
+            <div class="alert alert-warning d-flex align-items-center" role="alert">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <div>
+                    <strong>Yêu cầu cập nhật ảnh đại diện!</strong><br />
+                    Nhân viên và quản lý ca cần có ảnh đại diện để sử dụng chức năng <strong>Check-in/Check-out bằng khuôn mặt</strong>.
+                    Vui lòng chọn ảnh rõ mặt ở phần “Đổi ảnh đại diện” phía trên.
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-success d-flex align-items-center" role="alert">
+                <i class="fas fa-check-circle me-2"></i>
+                <div>Ảnh đại diện của bạn đã được đăng ký để nhận diện khuôn mặt khi Check-in/Check-out.</div>
+            </div>
+
+            <div class="d-flex align-items-start gap-3">
+                <img src="@emp.AvatarUrl" alt="Ảnh khuôn mặt" style="width: 120px; height: 120px; object-fit: cover; border-radius: 8px; border: 2px solid #ddd;" />
+                <div class="text-muted small">
+                    
+                </div>
+            </div>
+        }
+    }
+    else
+    {
+        <div class="alert alert-info d-flex align-items-center" role="alert">
+            <i class="fas fa-info-circle me-2"></i>
+            <div>Tính năng nhận diện khuôn mặt chỉ áp dụng cho <strong>nhân viên (EM)</strong> và <strong>quản lý ca (SL)</strong>.</div>
+        </div>
+    }
+</div>
+
 
     <h3 class="section-title">ĐỔI MẬT KHẨU</h3>
 <button type="button" class="btn btn-ghost btn-sm" id="btnTogglePwd">+ Tôi muốn đổi mật khẩu</button>
@@ -151,6 +191,73 @@
           const url = URL.createObjectURL(this.files[0]);
           preview.src = url;
           uploadBtn.style.display = 'inline-flex';
+        }
+      });
+    })();
+
+    // Upload ảnh khuôn mặt
+    (function(){
+      const form = document.getElementById('faceImageForm');
+      const input = document.getElementById('faceImageFile');
+      const preview = document.getElementById('faceImagePreview');
+      const messageDiv = document.getElementById('faceImageMessage');
+      
+      // Preview ảnh khi chọn
+      input?.addEventListener('change', function(){
+        if (this.files && this.files[0]) {
+          const url = URL.createObjectURL(this.files[0]);
+            if (preview) {
+            preview.src = url;
+            preview.style.display = 'block';
+          } else {
+            // Nếu chưa có preview, tạo mới
+            const img = document.createElement('img');
+            img.id = 'faceImagePreview';
+            img.src = url;
+            img.alt = 'Face Image';
+            img.style.cssText = 'width: 120px; height: 120px; object-fit: cover; border-radius: 8px; border: 2px solid #ddd;';
+            const container = input.closest('.d-flex').querySelector('div:first-child');
+            if (container) {
+              container.innerHTML = '';
+              container.appendChild(img);
+            }
+          }
+        }
+      });
+
+      // Submit form
+      form?.addEventListener('submit', async function(e){
+        e.preventDefault();
+        const formData = new FormData(form);
+        const uploadBtn = document.getElementById('btnUploadFaceImage');
+        const originalText = uploadBtn.innerHTML;
+        
+        uploadBtn.disabled = true;
+        uploadBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Đang tải...';
+        messageDiv.innerHTML = '';
+        
+        try {
+          const response = await fetch('/Employee/UploadFaceImage', {
+            method: 'POST',
+            body: formData,
+            headers: {
+              'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value
+            }
+          });
+          
+          const result = await response.json();
+          
+          if (result.success) {
+            messageDiv.innerHTML = '<div class="alert alert-success"><i class="fas fa-check-circle"></i> ' + result.message + '</div>';
+            setTimeout(() => location.reload(), 1500);
+          } else {
+            messageDiv.innerHTML = '<div class="alert alert-danger"><i class="fas fa-exclamation-circle"></i> ' + result.message + '</div>';
+          }
+        } catch (error) {
+          messageDiv.innerHTML = '<div class="alert alert-danger"><i class="fas fa-exclamation-circle"></i> Có lỗi xảy ra. Vui lòng thử lại.</div>';
+        } finally {
+          uploadBtn.disabled = false;
+          uploadBtn.innerHTML = originalText;
         }
       });
     })();
