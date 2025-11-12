@@ -98,16 +98,6 @@
                 </button>
             </form>
         }
-        @* ✅ HIỂN THỊ NÚT HOÀN TIỀN NẾU CÓ TRANSID *@
-        @if (!string.IsNullOrEmpty(order.TransId))
-        {
-            <form method="post" action="/Order/RefundMomo/@order.OrderID" class="refund-form" style="display:inline;">
-                @Html.AntiForgeryToken()
-                <button type="submit" class="btn-action btn-refund" style="background:#ff7675;color:#fff;border:none;border-radius:6px;padding:6px 10px;margin-left:6px;cursor:pointer;">
-                    <i class="fas fa-undo"></i> Hoàn tiền
-                </button>
-            </form>
-        }
     </div>
 
 
@@ -194,15 +184,3 @@
             </div>
         </div>
         </div>
-
-        <script>
-    document.addEventListener("DOMContentLoaded", function() {
-        document.querySelectorAll(".refund-form").forEach(form => {
-            form.addEventListener("submit", function(e) {
-                if (!confirm("Xác nhận hoàn tiền cho đơn hàng này?")) {
-                    e.preventDefault();
-                }
-            });
-        });
-    });
-    </script>
