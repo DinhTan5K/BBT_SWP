@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using start.Models;
 
 namespace start.Data
@@ -38,6 +39,8 @@ namespace start.Data
         public DbSet<ChatHistory> ChatHistories { get; set; }
 
         public DbSet<EmployeeBranchRequest> EmployeeBranchRequests { get; set; }
+        public DbSet<Attendance> Attendances { get; set; }
+        
 
     }
 }

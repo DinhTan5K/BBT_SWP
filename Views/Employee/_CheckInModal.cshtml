@@ -1,0 +1,243 @@
+@model dynamic
+@{
+    bool canStart = Model != null && (Model.canStart is bool c && c);
+    string message = Model?.message ?? "";
+    bool isCheckIn = Model != null && (Model.isCheckIn is bool i) ? (bool)Model.isCheckIn : false;
+    int? workScheduleId = Model?.workScheduleId;
+}
+
+
+<div class="modal fade" id="checkInModal" tabindex="-1" aria-labelledby="checkInModalLabel" aria-hidden="true"
+     data-is-checkin="@isCheckIn.ToString().ToLower()"
+     data-work-schedule-id="@(workScheduleId?.ToString() ?? "")">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="fas @(isCheckIn ? "fa-sign-in-alt" : "fa-sign-out-alt") me-2"></i>
+                    @(isCheckIn ? "Check-in bằng khuôn mặt" : "Check-out bằng khuôn mặt")
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+                @if (!canStart)
+                {
+                    <div class="alert alert-warning text-center">
+                        <i class="fas fa-exclamation-triangle me-2"></i>@message
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center mb-3">
+                        <p class="text-muted">
+                            Đưa khuôn mặt của bạn vào khung để @(isCheckIn ? "điểm danh vào ca" : "xác nhận kết thúc ca").
+                        </p>
+                    </div>
+
+                    <div class="camera-container text-center mb-3">
+                        <video id="video" autoplay playsinline style="width: 100%; max-width: 640px; border-radius: 8px;"></video>
+                       <canvas id="canvas" style="display: none;"></canvas>
+<img id="previewImage" src="" alt="Ảnh đã chụp"
+     class="img-fluid mt-3 rounded shadow-sm"
+     style="display:none; max-width: 320px;">
+
+                        
+                    </div>
+
+                    <div class="text-center">
+                        <button id="captureBtn" class="btn btn-primary"><i class="fas fa-camera"></i> Chụp ảnh</button>
+                        <button id="submitBtn" class="btn btn-success" disabled>
+                            <i class="fas fa-check-circle"></i> Xác nhận @(isCheckIn ? "Check-in" : "Check-out")
+                        </button>
+                    </div>
+
+                    <div id="alertBox" class="alert mt-3 text-center" style="display:none;"></div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ==========================
+// INIT VARIABLES
+// ==========================
+const modalEl = document.getElementById('checkInModal');
+const canvas = document.getElementById('canvas');
+const captureBtn = document.getElementById('captureBtn');
+const submitBtn = document.getElementById('submitBtn');
+const alertBox = document.getElementById('alertBox');
+const isCheckIn = modalEl ? modalEl.dataset.isCheckin === 'true' : true;
+const workScheduleIdValue = modalEl ? modalEl.dataset.workScheduleId : null;
+const workScheduleId = workScheduleIdValue ? parseInt(workScheduleIdValue) : null;
+
+let stream, imageData;
+
+// ==========================
+// CAMERA FUNCTIONS
+// ==========================
+async function initCamera() {
+    try {
+        // Tìm lại modal và video mỗi lần gọi để đảm bảo tìm đúng
+        const currentModal = document.getElementById('checkInModal');
+        if (!currentModal) {
+            console.error("⚠️ Không tìm thấy modal element");
+            return;
+        }
+        
+        const video = currentModal.querySelector('#video');
+        if (!video) {
+            console.warn("⚠️ Không tìm thấy phần tử <video> trong modal.");
+            console.log('Modal HTML:', currentModal.innerHTML.substring(0, 500));
+            // Thử lại sau 100ms
+           setTimeout(() => {
+    const bootstrapModal = bootstrap.Modal.getInstance(modalEl);
+    if (bootstrapModal) bootstrapModal.hide();
+
+    // 🔄 Reload cứng, không cache, để dữ liệu check-in/out cập nhật ngay
+    window.location.replace("/Employee/Schedule");
+}, 2000);
+
+
+            return;
+        }
+
+        if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+            showError("Trình duyệt chỉ cho phép truy cập camera qua HTTPS hoặc localhost.");
+            return;
+        }
+
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+        video.srcObject = stream;
+        video.setAttribute('playsinline', 'true');
+
+        await video.play().catch(e => console.warn('Video play blocked:', e));
+        console.log('✅ Camera initialized successfully');
+    } catch (err) {
+        console.error('Camera error:', err);
+        showError("Không thể truy cập camera. Vui lòng kiểm tra quyền truy cập (bị chặn hoặc chưa cấp quyền).");
+    }
+}
+
+function stopCamera() {
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+    }
+}
+
+// ==========================
+// EVENT: CHỤP ẢNH
+// ==========================
+captureBtn?.addEventListener('click', () => {
+    const video = modalEl ? modalEl.querySelector('#video') : document.getElementById('video');
+    if (!video) return showError("Không tìm thấy phần tử camera để chụp.");
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+    imageData = canvas.toDataURL('image/jpeg', 0.8);
+    submitBtn.disabled = false;
+    showSuccess("Ảnh đã được chụp. Bấm Xác nhận để gửi.");
+
+    // ✅ THÊM Ở ĐÂY — hiển thị ảnh vừa chụp bên dưới camera
+    const preview = document.getElementById('previewImage');
+    if (preview && imageData) {
+        preview.src = imageData;
+        preview.style.display = 'block';
+    }
+});
+
+
+// ==========================
+// EVENT: GỬI DỮ LIỆU CHECK-IN/OUT
+// ==========================
+submitBtn?.addEventListener('click', async () => {
+    if (!imageData) {
+        showError("Chưa chụp ảnh!");
+        return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Đang gửi...';
+
+    try {
+        const url = isCheckIn ? '/Employee/DoCheckIn' : '/Employee/DoCheckOut';
+
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ WorkScheduleId: workScheduleId, ImageBase64: imageData })
+        });
+
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+
+        const result = await res.json();
+
+        if (result.success) {
+            console.log('✅ Thành công:', result.message);
+            showSuccess(result.message || (isCheckIn ? "Check-in thành công!" : "Check-out thành công!"));
+            setTimeout(() => {
+                const bootstrapModal = bootstrap.Modal.getInstance(modalEl);
+                if (bootstrapModal) bootstrapModal.hide();
+                location.href = `/Employee/Schedule?ok=${encodeURIComponent(result.message)}`;
+            }, 2000);
+        } else {
+            showError(result.message || "Có lỗi xảy ra. Vui lòng thử lại.");
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-check-circle"></i> Xác nhận';
+        }
+    } catch (error) {
+        console.error('Submit error:', error);
+        showError("Không thể kết nối đến server. Vui lòng thử lại.");
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-check-circle"></i> Xác nhận';
+    }
+});
+
+// ==========================
+// ALERT FUNCTIONS
+// ==========================
+function showError(msg) {
+    const box = modalEl ? modalEl.querySelector('#alertBox') : document.getElementById('alertBox');
+    if (!box) {
+        console.error('AlertBox not found, using alert()');
+        alert('LỖI: ' + msg);
+        return;
+    }
+
+    // 🔹 Thêm class 'show' và style rõ ràng
+    box.className = 'alert alert-danger text-center show';
+    box.style.display = 'block';
+    box.innerHTML = `<i class="fas fa-times-circle me-2"></i>${msg}`;
+}
+
+function showSuccess(msg) {
+    const box = modalEl ? modalEl.querySelector('#alertBox') : document.getElementById('alertBox');
+    if (!box) {
+        console.error('AlertBox not found, using alert()');
+        alert('THÀNH CÔNG: ' + msg);
+        return;
+    }
+
+    // 🔹 Thêm class 'show' để chạy animation
+    box.className = 'alert alert-success text-center show';
+    box.style.display = 'block';
+    box.innerHTML = `<i class="fas fa-check-circle me-2"></i>${msg}`;
+}
+
+
+// ==========================
+// CHỜ MODAL HIỆN XONG RỒI MỚI KHỞI ĐỘNG CAMERA
+// ==========================
+modalEl.addEventListener('shown.bs.modal', () => {
+    console.log("🎥 Modal shown → Starting camera...");
+    initCamera();
+});
+
+// Khi đóng modal thì tắt camera để tránh chiếm tài nguyên
+modalEl.addEventListener('hidden.bs.modal', () => {
+    console.log("🛑 Modal hidden → Stopping camera...");
+    stopCamera();
+});
+</script>

@@ -17,6 +17,8 @@ builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IOrderReadService, OrderReadService>();
 builder.Services.AddScoped<ICheckoutService, CheckoutService>();
+builder.Services.AddScoped<IShipperService, ShipperService>();
+
 builder.Services.Configure<start.Models.Configurations.EmailSettings>(
     builder.Configuration.GetSection("EmailSettings")
 );
@@ -34,6 +36,7 @@ builder.Services.AddScoped<IScheduleForManagerService, ScheduleForManagerService
 builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<IContractService, ContractService>();
 builder.Services.AddScoped<IEmployeeManagementService, EmployeeManagementService>();
+builder.Services.AddScoped<IAttendanceService, AttendanceService>();
 
 builder.Logging.ClearProviders();
 builder.Logging.AddSimpleConsole(options =>

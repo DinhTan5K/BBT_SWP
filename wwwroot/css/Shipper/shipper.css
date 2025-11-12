@@ -1,0 +1,189 @@
+/* ======= GIAO DIỆN CHUNG ======= */
+body {
+    background: #f6f8fa; /* nền xám nhạt */
+    font-family: "Segoe UI", sans-serif; /* font hiện đại của Windows */
+    color: #333; /* chữ xám đậm dễ đọc */
+    font-size: 1.05rem;
+}
+
+/* ======= KHUNG CHÍNH ======= */
+.shipper-container {
+    max-width: 100%;           /* ✅ kéo to hơn (có thể đổi 1600 nếu muốn full rộng) */
+    width: 90%;                  /* ✅ cho linh hoạt, tự co theo màn hình */
+    margin: 50px auto;
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+    transition: 0.3s ease;
+}
+
+
+/* ======= HEADER ======= */
+.shipper-header {
+    background: linear-gradient(135deg, #c86310, #ffc107); /* xanh dương pha cyan */
+    color: #fff;
+    padding: 50px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.shipper-header h3 {
+    margin: 0;
+    font-weight: 600;
+}
+
+.shipper-meta {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+/* ======= BẢNG ĐƠN HÀNG ======= */
+.shipper-table th {
+    background: #f8f9fa;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+    color: #444;
+}
+
+.shipper-table td {
+    vertical-align: middle;
+    font-size: 0.95rem;
+}
+
+/* ======= NHÃN TRẠNG THÁI ======= */
+.badge-status {
+    font-size: 0.85rem;
+    padding: 6px 10px;
+    border-radius: 8px;
+}
+
+.status-confirmed {
+    background-color: #17a2b8; /* xanh dương nhạt */
+    color: white;
+}
+
+.status-delivering {
+    background-color: #ffc107; /* vàng */
+    color: #212529;
+}
+
+.status-delivered {
+    background-color: #28a745; /* xanh lá */
+    color: white;
+}
+
+.status-cancelled {
+    background-color: #dc3545; /* đỏ */
+    color: white;
+}
+
+/* ======= NÚT THAO TÁC ======= */
+.btn-action {
+    border: none;
+    font-size: 0.9rem;
+    padding: 6px 14px;
+    border-radius: 8px;
+    color: white;
+    transition: 0.2s;
+    cursor: pointer;
+}
+.btn-action:hover {
+    opacity: 0.9;
+}
+
+.btn-start {
+    background: linear-gradient(135deg, #00b09b, #96c93d); /* xanh lá pha ngọc */
+}
+.btn-complete {
+    background: linear-gradient(135deg, #4CAF50, #2E7D32); /* xanh đậm */
+}
+.btn-cancel {
+    background: linear-gradient(135deg, #f44336, #d32f2f); /* đỏ pha đậm */
+}
+
+/* ======= THÔNG BÁO TRỐNG ======= */
+.empty-message {
+    padding: 30px;
+    text-align: center;
+    font-style: italic;
+    color: #888;
+}
+
+/* ======= HEADER PHẦN PROFILE & LOGOUT ======= */
+.profile-btn {
+    background: rgba(255,255,255,0.15);
+    padding: 6px 12px;
+    border-radius: 12px;
+    color: #fff;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    transition: 0.2s;
+}
+.profile-btn:hover {
+    background: rgba(255,255,255,0.3);
+    color: #fff;
+}
+.avatar-img {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #fff;
+}
+
+.logout-btn {
+    border: 1px solid rgba(255,255,255,0.7);
+    color: #fff;
+    font-weight: 500;
+    transition: 0.3s;
+}
+.logout-btn:hover {
+    background-color: rgba(255,255,255,0.2);
+}
+/* ===== HEADER CHÍNH (có avatar & logout cùng hàng) ===== */
+
+
+.shipper-header {
+    background: linear-gradient(135deg, #c86310, #ffc107); /* xanh dương pha cyan */
+    color: #fff;
+    padding: 50px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Avatar + Logout */
+.profile-btn {
+    background: rgba(255, 255, 255, 0.15);
+    padding: 6px 12px;
+    border-radius: 12px;
+    color: #fff;
+    transition: 0.2s;
+}
+.profile-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    color: #fff;
+}
+.avatar-img {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #fff;
+}
+
+.logout-btn {
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    color: #fff;
+    font-weight: 500;
+    transition: 0.3s;
+}
+.logout-btn:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+
