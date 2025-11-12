@@ -1,0 +1,164 @@
+@model Product
+
+@{
+    // cloud info passed from controller
+    var cloudName = (ViewBag.Cloudinary_CloudName as string) ?? "";
+    var uploadPreset = (ViewBag.Cloudinary_UploadPreset as string) ?? "";
+}
+
+<form id="createProductForm" asp-action="CreateProduct" method="post" novalidate="novalidate">
+    @Html.AntiForgeryToken()
+
+    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+    <div class="mb-3">
+        <label asp-for="ProductName" class="form-label"></label>
+        <input asp-for="ProductName" class="form-control" />
+        <span asp-validation-for="ProductName" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Description" class="form-label"></label>
+        <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+        <span asp-validation-for="Description" class="text-danger"></span>
+    </div>
+
+    <!-- Image chooser: file input + preview + hidden Image_Url -->
+    <div class="mb-3">
+        <label class="form-label">Ảnh sản phẩm</label>
+        <input id="productImageFile" type="file" accept="image/*" class="form-control" />
+        <div id="uploadStatus" style="margin-top:6px;font-size:13px;color:#666;"></div>
+        <div id="imagePreview" style="margin-top:10px;"></div>
+        <input asp-for="Image_Url" type="hidden" id="Image_Url" />
+        <span id="imageError" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="CategoryID" class="form-label"></label>
+        <select asp-for="CategoryID" class="form-select" asp-items="@ViewBag.Categories">
+            <option value="">-- Select Category --</option>
+        </select>
+        <span asp-validation-for="CategoryID" class="text-danger"></span>
+    </div>
+
+    <hr />
+    <h6>Product Sizes & Prices</h6>
+    <div id="sizes-container"></div>
+    <button type="button" id="add-size-btn" class="btn btn-outline-primary btn-sm mt-2">Add Size</button>
+</form>
+
+<script>
+    $(document).ready(function () {
+        // sizes logic
+        let sizeIndex = 0;
+        function addSizeField() {
+            var sizeHtml = `
+                <div class="row g-2 mb-2 align-items-center size-entry">
+                    <div class="col-5">
+                        <select name="ProductSizes[${sizeIndex}].Size" class="form-select">
+                            <option value="S">S</option>
+                            <option value="M">M</option>
+                            <option value="L">L</option>
+                        </select>
+                    </div>
+                    <div class="col-5">
+                        <input type="number" name="ProductSizes[${sizeIndex}].Price" class="form-control" placeholder="Price" />
+                    </div>
+                    <div class="col-2">
+                        <button type="button" class="btn btn-danger btn-sm remove-size-btn">X</button>
+                    </div>
+                </div>`;
+            $('#sizes-container').append(sizeHtml);
+            sizeIndex++;
+        }
+        $('#add-size-btn').click(addSizeField);
+        $('#sizes-container').on('click', '.remove-size-btn', function () {
+            $(this).closest('.size-entry').remove();
+        });
+        addSizeField();
+
+        // Image upload flow (unsigned direct to Cloudinary)
+        const fileInput = document.getElementById('productImageFile');
+        const preview = document.getElementById('imagePreview');
+        const status = document.getElementById('uploadStatus');
+        const hiddenUrl = document.getElementById('Image_Url');
+        const imageError = document.getElementById('imageError');
+
+        // cloud info from server-rendered Razor
+        const CLOUD_NAME = '@cloudName';
+        const UPLOAD_PRESET = '@uploadPreset';
+        const MAX_MB = 5;
+
+        fileInput.addEventListener('change', async function (e) {
+            imageError.textContent = '';
+            status.textContent = '';
+            preview.innerHTML = '';
+
+            const file = this.files && this.files[0];
+            if (!file) return;
+
+            if (!file.type.startsWith('image/')) {
+                imageError.textContent = "Vui lòng chọn file ảnh.";
+                return;
+            }
+            if (file.size > MAX_MB * 1024 * 1024) {
+                imageError.textContent = `Kích thước file quá lớn (max ${MAX_MB} MB).`;
+                return;
+            }
+
+            // local preview
+            const reader = new FileReader();
+            reader.onload = function (ev) {
+                preview.innerHTML = `<img src="${ev.target.result}" style="max-width:200px;max-height:200px;border:1px solid #ddd;padding:4px;border-radius:6px;" />`;
+            };
+            reader.readAsDataURL(file);
+
+            // Prepare unsigned upload to Cloudinary
+            status.textContent = 'Đang upload ảnh...';
+
+            const fd = new FormData();
+            fd.append('file', file);
+            fd.append('upload_preset', UPLOAD_PRESET);
+
+            try {
+                const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
+                    method: 'POST',
+                    body: fd
+                });
+
+                const json = await res.json();
+
+                if (!res.ok) {
+                    // Cloudinary trả lỗi - hiển thị
+                    const message = (json && json.error && json.error.message) ? json.error.message : 'Upload thất bại.';
+                    imageError.textContent = message;
+                    status.textContent = '';
+                    hiddenUrl.value = '';
+                    return;
+                }
+
+                // success
+                const secureUrl = json.secure_url || json.url;
+                if (!secureUrl) {
+                    imageError.textContent = "Không có URL trả về từ Cloudinary.";
+                    status.textContent = '';
+                    hiddenUrl.value = '';
+                    return;
+                }
+
+                status.textContent = 'Upload thành công.';
+                hiddenUrl.value = secureUrl;
+                preview.innerHTML += `<div style="margin-top:6px;font-size:13px;color:#0a58ca">Link: <a href="${secureUrl}" target="_blank">mở ảnh</a></div>`;
+            } catch (err) {
+                console.error(err);
+                imageError.textContent = 'Lỗi khi upload ảnh.';
+                status.textContent = '';
+                hiddenUrl.value = '';
+            }
+        });
+
+        // parse unobtrusive if present
+        var form = $('#createProductForm');
+        if ($.validator && $.validator.unobtrusive) $.validator.unobtrusive.parse(form);
+    });
+</script>

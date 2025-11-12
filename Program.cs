@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using start.Data;
+using start.Models.Configurations;
 using start.Services;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
@@ -28,6 +29,9 @@ builder.Services.AddScoped<IPayrollService, PayrollService >();
 builder.Services.AddScoped<IDayOffService, DayOffService>();
 builder.Services.AddScoped<INewsService, NewsService>();
 builder.Services.AddScoped<IStoreService, StoreService>();
+builder.Services.AddScoped<IRegionService, RegionService>();
+builder.Services.Configure<CloudinarySettings>(builder.Configuration.GetSection("CloudinarySettings"));
+builder.Services.AddControllersWithViews();
 
 builder.Logging.ClearProviders();
 builder.Logging.AddSimpleConsole(options =>

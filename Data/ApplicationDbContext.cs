@@ -15,6 +15,7 @@ namespace start.Data
 
         public DbSet<Branch> Branches { get; set; }
         public DbSet<Region> Regions { get; set; }
+       
         public DbSet<Cart> Carts { get; set; }
         public DbSet<CartDetail> CartDetails { get; set; }
 
@@ -34,8 +35,15 @@ namespace start.Data
         public DbSet<DayOffRequest> DayOffRequests => Set<DayOffRequest>();
         public DbSet<ProductCategory> ProductCategories { get; set; }
         public DbSet<News> News { get; set; }
+        
         public DbSet<Wishlist> Wishlist { get; set; }
         public DbSet<ChatHistory> ChatHistories { get; set; }
 
+      
+
+       public DbSet<ProductRequest> ProductRequests { get; set; }
+       public DbSet<BranchRequest> BranchRequests { get; set; }
+       public DbSet<EmployeeBranchRequest> EmployeeBranchRequests { get; set; }
+       public DbSet<CategoryRequest> CategoryRequests { get; set; }
     }
 }

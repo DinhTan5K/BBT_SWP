@@ -20,8 +20,6 @@ namespace start.Models
         [StringLength(100)]
         public string? FullName { get; set; }
 
-
-
         [DataType(DataType.Date)]
         [DisplayFormat(DataFormatString = "{0:yyyy-MM-dd}", ApplyFormatInEditMode = true)]
         [Display(Name = "Date of Birth")]
@@ -38,7 +36,6 @@ namespace start.Models
         [Column("City")]
         public string? City { get; set; }
 
-
         [Required]
         [Column("RoleID")]
         [StringLength(2)]
@@ -47,15 +44,17 @@ namespace start.Models
         [Column("BranchID")]
         public int? BranchID { get; set; }
 
+        // --- NEW: RegionID (nullable) ---
+        [Column("RegionID")]
+        public int? RegionID { get; set; }
+
         [Required]
         [Column("Password")]
         [StringLength(200)]
-       
         public string? Password { get; set; }
 
         public DateTime HireDate { get; set; }
         public bool IsActive { get; set; }
-
 
         [Column("Gender")]
         [StringLength(10)]
@@ -82,12 +81,16 @@ namespace start.Models
         public string? AvatarUrl { get; set; }
         public bool IsHashed { get; set; } = false;
 
-
         [ForeignKey(nameof(RoleID))]
         public Role Role { get; set; } = null!;
 
         [ForeignKey(nameof(BranchID))]
         public Branch? Branch { get; set; }
+
+        // NEW: Navigation to Region
+        [ForeignKey(nameof(RegionID))]
+        public Region? Region { get; set; }
+
         public ICollection<Contract> Contracts { get; set; } = new List<Contract>();
         [InverseProperty(nameof(Salary.Employee))]
         public ICollection<Salary> Salaries { get; set; } = new List<Salary>();
