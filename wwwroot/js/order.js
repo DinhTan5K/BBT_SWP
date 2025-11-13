@@ -409,6 +409,14 @@ document.addEventListener("DOMContentLoaded", () => {
         const phoneRegex = /^(0[3|5|7|8|9])+([0-9]{8})\b/;
         let branchIdValue = 0;
 
+            // === CHECK PAYMENT METHOD ===
+    const paymentMethodCheck = document.querySelector('input[name="Payment"]:checked');
+    if (!paymentMethodCheck) {
+        showToast('❌ Vui lòng chọn phương thức thanh toán.', 'danger');
+        isValid = false;
+    }
+
+
         if (isDeliveryMode) {
             if (!nameInput.value.trim()) { showError('nameError', 'Vui lòng nhập họ tên.'); isValid = false; }
             if (!phoneRegex.test(phoneInput.value.trim())) { showError('phoneError', 'Số điện thoại không hợp lệ.'); isValid = false; }

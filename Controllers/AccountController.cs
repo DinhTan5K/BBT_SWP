@@ -7,6 +7,8 @@ using start.Services;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.EntityFrameworkCore;
+using start.Data;
 namespace start.Controllers
 {
     public class AccountController : Controller
@@ -14,12 +16,24 @@ namespace start.Controllers
         private readonly IAuthService _authService;
         private readonly IProfileService _profileService;
         private readonly IEmailService _emailService;
+        private readonly IAdminSecurityService _adminSecurityService;
+        private readonly ApplicationDbContext _db;
 
-        public AccountController(IAuthService authService, IProfileService profileService, IEmailService emailService)
+        private const string PendingAdmin2FAKey = "PendingAdmin2FA";
+        private const string PendingAdmin2FAEmailKey = "PendingAdmin2FAEmail";
+
+        public AccountController(
+            IAuthService authService,
+            IProfileService profileService,
+            IEmailService emailService,
+            IAdminSecurityService adminSecurityService,
+            ApplicationDbContext db)
         {
             _authService = authService;
             _profileService = profileService;
             _emailService = emailService;
+            _adminSecurityService = adminSecurityService;
+            _db = db;
         }
 
         #region Login
@@ -50,68 +64,29 @@ namespace start.Controllers
             var emp = _authService.LoginEmployee(loginId, password);
             if (emp != null)
             {
-                // Log thành công - UTCID5-01
-                System.Diagnostics.Debug.WriteLine($"Login successful: EmployeeID={emp.EmployeeID}, Role={emp.RoleID}");
-                
-                // Xác định scheme dựa trên role
-                string authScheme = emp.RoleID == "AD" ? "AdminScheme" : "EmployeeScheme";
-                
-                // Tạo Claims cho Employee
-                var claims = new List<System.Security.Claims.Claim>
+                if (emp.RoleID == "AD" && !string.IsNullOrEmpty(emp.EmployeeID))
                 {
-                    new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.NameIdentifier, emp.EmployeeID ?? ""),
-                    new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, emp.FullName ?? ""),
-                    new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Email, emp.Email ?? ""),
-                    new System.Security.Claims.Claim("Role", emp.RoleID ?? "EM"),
-                    new System.Security.Claims.Claim("RoleID", emp.RoleID ?? "EM")
-                };
+                    if (await _adminSecurityService.IsTwoFactorEnabledAsync(emp.EmployeeID))
+                    {
+                        var otpResult = await _adminSecurityService.SendOtpAsync(emp, AdminOtpPurpose.Login);
+                        if (!otpResult.Succeeded)
+                        {
+                            ModelState.AddModelError("", otpResult.Message);
+                            return View();
+                        }
 
-                var claimsIdentity = new System.Security.Claims.ClaimsIdentity(claims, authScheme);
-                var principal = new System.Security.Claims.ClaimsPrincipal(claimsIdentity);
+                        HttpContext.Session.Remove(PendingAdmin2FAKey);
+                        HttpContext.Session.Remove(PendingAdmin2FAEmailKey);
+                        HttpContext.Session.SetString(PendingAdmin2FAKey, emp.EmployeeID);
+                        HttpContext.Session.SetString(PendingAdmin2FAEmailKey, emp.Email ?? string.Empty);
+                        await HttpContext.Session.CommitAsync();
 
-                // Sign in với đúng scheme để tạo authentication cookie
-                // KHÔNG sign out các schemes khác - mỗi scheme có cookie riêng nên không conflict
-                await HttpContext.SignInAsync(authScheme, principal);
-                
-                // Set Session để tương thích với code cũ
-                HttpContext.Session.SetString("EmployeeID", emp.EmployeeID ?? "");
-                HttpContext.Session.SetString("EmployeeName", emp.FullName ?? "");
-                HttpContext.Session.SetString("Role", emp.RoleID ?? "EM");
-                HttpContext.Session.SetString("RoleID", emp.RoleID ?? "EM");
-                
-                if (emp.BranchID.HasValue)
-                {
-                    HttpContext.Session.SetString("BranchId", emp.BranchID.Value.ToString());
+                        TempData["InfoMessage"] = otpResult.Message;
+                        return RedirectToAction("AdminTwoFactor");
+                    }
                 }
 
-                // Commit session
-                await HttpContext.Session.CommitAsync();
-
-                // điều hướng theo role nội bộ
-                if (emp.RoleID == "AD")         // Admin
-                {
-                    return RedirectToAction("Dashboard", "Admin");
-                }
-                else if (emp.RoleID?.Equals("EM", StringComparison.OrdinalIgnoreCase) == true)
-                {
-                    return RedirectToAction("Profile", "Employee");
-                }
-                else if (emp.RoleID == "SL")    // Shift Leader (nếu có)
-                {
-                    return RedirectToAction("Profile", "Employee");
-                }
-                else if (emp.RoleID == "BM")    // Branch Manager (nếu có)
-                {
-                    return RedirectToAction("Index", "BManager");
-                }
-                else if (emp.RoleID == "RM")    // Region Manager (nếu có)
-                {
-                    return RedirectToAction("Profile", "Employee");
-                }
-                else
-                {
-                    return RedirectToAction("Profile", "Employee"); // Default
-                }
+                return await SignInEmployeeAndRedirectAsync(emp);
             }
 
             // 2) Nếu không phải Employee, thử Customer (người dùng ngoài)
@@ -177,6 +152,156 @@ namespace start.Controllers
     }
 
         #endregion
+
+        private async Task<IActionResult> SignInEmployeeAndRedirectAsync(Employee emp)
+        {
+            // Log thành công - UTCID5-01
+            System.Diagnostics.Debug.WriteLine($"Login successful: EmployeeID={emp.EmployeeID}, Role={emp.RoleID}");
+
+            var employeeId = emp.EmployeeID ?? string.Empty;
+            var fullName = emp.FullName ?? string.Empty;
+            var email = emp.Email ?? string.Empty;
+            var roleId = emp.RoleID ?? "EM";
+
+            // Xác định scheme dựa trên role
+            var authScheme = roleId == "AD" ? "AdminScheme" : "EmployeeScheme";
+
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.NameIdentifier, employeeId),
+                new Claim(ClaimTypes.Name, fullName),
+                new Claim(ClaimTypes.Email, email),
+                new Claim("Role", roleId),
+                new Claim("RoleID", roleId)
+            };
+
+            var claimsIdentity = new ClaimsIdentity(claims, authScheme);
+            var principal = new ClaimsPrincipal(claimsIdentity);
+
+            await HttpContext.SignInAsync(authScheme, principal);
+
+            HttpContext.Session.SetString("EmployeeID", employeeId);
+            HttpContext.Session.SetString("EmployeeName", fullName);
+            HttpContext.Session.SetString("Role", roleId);
+            HttpContext.Session.SetString("RoleID", roleId);
+
+            if (emp.BranchID.HasValue)
+            {
+                HttpContext.Session.SetString("BranchId", emp.BranchID.Value.ToString());
+            }
+            else
+            {
+                HttpContext.Session.Remove("BranchId");
+            }
+
+            HttpContext.Session.Remove(PendingAdmin2FAKey);
+            HttpContext.Session.Remove(PendingAdmin2FAEmailKey);
+
+            await HttpContext.Session.CommitAsync();
+
+            return roleId switch
+            {
+                "AD" => RedirectToAction("Dashboard", "Admin"),
+                "BM" => RedirectToAction("Index", "BManager"),
+                "SL" => RedirectToAction("Profile", "Employee"),
+                "RM" => RedirectToAction("Profile", "Employee"),
+                _ => RedirectToAction("Profile", "Employee")
+            };
+        }
+
+        [HttpGet]
+        public IActionResult AdminTwoFactor()
+        {
+            var employeeId = HttpContext.Session.GetString(PendingAdmin2FAKey);
+            if (string.IsNullOrEmpty(employeeId))
+            {
+                return RedirectToAction("Login");
+            }
+
+            ViewBag.MaskedEmail = MaskEmail(HttpContext.Session.GetString(PendingAdmin2FAEmailKey));
+            return View();
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AdminTwoFactor(string otp)
+        {
+            var employeeId = HttpContext.Session.GetString(PendingAdmin2FAKey);
+            if (string.IsNullOrEmpty(employeeId))
+            {
+                return RedirectToAction("Login");
+            }
+
+            ViewBag.MaskedEmail = MaskEmail(HttpContext.Session.GetString(PendingAdmin2FAEmailKey));
+
+            if (string.IsNullOrWhiteSpace(otp))
+            {
+                ModelState.AddModelError("", "Vui lòng nhập mã OTP.");
+                return View();
+            }
+
+            var verification = await _adminSecurityService.VerifyOtpAsync(employeeId, otp.Trim());
+            if (!verification.Succeeded)
+            {
+                if (verification.IsLocked)
+                {
+                    TempData["ErrorMessage"] = verification.Message;
+                    HttpContext.Session.Remove(PendingAdmin2FAKey);
+                    HttpContext.Session.Remove(PendingAdmin2FAEmailKey);
+                    return RedirectToAction("Login");
+                }
+
+                ModelState.AddModelError("", verification.Message);
+                return View();
+            }
+
+            var emp = await _db.Employees
+                .AsNoTracking()
+                .FirstOrDefaultAsync(e => e.EmployeeID == employeeId);
+
+            if (emp == null)
+            {
+                ModelState.AddModelError("", "Không tìm thấy tài khoản quản trị viên.");
+                return View();
+            }
+
+            return await SignInEmployeeAndRedirectAsync(emp);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ResendAdminTwoFactor()
+        {
+            var employeeId = HttpContext.Session.GetString(PendingAdmin2FAKey);
+            if (string.IsNullOrEmpty(employeeId))
+            {
+                return RedirectToAction("Login");
+            }
+
+            var emp = await _db.Employees
+                .AsNoTracking()
+                .FirstOrDefaultAsync(e => e.EmployeeID == employeeId);
+
+            if (emp == null)
+            {
+                HttpContext.Session.Remove(PendingAdmin2FAKey);
+                HttpContext.Session.Remove(PendingAdmin2FAEmailKey);
+                TempData["ErrorMessage"] = "Không tìm thấy tài khoản quản trị viên.";
+                return RedirectToAction("Login");
+            }
+
+            var result = await _adminSecurityService.SendOtpAsync(emp, AdminOtpPurpose.Login);
+            if (result.Succeeded)
+            {
+                TempData["InfoMessage"] = "Đã gửi lại mã OTP.";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = result.Message;
+            }
+
+            return RedirectToAction("AdminTwoFactor");
+        }
 
         #region Register
 
@@ -557,5 +682,21 @@ namespace start.Controllers
         }
 
         #endregion
+
+        private static string MaskEmail(string? email)
+        {
+            if (string.IsNullOrWhiteSpace(email))
+                return "(chưa cập nhật)";
+
+            var atIndex = email.IndexOf('@');
+            if (atIndex <= 1)
+            {
+                return "****" + (atIndex >= 0 ? email[atIndex..] : string.Empty);
+            }
+
+            var prefix = email.Substring(0, Math.Min(2, atIndex));
+            var domain = atIndex >= 0 ? email[atIndex..] : string.Empty;
+            return $"{prefix}****{domain}";
+        }
     }
 }

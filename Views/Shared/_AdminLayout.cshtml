@@ -2,6 +2,7 @@
 @{
     Layout = null;
     var active = (string?)ViewBag.ActiveMenu ?? "";
+    var activeTab = (string?)ViewBag.ActiveTab ?? "";
 
     // Đọc role từ ViewBag (ưu tiên), Claims, hoặc Session (fallback), chuẩn hóa in hoa
     var roleFromViewBag = ViewBag.CurrentRole as string;
@@ -53,14 +54,9 @@
         <span class="sb-text">Hồ sơ của tôi</span>
       </a>
 
-      <a class="sb-item @(active=="Employees" || active=="Roles" ? "active" : "")" href="@Url.Action("Employees","Admin")">
+      <a class="sb-item @((active=="Employees" && activeTab != "regionManagers") ? "active" : "")" href="@Url.Action("Employees","Admin")">
         <i class="fas fa-users"></i>
         <span class="sb-text">Quản lý nhân sự</span>
-      </a>
-
-      <a class="sb-item @(active=="RegionManagers" ? "active" : "")" href="@Url.Action("RegionManagers","Admin")">
-        <i class="fas fa-user-shield"></i>
-        <span class="sb-text">Quản lý Region Manager</span>
       </a>
 
       <a class="sb-item @(active=="Products" ? "active" : "")" href="@Url.Action("Products","Admin")">

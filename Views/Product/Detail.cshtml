@@ -1,0 +1,549 @@
+@model start.Models.ViewModels.ProductDetailViewModel
+@{
+    ViewData["Title"] = Model.Product.ProductName;
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@Model.Product.ProductName - Chi tiết sản phẩm</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="shortcut icon" type="image/x-icon"
+        href="https://res.cloudinary.com/do48qpmut/image/upload/v1761655863/rtqvgmhsxpjtavejobfy.png" />
+    <link rel="stylesheet" href="/css/Product/product-detail.css" />
+</head>
+
+<body>
+    <div class="detail-wrapper">
+        <!-- Breadcrumb -->
+        <nav class="breadcrumb-nav">
+            <a href="/" class="breadcrumb-link">
+                <i class="fas fa-home"></i> Trang chủ
+            </a>
+            <span class="breadcrumb-separator">/</span>
+            <a href="/Product/Product" class="breadcrumb-link">Sản phẩm</a>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-current">@Model.Product.ProductName</span>
+        </nav>
+
+        <!-- Main Product Section -->
+        <div class="product-main-section">
+            <!-- Product Image -->
+            <div class="product-image-section">
+                <div class="image-container">
+                    <img src="@Model.Product.Image_Url" alt="@Model.Product.ProductName" class="product-main-image"
+                        onerror="this.src='https://via.placeholder.com/600x600?text=Trà+Sữa'">
+                    <div class="image-overlay">
+                        <button class="btn-zoom" onclick="zoomImage()">
+                            <i class="fas fa-search-plus"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Product Info -->
+            <div class="product-info-section">
+                <div class="product-header">
+                    <h1>@Model.Product.ProductName</h1>
+                    <div class="product-category">
+                        <i class="fas fa-tag"></i> @Model.Product.Category?.CategoryName
+                    </div>
+                </div>
+
+                <!-- Rating -->
+                <div class="product-rating">
+                    @if (Model.AverageRating > 0)
+                    {
+                        <div class="stars">
+                            @for (int i = 1; i <= 5; i++)
+                            {
+                                if (i <= Model.AverageRating)
+                                {
+                                    <i class="fas fa-star"></i>
+                                }
+                                else if (i - 0.5 <= Model.AverageRating)
+                                {
+                                    <i class="fas fa-star-half-alt"></i>
+                                }
+                                else
+                                {
+                                    <i class="far fa-star"></i>
+                                }
+                            }
+                        </div>
+                        <span class="rating-text">@Model.AverageRating.ToString("F1") / 5.0</span>
+                        <span class="review-count">(@Model.Product.Reviews.Count đánh giá)</span>
+                    }
+                    else
+                    {
+                        <div class="no-rating">
+                            <i class="far fa-star"></i> Chưa có đánh giá
+                        </div>
+                    }
+                </div>
+
+                <!-- Price Section - Hiển thị chi tiết từng giá -->
+                <div class="product-pricing">
+                    <h3 class="pricing-title">
+                        <i class="fas fa-tags"></i> Bảng giá theo size
+                    </h3>
+                    @if (Model.Product.ProductSizes.Any())
+                    {
+                        <div class="size-price-grid">
+                            @foreach (var size in Model.Product.ProductSizes.OrderBy(s => s.Price))
+                            {
+                                <div class="size-price-card" data-size-id="@size.ProductSizeID"
+                                    data-price="@size.Price.ToString("F0", System.Globalization.CultureInfo.InvariantCulture)"
+                                    data-size-name="@size.Size">
+                                    <div class="size-badge">@size.Size</div>
+                                    <div class="price-amount">@size.Price.ToString("N0") <span class="currency">VNĐ</span></div>
+                                </div>
+                            }
+                        </div>
+                        <div class="price-range">
+                            <i class="fas fa-info-circle"></i>
+                            Giá từ <strong>@Model.Product.ProductSizes.Min(s => s.Price).ToString("N0") VNĐ</strong>
+                            đến <strong>@Model.Product.ProductSizes.Max(s => s.Price).ToString("N0") VNĐ</strong>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="no-price">Chưa có thông tin giá</div>
+                    }
+                </div>
+
+                <!-- Size Selection -->
+                <div class="size-selection">
+                    <label class="size-label">
+                        <i class="fas fa-ruler"></i> Chọn size:
+                    </label>
+                    <div class="size-options">
+                        @foreach (var size in Model.Product.ProductSizes.OrderBy(s => s.Price))
+                        {
+                            <button class="size-btn" data-size-id="@size.ProductSizeID"
+                                data-price="@size.Price.ToString("F0", System.Globalization.CultureInfo.InvariantCulture)"
+                                data-size-name="@size.Size">
+                                @size.Size
+                            </button>
+
+
+                        }
+                    </div>
+                    <div class="selected-size-info" id="selectedSizeInfo" style="display: none;">
+                        <span>Đã chọn: <strong id="selectedSizeText"></strong></span>
+                        <span class="selected-price">Giá: <strong id="selectedPriceText"></strong> VNĐ</span>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="product-actions">
+                    <button class="btn-add-cart" onclick="addToCart()" id="btnAddCart" disabled>
+                        <i class="fas fa-shopping-cart"></i>
+                        <span>Thêm vào giỏ hàng</span>
+                    </button>
+                    <button class="btn-wishlist" data-id="@Model.Product.ProductID">
+                        <i class="fas fa-heart heart-icon text-secondary"></i>
+                    </button>
+
+                </div>
+
+                <!-- Quick Info -->
+                <div class="quick-info">
+                    <div class="info-item">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Giao hàng miễn phí</span>
+                    </div>
+                    <div class="info-item">
+                        <i class="fas fa-undo"></i>
+                        <span>Đổi trả trong 7 ngày</span>
+                    </div>
+                    <div class="info-item">
+                        <i class="fas fa-shield-alt"></i>
+                        <span>Bảo hành chất lượng</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Description Section -->
+        <div class="description-section">
+            <h2 class="section-title">
+                <i class="fas fa-file-alt"></i> Mô tả sản phẩm
+            </h2>
+            <div class="description-content">
+                @if (!string.IsNullOrEmpty(Model.Product.Description))
+                {
+                    <p>@Model.Product.Description</p>
+                }
+                else
+                {
+                    <p class="no-description">Chưa có mô tả cho sản phẩm này.</p>
+                }
+            </div>
+        </div>
+
+        <!-- Reviews Section -->
+        <div class="reviews-section">
+            <div class="reviews-header">
+                <h2 class="section-title">
+                    <i class="fas fa-star"></i> Đánh giá sản phẩm
+                </h2>
+                @if (Model.AverageRating > 0)
+                {
+                    <div class="reviews-summary">
+                        <span class="big-rating">@Model.AverageRating.ToString("F1")</span>
+                        <div class="summary-stars">
+                            @for (int i = 1; i <= 5; i++)
+                            {
+                                if (i <= Model.AverageRating)
+                                {
+                                    <i class="fas fa-star"></i>
+                                }
+                                else if (i - 0.5 <= Model.AverageRating)
+                                {
+                                    <i class="fas fa-star-half-alt"></i>
+                                }
+                                else
+                                {
+                                    <i class="far fa-star"></i>
+                                }
+                            }
+                        </div>
+                        <span class="summary-count">@Model.Product.Reviews.Count đánh giá</span>
+                    </div>
+                }
+            </div>
+
+            <!-- Reviews List -->
+            @if (Model.Reviews.Any())
+            {
+                <div class="reviews-list">
+                    @foreach (var review in Model.Reviews)
+                    {
+                        <div class="review-card">
+                            <div class="review-header">
+                                <div class="reviewer-info">
+                                    <div class="reviewer-avatar">
+                                        <i class="fas fa-user"></i>
+                                    </div>
+                                    <div class="reviewer-details">
+                                        <div class="reviewer-name">@review.CustomerName</div>
+                                        <div class="review-date">
+                                            <i class="far fa-calendar"></i>
+                                            @review.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="review-rating">
+                                    @for (int i = 1; i <= 5; i++)
+                                    {
+                                        if (i <= review.Rating)
+                                        {
+                                            <i class="fas fa-star"></i>
+                                        }
+                                        else
+                                        {
+                                            <i class="far fa-star"></i>
+                                        }
+                                    }
+                                </div>
+                            </div>
+                            <div class="review-content">
+                                <p>@review.Comment</p>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="no-reviews">
+                    <i class="far fa-comment-dots"></i>
+                    <p>Sản phẩm này chưa có đánh giá nào. Hãy là người đầu tiên đánh giá!</p>
+                </div>
+            }
+
+            <!-- Review Form -->
+            @if (User.Identity.IsAuthenticated)
+            {
+                <div class="review-form-section">
+                    <h3 class="form-title">
+                        <i class="fas fa-pen"></i> Viết đánh giá của bạn
+                    </h3>
+                    <form method="post" asp-action="AddReview" class="review-form">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="ProductID" value="@Model.ProductID">
+
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-star"></i> Chọn số sao
+                            </label>
+
+                            <div class="star-rating" id="starRating">
+                                <i class="fas fa-star star" data-value="1"></i>
+                                <i class="fas fa-star star" data-value="2"></i>
+                                <i class="fas fa-star star" data-value="3"></i>
+                                <i class="fas fa-star star" data-value="4"></i>
+                                <i class="fas fa-star star" data-value="5"></i>
+                            </div>
+
+                            <!-- Hidden input để submit -->
+                            <input type="hidden" id="Rating" name="Rating" required />
+                        </div>
+
+
+                        <div class="form-group">
+                            <label for="Comment" class="form-label">
+                                <i class="fas fa-comment"></i> Nội dung đánh giá
+                            </label>
+                            <textarea name="Comment" class="form-control" id="Comment" rows="5"
+                            placeholder="Chia sẻ cảm nhận của bạn về sản phẩm này..." required></textarea>
+                        </div>
+
+                        <button type="submit" class="btn-submit-review">
+                            <i class="fas fa-paper-plane"></i> Gửi đánh giá
+                        </button>
+                    </form>
+                </div>
+            }
+            else
+            {
+                <div class="login-prompt">
+                    <i class="fas fa-lock"></i>
+                    <p>Bạn cần <a href="/Account/Login">đăng nhập</a> để viết đánh giá</p>
+                </div>
+            }
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let selectedSizeId = null;
+        let selectedPrice = null;
+        let selectedSizeName = null;
+
+        function selectSize(btn, sizeId, price, sizeName) {
+            // Remove active from all buttons
+            document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.size-price-card').forEach(c => c.classList.remove('selected'));
+
+            // Add active to clicked button
+            btn.classList.add('active');
+
+            selectedSizeId = sizeId;
+            selectedPrice = price;
+            selectedSizeName = sizeName;
+
+            // Update selected size info
+            document.getElementById('selectedSizeText').textContent = sizeName;
+            document.getElementById('selectedPriceText').textContent = price.toLocaleString('vi-VN');
+            document.getElementById('selectedSizeInfo').style.display = 'flex';
+
+            // Enable add to cart button
+            document.getElementById('btnAddCart').disabled = false;
+        }
+
+        function addToCart() {
+            if (!selectedSizeId) {
+                alert('Vui lòng chọn size trước!');
+                return;
+            }
+
+            // Get CSRF token
+            const csrfToken = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+
+            fetch('/Cart/Add', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': csrfToken
+                },
+                body: JSON.stringify({
+                    productId: @Model.Product.ProductID,
+                    productSizeId: selectedSizeId,
+                    quantity: 1,
+                    price: selectedPrice
+                })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.redirectUrl) {
+                        window.location.href = data.redirectUrl;
+                        return;
+                    }
+                    if (data.success) {
+                        alert('Đã thêm sản phẩm vào giỏ hàng!');
+                        // Reload page to update cart
+                        if (typeof loadCart === 'function') loadCart();
+                    } else {
+                        alert('Lỗi: ' + (data.message || 'Không thể thêm vào giỏ hàng'));
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert('Có lỗi xảy ra khi thêm vào giỏ hàng');
+                });
+        }
+
+        function toggleWishlist(productId) {
+            fetch('/Wishlist/Toggle', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ productId: productId })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data && data.success !== undefined) {
+                        const btn = document.getElementById('btnWishlist');
+                        if (data.isWishlisted) {
+                            btn.classList.add('active');
+                        } else {
+                            btn.classList.remove('active');
+                        }
+                    }
+                })
+                .catch(err => console.error(err));
+        }
+
+        function zoomImage() {
+            const img = document.querySelector('.product-main-image');
+            if (img.style.transform === 'scale(2)') {
+                img.style.transform = 'scale(1)';
+            } else {
+                img.style.transform = 'scale(2)';
+                img.style.transition = 'transform 0.5s';
+            }
+        }
+        const stars = document.querySelectorAll("#starRating .star");
+        const ratingInput = document.getElementById("Rating");
+
+        stars.forEach(star => {
+            star.addEventListener("mouseover", function () {
+                highlightStars(this.dataset.value);
+            });
+
+            star.addEventListener("mouseout", function () {
+                resetHoverStars();
+            });
+
+            star.addEventListener("click", function () {
+                selectStars(this.dataset.value);
+            });
+        });
+
+        function highlightStars(value) {
+            stars.forEach(s => {
+                s.classList.toggle("hover", s.dataset.value <= value);
+            });
+        }
+
+        function resetHoverStars() {
+            stars.forEach(s => s.classList.remove("hover"));
+        }
+
+        function selectStars(value) {
+            ratingInput.value = value;
+
+            stars.forEach(s => {
+                s.classList.toggle("selected", s.dataset.value <= value);
+            });
+        }
+
+        document.querySelectorAll('.size-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+
+                const sizeId = this.getAttribute('data-size-id');
+                const price = Number(this.getAttribute('data-price').replace(/\D/g, ""));
+                const sizeName = this.innerText.trim(); // <-- tên size lấy từ text nút
+
+                // Remove highlight
+                document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.size-price-card').forEach(c => c.classList.remove('selected'));
+                this.classList.add('active');
+
+                selectedSizeId = sizeId;
+                selectedPrice = price;
+                selectedSizeName = sizeName;
+
+                // Update UI
+                document.getElementById('selectedSizeText').textContent = sizeName;
+                document.getElementById('selectedPriceText').textContent = price.toLocaleString('vi-VN');
+                document.getElementById('selectedSizeInfo').style.display = 'flex';
+                document.getElementById('btnAddCart').disabled = false;
+
+                console.log("BTN CLICK ->", sizeId, price, sizeName);
+            });
+        });
+
+        document.querySelectorAll('.size-price-card').forEach(card => {
+            card.addEventListener('click', function () {
+
+                const sizeId = this.getAttribute('data-size-id');
+                const price = Number(this.getAttribute('data-price'));
+                const sizeName = this.querySelector('.size-badge').innerText.trim();
+
+                document.querySelectorAll('.size-price-card').forEach(c => c.classList.remove('selected'));
+                document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('selected');
+
+                // Đồng bộ nút size
+                const btn = document.querySelector(`.size-btn[data-size-id="${sizeId}"]`);
+                if (btn) btn.classList.add('active');
+
+                selectedSizeId = sizeId;
+                selectedPrice = price;
+                selectedSizeName = sizeName;
+
+                document.getElementById('selectedSizeText').textContent = sizeName;
+                document.getElementById('selectedPriceText').textContent = price.toLocaleString('vi-VN');
+                document.getElementById('selectedSizeInfo').style.display = 'flex';
+                document.getElementById('btnAddCart').disabled = false;
+
+                console.log("CARD CLICK ->", sizeId, price, sizeName);
+            });
+        });
+
+
+       function setWishlistStateFor(productId, isWishlisted) {
+    document.querySelectorAll(`.btn-wishlist[data-id='${productId}'] .heart-icon`)
+        .forEach(icon => {
+            if (isWishlisted) {
+                icon.classList.remove('text-secondary');
+                icon.classList.add('text-danger');
+            } else {
+                icon.classList.remove('text-danger');
+                icon.classList.add('text-secondary');
+            }
+        });
+}
+
+document.querySelectorAll('.btn-wishlist').forEach(btn => {
+    btn.addEventListener('click', function () {
+        const productId = this.dataset.id;
+
+        fetch('/Wishlist/Toggle', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ productId: productId })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data && data.success === true) {
+                setWishlistStateFor(productId, data.isWishlisted);
+            }
+        });
+    });
+});
+
+
+    </script>
+</body>
+
+</html>

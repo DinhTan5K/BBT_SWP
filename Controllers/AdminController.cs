@@ -7,6 +7,12 @@ using System.Linq;
 using start.Data;
 using start.Models;
 using start.Services;
+using System.ComponentModel;
+using System.Drawing;
+using OfficeOpenXml;
+using OfficeOpenXml.Style;
+using ClosedXML.Excel;
+
 
 namespace start.Controllers
 {
@@ -17,13 +23,20 @@ namespace start.Controllers
         private readonly IEmployeeProfileService _employeeProfileService;
         private readonly ICloudinaryService _cloudinaryService;
         private readonly IAuthService _authService;
+        private readonly IAdminSecurityService _adminSecurityService;
 
-        public AdminController(ApplicationDbContext db, IEmployeeProfileService employeeProfileService, ICloudinaryService cloudinaryService, IAuthService authService)
+        public AdminController(
+            ApplicationDbContext db,
+            IEmployeeProfileService employeeProfileService,
+            ICloudinaryService cloudinaryService,
+            IAuthService authService,
+            IAdminSecurityService adminSecurityService)
         {
             _db = db;
             _employeeProfileService = employeeProfileService;
             _cloudinaryService = cloudinaryService;
             _authService = authService;
+            _adminSecurityService = adminSecurityService;
         }
 
         // Lấy EmployeeID và Role từ Claims
@@ -120,7 +133,7 @@ namespace start.Controllers
 
             var monthlyRevenueData = last6Months.Select(month => new
             {
-                Month = month.ToString("MM/yyyy"),
+                Month = month.ToString("MK/yyyy"),
                 Revenue = _db.Orders
                     .Where(o => o.CreatedAt.Month == month.Month &&
                                o.CreatedAt.Year == month.Year &&
@@ -305,18 +318,21 @@ namespace start.Controllers
         }
 
         // GET /Admin/Profile
-        public IActionResult Profile()
+        public async Task<IActionResult> Profile()
         {
             if (string.IsNullOrEmpty(CurrentEmpId))
                 return RedirectToAction("Login", "Account");
 
-            var emp = _db.Employees
+            var emp = await _db.Employees
                          .AsNoTracking()
                          .Include(e => e.Branch)
                          .Include(e => e.Role)
-                         .SingleOrDefault(e => e.EmployeeID == CurrentEmpId);
+                         .SingleOrDefaultAsync(e => e.EmployeeID == CurrentEmpId);
 
             if (emp == null) return NotFound();
+
+            var security = await _adminSecurityService.GetOrCreateAsync(emp.EmployeeID ?? string.Empty);
+            ViewBag.AdminSecurity = security;
 
             ViewBag.ActiveMenu = "Profile";
             return View(emp);
@@ -342,6 +358,105 @@ namespace start.Controllers
                 }
             }
 
+            return RedirectToAction("Profile");
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SendTwoFactorSetupOtp()
+        {
+            if (string.IsNullOrEmpty(CurrentEmpId) || CurrentRole != "AD")
+                return RedirectToAction("Login", "Account");
+
+            var admin = await _db.Employees
+                .AsNoTracking()
+                .FirstOrDefaultAsync(e => e.EmployeeID == CurrentEmpId);
+
+            if (admin == null)
+                return RedirectToAction("Login", "Account");
+
+            var result = await _adminSecurityService.SendOtpAsync(admin, AdminOtpPurpose.Setup);
+            TempData[result.Succeeded ? "SuccessMessage" : "ErrorMessage"] = result.Message;
+
+            return RedirectToAction("Profile");
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> VerifyTwoFactorSetup(string otp)
+        {
+            if (string.IsNullOrEmpty(CurrentEmpId) || CurrentRole != "AD")
+                return RedirectToAction("Login", "Account");
+
+            if (string.IsNullOrWhiteSpace(otp))
+            {
+                TempData["ErrorMessage"] = "Vui lòng nhập mã OTP.";
+                return RedirectToAction("Profile");
+            }
+
+            var verification = await _adminSecurityService.VerifyOtpAsync(CurrentEmpId, otp.Trim());
+            if (!verification.Succeeded)
+            {
+                TempData["ErrorMessage"] = verification.Message;
+                if (verification.IsLocked)
+                {
+                    TempData["ErrorMessage"] = verification.Message;
+                }
+                return RedirectToAction("Profile");
+            }
+
+            await _adminSecurityService.EnableTwoFactorAsync(CurrentEmpId);
+            TempData["SuccessMessage"] = "Đã bật 2FA cho tài khoản quản trị viên.";
+            return RedirectToAction("Profile");
+        }
+
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SendDisableTwoFactorOtp()
+        {
+            if (string.IsNullOrEmpty(CurrentEmpId) || CurrentRole != "AD")
+                return RedirectToAction("Login", "Account");
+
+            var admin = await _db.Employees
+                .AsNoTracking()
+                .FirstOrDefaultAsync(e => e.EmployeeID == CurrentEmpId);
+
+            if (admin == null)
+                return RedirectToAction("Login", "Account");
+
+            var result = await _adminSecurityService.SendOtpAsync(admin, AdminOtpPurpose.Disable);
+            TempData[result.Succeeded ? "SuccessMessage" : "ErrorMessage"] = result.Message;
+
+            return RedirectToAction("Profile");
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DisableTwoFactor(string otp)
+        {
+            if (string.IsNullOrEmpty(CurrentEmpId) || CurrentRole != "AD")
+                return RedirectToAction("Login", "Account");
+
+            if (string.IsNullOrWhiteSpace(otp))
+            {
+                TempData["ErrorMessage"] = "Vui lòng nhập mã OTP để xác nhận tắt 2FA.";
+                return RedirectToAction("Profile");
+            }
+
+            var verification = await _adminSecurityService.VerifyOtpAsync(CurrentEmpId, otp.Trim());
+            if (!verification.Succeeded)
+            {
+                TempData["ErrorMessage"] = verification.Message;
+                if (verification.IsLocked)
+                {
+                    TempData["ErrorMessage"] = verification.Message;
+                }
+                return RedirectToAction("Profile");
+            }
+
+            await _adminSecurityService.DisableTwoFactorAsync(CurrentEmpId);
+            TempData["SuccessMessage"] = "Đã tắt 2FA cho tài khoản quản trị viên.";
             return RedirectToAction("Profile");
         }
 
@@ -395,6 +510,40 @@ namespace start.Controllers
 
                 ViewBag.RolesWithStats = rolesWithStats;
                 ViewBag.CurrentRole = CurrentRole;
+            }
+            else if (tab == "regionManagers")
+            {
+                var regionManagers = await _db.Employees
+                    .AsNoTracking()
+                    .Include(e => e.Region)
+                    .Include(e => e.Role)
+                    .Where(e => e.RoleID == "RM")
+                    .OrderBy(e => e.FullName)
+                    .ToListAsync();
+
+                ViewBag.RegionManagers = regionManagers;
+                ViewBag.RMActiveCount = regionManagers.Count(e => e.IsActive);
+                ViewBag.RMInactiveCount = regionManagers.Count(e => !e.IsActive);
+                ViewBag.RMTotalCount = regionManagers.Count;
+            }
+            else if (tab == "marketingManagers")
+            {
+                var marketingManagers = await _db.Employees
+                    .AsNoTracking()
+                    .Include(e => e.Role)
+                    .Where(e => e.RoleID == "MK")
+                    .OrderBy(e => e.FullName)
+                    .ToListAsync();
+
+                // Đếm tổng số nhân viên Marketing (MK) trong hệ thống
+                var totalMarketingEmployees = await _db.Employees
+                    .CountAsync(e => e.RoleID == "MK" && e.IsActive);
+
+                ViewBag.MarketingManagers = marketingManagers;
+                ViewBag.TotalMarketingEmployees = totalMarketingEmployees;
+                ViewBag.MKActiveCount = marketingManagers.Count(e => e.IsActive);
+                ViewBag.MKInactiveCount = marketingManagers.Count(e => !e.IsActive);
+                ViewBag.MKTotalCount = marketingManagers.Count;
             }
 
             ViewBag.ActiveMenu = "Employees";
@@ -644,7 +793,7 @@ namespace start.Controllers
 
             var monthlyRevenue = last6Months.Select(month => new
             {
-                Month = month.ToString("MM/yyyy"),
+                Month = month.ToString("MK/yyyy"),
                 Revenue = allOrders
                     .Where(o => o.CreatedAt.Month == month.Month &&
                                o.CreatedAt.Year == month.Year &&
@@ -1035,7 +1184,7 @@ namespace start.Controllers
         }
 
         // ========== QUẢN LÝ CHI NHÁNH ==========
-        
+
         // GET /Admin/Branches - Danh sách tất cả chi nhánh
         public async Task<IActionResult> Branches(int page = 1, int pageSize = 10, int? regionId = null)
         {
@@ -1121,7 +1270,7 @@ namespace start.Controllers
                 // Kiểm tra tên branch không trùng trong cùng region
                 var existingBranch = await _db.Branches
                     .FirstOrDefaultAsync(b => b.Name.Trim() == Name.Trim() && b.RegionID == RegionID);
-                
+
                 if (existingBranch != null)
                 {
                     return Json(new { success = false, message = $"Đã tồn tại chi nhánh \"{Name.Trim()}\" trong khu vực này" });
@@ -1198,10 +1347,10 @@ namespace start.Controllers
 
                 // Kiểm tra tên branch không trùng với branch khác trong cùng region
                 var duplicateBranch = await _db.Branches
-                    .FirstOrDefaultAsync(b => b.Name.Trim() == Name.Trim() && 
-                                             b.RegionID == RegionID && 
+                    .FirstOrDefaultAsync(b => b.Name.Trim() == Name.Trim() &&
+                                             b.RegionID == RegionID &&
                                              b.BranchID != id);
-                
+
                 if (duplicateBranch != null)
                 {
                     return Json(new { success = false, message = $"Đã tồn tại chi nhánh \"{Name.Trim()}\" trong khu vực này" });
@@ -1249,18 +1398,20 @@ namespace start.Controllers
                 // Kiểm tra xem chi nhánh có đơn hàng không
                 if (orderCount > 0)
                 {
-                    return Json(new { 
-                        success = false, 
-                        message = $"Không thể xóa chi nhánh vì đang có {orderCount} đơn hàng liên quan. Vui lòng xử lý đơn hàng trước khi xóa." 
+                    return Json(new
+                    {
+                        success = false,
+                        message = $"Không thể xóa chi nhánh vì đang có {orderCount} đơn hàng liên quan. Vui lòng xử lý đơn hàng trước khi xóa."
                     });
                 }
 
                 // Kiểm tra xem có nhân viên nào thuộc chi nhánh này không
                 if (employeeCount > 0)
                 {
-                    return Json(new { 
-                        success = false, 
-                        message = $"Không thể xóa chi nhánh vì đang có {employeeCount} nhân viên thuộc chi nhánh này. Vui lòng chuyển nhân viên trước khi xóa." 
+                    return Json(new
+                    {
+                        success = false,
+                        message = $"Không thể xóa chi nhánh vì đang có {employeeCount} nhân viên thuộc chi nhánh này. Vui lòng chuyển nhân viên trước khi xóa."
                     });
                 }
 
@@ -1277,7 +1428,7 @@ namespace start.Controllers
         }
 
         // ========== QUẢN LÝ MÃ GIẢM GIÁ (DISCOUNTS) - CHỈ XEM ==========
-        
+
         // GET /Admin/Discounts - Danh sách mã giảm giá (chỉ xem, không CRUD)
         public IActionResult Discounts(string? filter, int page = 1, int pageSize = 10)
         {
@@ -1294,8 +1445,8 @@ namespace start.Controllers
                 else if (filter == "Ship")
                 {
                     // Ship: FreeShipping, FixedShippingDiscount, PercentShippingDiscount
-                    query = query.Where(d => d.Type == DiscountType.FreeShipping || 
-                                            d.Type == DiscountType.FixedShippingDiscount || 
+                    query = query.Where(d => d.Type == DiscountType.FreeShipping ||
+                                            d.Type == DiscountType.FixedShippingDiscount ||
                                             d.Type == DiscountType.PercentShippingDiscount);
                 }
             }
@@ -1322,7 +1473,7 @@ namespace start.Controllers
         }
 
         // ========== QUẢN LÝ TIN TỨC (NEWS) ==========
-        
+
         // GET /Admin/News - Danh sách tin tức
         public IActionResult News(int page = 1, int pageSize = 10)
         {
@@ -1349,20 +1500,43 @@ namespace start.Controllers
         // News chỉ xem, không có CRUD - CRUD thông qua NewsRequest
 
         // ========== XUẤT BÁO CÁO EXCEL ==========
-        
+
         // GET /Admin/ExportReports - Xuất báo cáo Excel
         [HttpGet]
         public IActionResult ExportReports(string? reportType, DateTime? startDate, DateTime? endDate)
         {
             try
             {
-                // Tạo dữ liệu báo cáo
-                var reportData = new List<Dictionary<string, object>>();
-
-                if (reportType == "orders" || string.IsNullOrEmpty(reportType))
+                using (var workbook = new XLWorkbook())
                 {
+                    var ws = workbook.Worksheets.Add("Báo cáo đơn hàng");
+
+                    // ===================== TIÊU ĐỀ CHÍNH =====================
+                    ws.Cell("A1").Value = "BÁO CÁO ĐƠN HÀNG";
+                    ws.Range("A1:F1").Merge();
+                    ws.Cell("A1").Style
+                        .Font.SetBold()
+                        .Font.SetFontSize(18)
+                        .Font.SetFontColor(XLColor.White)
+                        .Fill.SetBackgroundColor(XLColor.FromArgb(153, 102, 51))
+                        .Alignment.SetHorizontal(XLAlignmentHorizontalValues.Center)
+                        .Alignment.SetVertical(XLAlignmentVerticalValues.Center);
+
+                    // ===================== TIÊU ĐỀ CỘT =====================
+                    string[] headers = { "Mã đơn", "Khách hàng", "Chi nhánh", "Tổng tiền", "Ngày tạo", "Trạng thái" };
+                    for (int i = 0; i < headers.Length; i++)
+                    {
+                        var cell = ws.Cell(3, i + 1);
+                        cell.Value = headers[i];
+                        cell.Style
+                            .Font.SetBold()
+                            .Fill.SetBackgroundColor(XLColor.Beige)
+                            .Alignment.SetHorizontal(XLAlignmentHorizontalValues.Center)
+                            .Border.SetOutsideBorder(XLBorderStyleValues.Thin);
+                    }
+
+                    // ===================== LẤY DỮ LIỆU =====================
                     var orders = _db.Orders
-                        .AsNoTracking()
                         .Include(o => o.Customer)
                         .Include(o => o.Branch)
                         .Where(o => o.Status == "Đã giao")
@@ -1373,45 +1547,52 @@ namespace start.Controllers
                     if (endDate.HasValue)
                         orders = orders.Where(o => o.CreatedAt <= endDate.Value.AddDays(1));
 
-                    var ordersList = orders.OrderByDescending(o => o.CreatedAt).ToList();
+                    var data = orders.OrderByDescending(o => o.CreatedAt).ToList();
 
-                    foreach (var order in ordersList)
+                    // ===================== GHI DỮ LIỆU =====================
+                    int row = 4;
+                    foreach (var order in data)
                     {
-                        reportData.Add(new Dictionary<string, object>
-                        {
-                            { "Mã đơn", order.OrderCode ?? order.OrderID.ToString() },
-                            { "Khách hàng", order.Customer?.Name ?? "N/A" },
-                            { "Chi nhánh", order.Branch?.Name ?? "N/A" },
-                            { "Tổng tiền", order.Total },
-                            { "Ngày tạo", order.CreatedAt.ToString("dd/MM/yyyy HH:mm") },
-                            { "Trạng thái", order.Status ?? "N/A" }
-                        });
+                        ws.Cell(row, 1).Value = order.OrderCode ?? order.OrderID.ToString();
+                        ws.Cell(row, 2).Value = order.Customer?.Name ?? "N/A";
+                        ws.Cell(row, 3).Value = order.Branch?.Name ?? "N/A";
+                        ws.Cell(row, 4).Value = order.Total;
+                        ws.Cell(row, 4).Style.NumberFormat.Format = "#,##0 ₫";
+                        ws.Cell(row, 5).Value = order.CreatedAt.ToString("dd/MK/yyyy HH:mm");
+                        ws.Cell(row, 6).Value = order.Status ?? "N/A";
+
+                        ws.Range(row, 1, row, 6)
+                            .Style.Border.SetOutsideBorder(XLBorderStyleValues.Thin)
+                            .Alignment.SetVertical(XLAlignmentVerticalValues.Center);
+
+                        row++;
+                    }
+
+                    // ===================== XỬ LÝ TRƯỜNG HỢP RỖNG =====================
+                    if (data.Count == 0)
+                    {
+                        ws.Cell("A4").Value = "Không có dữ liệu trong khoảng thời gian đã chọn.";
+                        ws.Range("A4:F4").Merge();
+                        ws.Cell("A4").Style
+                            .Font.SetItalic()
+                            .Alignment.SetHorizontal(XLAlignmentHorizontalValues.Center);
+                    }
+
+                    // ===================== FORMAT + XUẤT FILE =====================
+                    ws.Columns().AdjustToContents();
+                    ws.SheetView.FreezeRows(3); // Cố định tiêu đề khi cuộn
+
+                    using (var stream = new MemoryStream())
+                    {
+                        workbook.SaveAs(stream);
+                        var content = stream.ToArray();
+                        var fileName = $"BaoCao_{reportType ?? "DonHang"}_{DateTime.Now:yyyyMKdd_HHmmss}.xlsx";
+
+                        return File(content,
+                            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                            fileName);
                     }
                 }
-
-                // Tạo CSV format (Excel có thể mở CSV)
-                var csv = new System.Text.StringBuilder();
-                
-                if (reportData.Count > 0)
-                {
-                    // Header
-                    var headers = reportData[0].Keys;
-                    csv.AppendLine(string.Join(",", headers));
-
-                    // Rows
-                    foreach (var row in reportData)
-                    {
-                        var values = row.Values.Select(v => 
-                            v is string s ? $"\"{s.Replace("\"", "\"\"")}\"" : v.ToString()
-                        );
-                        csv.AppendLine(string.Join(",", values));
-                    }
-                }
-
-                var fileName = $"BaoCao_{reportType ?? "orders"}_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
-                var bytes = System.Text.Encoding.UTF8.GetBytes(csv.ToString());
-                
-                return File(bytes, "text/csv; charset=utf-8", fileName);
             }
             catch (Exception ex)
             {
@@ -1421,7 +1602,7 @@ namespace start.Controllers
         }
 
         // ========== QUẢN LÝ DUYỆT YÊU CẦU (APPROVALS) ==========
-        
+
         // GET /Admin/Approvals - Danh sách yêu cầu cần duyệt
         public IActionResult Approvals(string? status, string? requestType, int page = 1, int pageSize = 15)
         {
@@ -1488,14 +1669,14 @@ namespace start.Controllers
                 + _db.ProductRequests.Count(pr => pr.Status == RequestStatus.Pending)
                 + _db.CategoryRequests.Count(cr => cr.Status == RequestStatus.Pending)
                 + _db.BranchRequests.Count(br => br.Status == RequestStatus.Pending);
-            
+
             var totalApproved = _db.DiscountRequests.Count(dr => dr.Status == RequestStatus.Approved)
                 + _db.NewsRequests.Count(nr => nr.Status == RequestStatus.Approved)
                 + _db.EmployeeBranchRequests.Count(ebr => ebr.Status == RequestStatus.Approved)
                 + _db.ProductRequests.Count(pr => pr.Status == RequestStatus.Approved)
                 + _db.CategoryRequests.Count(cr => cr.Status == RequestStatus.Approved)
                 + _db.BranchRequests.Count(br => br.Status == RequestStatus.Approved);
-            
+
             var totalRejected = _db.DiscountRequests.Count(dr => dr.Status == RequestStatus.Rejected)
                 + _db.NewsRequests.Count(nr => nr.Status == RequestStatus.Rejected)
                 + _db.EmployeeBranchRequests.Count(ebr => ebr.Status == RequestStatus.Rejected)
@@ -1626,7 +1807,7 @@ namespace start.Controllers
 
             // Kết hợp và phân trang - Sử dụng Dictionary để tương thích với dynamic
             var allRequestsList = new List<Dictionary<string, object>>();
-            
+
             foreach (var dr in discountRequests)
             {
                 allRequestsList.Add(new Dictionary<string, object>
@@ -1638,7 +1819,7 @@ namespace start.Controllers
                     { "Status", dr.Status }
                 });
             }
-            
+
             foreach (var nr in newsRequests)
             {
                 allRequestsList.Add(new Dictionary<string, object>
@@ -1698,7 +1879,7 @@ namespace start.Controllers
                     { "Status", br.Status }
                 });
             }
-            
+
             // Sắp xếp: Status trước, sau đó RequestedAt
             var allRequests = allRequestsList
                 .OrderBy(x => (RequestStatus)x["Status"])      // Sắp xếp theo Status (Pending=0, Approved=1, Rejected=2)
@@ -2165,7 +2346,7 @@ namespace start.Controllers
                         };
 
                         _db.Employees.Add(newEmployee);
-                        
+
                         // Cập nhật EmployeeId trong request để lưu lại
                         request.EmployeeId = newEmployeeId;
                     }
@@ -2568,7 +2749,7 @@ namespace start.Controllers
                     // Kiểm tra tên branch không trùng trong cùng region
                     var existingBranch = await _db.Branches
                         .FirstOrDefaultAsync(b => b.Name == request.Name && b.RegionID == request.RegionID);
-                    
+
                     if (existingBranch != null)
                     {
                         return Json(new { success = false, message = $"Đã tồn tại chi nhánh \"{request.Name}\" trong region này" });
@@ -2601,7 +2782,7 @@ namespace start.Controllers
                     {
                         var branch = await _db.Branches
                             .FirstOrDefaultAsync(b => b.BranchID == request.BranchId.Value);
-                        
+
                         if (branch == null)
                         {
                             return Json(new { success = false, message = "Chi nhánh không tồn tại" });
@@ -2609,10 +2790,10 @@ namespace start.Controllers
 
                         // Kiểm tra tên branch không trùng với branch khác trong cùng region
                         var existingBranch = await _db.Branches
-                            .FirstOrDefaultAsync(b => b.Name == request.Name && 
-                                                     b.RegionID == request.RegionID && 
+                            .FirstOrDefaultAsync(b => b.Name == request.Name &&
+                                                     b.RegionID == request.RegionID &&
                                                      b.BranchID != request.BranchId.Value);
-                        
+
                         if (existingBranch != null)
                         {
                             return Json(new { success = false, message = $"Đã tồn tại chi nhánh \"{request.Name}\" trong region này" });
@@ -2640,7 +2821,7 @@ namespace start.Controllers
                         var branch = await _db.Branches
                             .Include(b => b.Orders)
                             .FirstOrDefaultAsync(b => b.BranchID == request.BranchId.Value);
-                        
+
                         if (branch == null)
                         {
                             return Json(new { success = false, message = "Chi nhánh không tồn tại" });
@@ -2649,16 +2830,17 @@ namespace start.Controllers
                         // Kiểm tra ràng buộc dữ liệu
                         var employeeCount = await _db.Employees
                             .CountAsync(e => e.BranchID == request.BranchId.Value);
-                        
+
                         var orderCount = branch.Orders?.Count ?? 0;
 
                         // Nếu có nhân viên hoặc đơn hàng, không cho phép xóa
                         // (Trong thực tế có thể cần thêm field IsActive vào Branch model)
                         if (employeeCount > 0 || orderCount > 0)
                         {
-                            return Json(new { 
-                                success = false, 
-                                message = $"Không thể xóa chi nhánh vì đang có {employeeCount} nhân viên và {orderCount} đơn hàng liên quan. Vui lòng chuyển nhân viên và đơn hàng trước khi xóa." 
+                            return Json(new
+                            {
+                                success = false,
+                                message = $"Không thể xóa chi nhánh vì đang có {employeeCount} nhân viên và {orderCount} đơn hàng liên quan. Vui lòng chuyển nhân viên và đơn hàng trước khi xóa."
                             });
                         }
 
@@ -2712,7 +2894,7 @@ namespace start.Controllers
         }
 
         // ========== QUẢN LÝ VAI TRÒ (ROLE MANAGEMENT) - CHỈ DÀNH CHO AD ==========
-        
+
         // Kiểm tra quyền truy cập: chỉ AD (Admin) mới được quản lý vai trò
         private bool CanManageRoles()
         {
@@ -3043,7 +3225,7 @@ namespace start.Controllers
         }
 
         // GET /Admin/RegionManagers - Danh sách tất cả Region Manager
-        public async Task<IActionResult> RegionManagers()
+        public IActionResult RegionManagers()
         {
             if (string.IsNullOrEmpty(CurrentEmpId) || CurrentRole != "AD")
             {
@@ -3051,26 +3233,7 @@ namespace start.Controllers
                 return RedirectToAction("Dashboard");
             }
 
-            // Lấy danh sách RM với Region
-            var regionManagers = await _db.Employees
-                .AsNoTracking()
-                .Include(e => e.Branch)
-                .Include(e => e.Role)
-                .Include(e => e.Region)
-                .Where(e => e.RoleID == "RM")
-                .OrderBy(e => e.FullName)
-                .ToListAsync();
-
-            var activeCount = regionManagers.Count(e => e.IsActive);
-            var inactiveCount = regionManagers.Count(e => !e.IsActive);
-
-            ViewBag.ActiveMenu = "RegionManagers";
-            ViewBag.CurrentRole = CurrentRole;
-            ViewBag.ActiveCount = activeCount;
-            ViewBag.InactiveCount = inactiveCount;
-            ViewBag.TotalCount = regionManagers.Count;
-
-            return View(regionManagers);
+            return RedirectToAction("Employees", new { tab = "regionManagers" });
         }
 
         // GET /Admin/RegionManagers/Create - Form tạo RM mới
@@ -3079,7 +3242,7 @@ namespace start.Controllers
             if (string.IsNullOrEmpty(CurrentEmpId) || CurrentRole != "AD")
             {
                 TempData["ErrorMessage"] = "Bạn không có quyền truy cập tính năng này.";
-                return RedirectToAction("RegionManagers");
+                return RedirectToAction("Employees", new { tab = "regionManagers" });
             }
 
             // Lấy danh sách Region để chọn
@@ -3096,8 +3259,9 @@ namespace start.Controllers
 
             ViewBag.Regions = regions;
             ViewBag.RegionsWithRM = regionsWithRM;
-            ViewBag.ActiveMenu = "RegionManagers";
+            ViewBag.ActiveMenu = "Employees";
             ViewBag.CurrentRole = CurrentRole;
+            ViewBag.ActiveTab = "regionManagers";
 
             return View();
         }
@@ -3216,7 +3380,7 @@ namespace start.Controllers
                 await _db.SaveChangesAsync();
 
                 // Ghi AuditLog
-                await LogAuditAsync("CREATE_RM", newRMId, newRM.FullName, 
+                await LogAuditAsync("CREATE_RM", newRMId, newRM.FullName,
                     $"Tạo Region Manager mới: {newRM.FullName} cho vùng {regionName}");
 
                 TempData["SuccessMessage"] = $"Tạo Region Manager thành công! Mã nhân viên: {newRMId}";
@@ -3234,7 +3398,7 @@ namespace start.Controllers
             if (string.IsNullOrEmpty(CurrentEmpId) || CurrentRole != "AD")
             {
                 TempData["ErrorMessage"] = "Bạn không có quyền truy cập tính năng này.";
-                return RedirectToAction("RegionManagers");
+                return RedirectToAction("Employees", new { tab = "regionManagers" });
             }
 
             var rm = await _db.Employees
@@ -3246,7 +3410,7 @@ namespace start.Controllers
             if (rm == null)
             {
                 TempData["ErrorMessage"] = "Không tìm thấy Region Manager.";
-                return RedirectToAction("RegionManagers");
+                return RedirectToAction("Employees", new { tab = "regionManagers" });
             }
 
             // Lấy danh sách Region để chọn
@@ -3263,8 +3427,9 @@ namespace start.Controllers
 
             ViewBag.Regions = regions;
             ViewBag.RegionsWithRM = regionsWithOtherRM;
-            ViewBag.ActiveMenu = "RegionManagers";
+            ViewBag.ActiveMenu = "Employees";
             ViewBag.CurrentRole = CurrentRole;
+            ViewBag.ActiveTab = "regionManagers";
 
             return View(rm);
         }
@@ -3378,7 +3543,7 @@ namespace start.Controllers
             if (string.IsNullOrEmpty(CurrentEmpId) || CurrentRole != "AD")
             {
                 TempData["ErrorMessage"] = "Bạn không có quyền truy cập tính năng này.";
-                return RedirectToAction("RegionManagers");
+                return RedirectToAction("Employees", new { tab = "regionManagers" });
             }
 
             var rm = await _db.Employees
@@ -3391,11 +3556,12 @@ namespace start.Controllers
             if (rm == null)
             {
                 TempData["ErrorMessage"] = "Không tìm thấy Region Manager.";
-                return RedirectToAction("RegionManagers");
+                return RedirectToAction("Employees", new { tab = "regionManagers" });
             }
 
-            ViewBag.ActiveMenu = "RegionManagers";
+            ViewBag.ActiveMenu = "Employees";
             ViewBag.CurrentRole = CurrentRole;
+            ViewBag.ActiveTab = "regionManagers";
 
             return View(rm);
         }
@@ -3425,16 +3591,327 @@ namespace start.Controllers
 
                 // Ghi AuditLog
                 var action = rm.IsActive ? "ACTIVATE_RM" : "DEACTIVATE_RM";
-                var description = rm.IsActive 
-                    ? $"Kích hoạt Region Manager: {rm.FullName}" 
+                var description = rm.IsActive
+                    ? $"Kích hoạt Region Manager: {rm.FullName}"
                     : $"Vô hiệu hóa Region Manager: {rm.FullName}";
                 await LogAuditAsync(action, rm.EmployeeID, rm.FullName, description);
 
-                var message = rm.IsActive 
-                    ? $"Đã kích hoạt Region Manager: {rm.FullName}" 
+                var message = rm.IsActive
+                    ? $"Đã kích hoạt Region Manager: {rm.FullName}"
                     : $"Đã vô hiệu hóa Region Manager: {rm.FullName}";
 
                 return Json(new { success = true, message = message, isActive = rm.IsActive });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Có lỗi xảy ra: " + ex.Message });
+            }
+        }
+
+        // ========== QUẢN LÝ MARKETING MANAGER (MK) ==========
+
+        // GET /Admin/MarketingManagers - Danh sách tất cả Marketing Manager
+        public IActionResult MarketingManagers()
+        {
+            if (string.IsNullOrEmpty(CurrentEmpId) || CurrentRole != "AD")
+            {
+                TempData["ErrorMessage"] = "Bạn không có quyền truy cập tính năng này.";
+                return RedirectToAction("Dashboard");
+            }
+
+            return RedirectToAction("Employees", new { tab = "marketingManagers" });
+        }
+
+        // GET /Admin/MarketingManagers/Create - Form tạo MK mới
+        public async Task<IActionResult> CreateMarketingManager()
+        {
+            if (string.IsNullOrEmpty(CurrentEmpId) || CurrentRole != "AD")
+            {
+                TempData["ErrorMessage"] = "Bạn không có quyền truy cập tính năng này.";
+                return RedirectToAction("Employees", new { tab = "marketingManagers" });
+            }
+
+            ViewBag.ActiveMenu = "Employees";
+            ViewBag.CurrentRole = CurrentRole;
+            ViewBag.ActiveTab = "marketingManagers";
+
+            return View();
+        }
+
+        // POST /Admin/MarketingManagers/Create - Tạo MK mới
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateMarketingManager(
+            string fullName,
+            string email,
+            string phoneNumber,
+            DateTime? dateOfBirth,
+            string? gender,
+            string? city,
+            string? nationality,
+            string? ethnicity,
+            string? emergencyPhone1,
+            string? emergencyPhone2)
+        {
+            if (string.IsNullOrEmpty(CurrentEmpId) || CurrentRole != "AD")
+            {
+                return Json(new { success = false, message = "Bạn không có quyền thực hiện thao tác này." });
+            }
+
+            try
+            {
+                // Validation
+                if (string.IsNullOrWhiteSpace(fullName))
+                    return Json(new { success = false, message = "Họ tên không được để trống." });
+
+                if (string.IsNullOrWhiteSpace(email))
+                    return Json(new { success = false, message = "Email không được để trống." });
+
+                if (string.IsNullOrWhiteSpace(phoneNumber))
+                    return Json(new { success = false, message = "Số điện thoại không được để trống." });
+
+                // Kiểm tra trùng email
+                if (await _db.Employees.AnyAsync(e => e.Email == email))
+                    return Json(new { success = false, message = "Email đã tồn tại trong hệ thống." });
+
+                // Kiểm tra trùng số điện thoại
+                if (await _db.Employees.AnyAsync(e => e.PhoneNumber == phoneNumber))
+                    return Json(new { success = false, message = "Số điện thoại đã tồn tại trong hệ thống." });
+
+                // Tạo EmployeeID mới (MK + số thứ tự)
+                var lastMK = await _db.Employees
+                    .Where(e => e.RoleID == "MK" && e.EmployeeID != null && e.EmployeeID.StartsWith("MK"))
+                    .OrderByDescending(e => e.EmployeeID)
+                    .FirstOrDefaultAsync();
+
+                string newMKId;
+                if (lastMK != null && !string.IsNullOrEmpty(lastMK.EmployeeID) && lastMK.EmployeeID.Length >= 5)
+                {
+                    try
+                    {
+                        var numberPart = lastMK.EmployeeID.Substring(2);
+                        if (int.TryParse(numberPart, out int lastNumber))
+                        {
+                            newMKId = $"MK{(lastNumber + 1):D3}";
+                        }
+                        else
+                        {
+                            newMKId = "MK001";
+                        }
+                    }
+                    catch
+                    {
+                        newMKId = "MK001";
+                    }
+                }
+                else
+                {
+                    newMKId = "MK001";
+                }
+
+                // Tạo MK mới
+                var newMK = new Employee
+                {
+                    EmployeeID = newMKId,
+                    FullName = fullName.Trim(),
+                    Email = email.Trim(),
+                    PhoneNumber = phoneNumber.Trim(),
+                    DateOfBirth = dateOfBirth,
+                    Gender = gender,
+                    City = city,
+                    Nationality = nationality ?? "Việt Nam",
+                    Ethnicity = ethnicity ?? "Kinh",
+                    EmergencyPhone1 = emergencyPhone1,
+                    EmergencyPhone2 = emergencyPhone2,
+                    RoleID = "MK",
+                    BranchID = null, // MK không gắn với chi nhánh cụ thể
+                    RegionID = null, // MK không gắn với vùng cụ thể
+                    Password = _authService.HashPassword("1234567"), // Mật khẩu mặc định
+                    IsHashed = true,
+                    HireDate = DateTime.UtcNow,
+                    IsActive = true,
+                    AvatarUrl = "https://res.cloudinary.com/do48qpmut/image/upload/v1761645429/uploads/tdppvgyas8bhvfs7lton.png"
+                };
+
+                _db.Employees.Add(newMK);
+                await _db.SaveChangesAsync();
+
+                // Ghi AuditLog
+                await LogAuditAsync("CREATE_MK", newMKId, newMK.FullName,
+                    $"Tạo Marketing Manager mới: {newMK.FullName}", "MK");
+
+                TempData["SuccessMessage"] = $"Tạo Marketing Manager thành công! Mã nhân viên: {newMKId}";
+                return Json(new { success = true, message = $"Tạo Marketing Manager thành công! Mã nhân viên: {newMKId}" });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Có lỗi xảy ra: " + ex.Message });
+            }
+        }
+
+        // GET /Admin/MarketingManagers/Edit/{id} - Form sửa MK
+        public async Task<IActionResult> EditMarketingManager(string id)
+        {
+            if (string.IsNullOrEmpty(CurrentEmpId) || CurrentRole != "AD")
+            {
+                TempData["ErrorMessage"] = "Bạn không có quyền truy cập tính năng này.";
+                return RedirectToAction("Employees", new { tab = "marketingManagers" });
+            }
+
+            var mm = await _db.Employees
+                .Include(e => e.Branch)
+                .Include(e => e.Role)
+                .FirstOrDefaultAsync(e => e.EmployeeID == id && e.RoleID == "MK");
+
+            if (mm == null)
+            {
+                TempData["ErrorMessage"] = "Không tìm thấy Marketing Manager.";
+                return RedirectToAction("Employees", new { tab = "marketingManagers" });
+            }
+
+            ViewBag.ActiveMenu = "Employees";
+            ViewBag.CurrentRole = CurrentRole;
+            ViewBag.ActiveTab = "marketingManagers";
+
+            return View(mm);
+        }
+
+        // POST /Admin/MarketingManagers/Edit - Cập nhật MK
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditMarketingManager(
+            string employeeId,
+            string fullName,
+            string email,
+            string phoneNumber,
+            DateTime? dateOfBirth,
+            string? gender,
+            string? city,
+            string? nationality,
+            string? ethnicity,
+            string? emergencyPhone1,
+            string? emergencyPhone2)
+        {
+            if (string.IsNullOrEmpty(CurrentEmpId) || CurrentRole != "AD")
+            {
+                return Json(new { success = false, message = "Bạn không có quyền thực hiện thao tác này." });
+            }
+
+            try
+            {
+                var mm = await _db.Employees
+                    .FirstOrDefaultAsync(e => e.EmployeeID == employeeId && e.RoleID == "MK");
+
+                if (mm == null)
+                    return Json(new { success = false, message = "Không tìm thấy Marketing Manager." });
+
+                // Validation
+                if (string.IsNullOrWhiteSpace(fullName))
+                    return Json(new { success = false, message = "Họ tên không được để trống." });
+
+                if (string.IsNullOrWhiteSpace(email))
+                    return Json(new { success = false, message = "Email không được để trống." });
+
+                if (string.IsNullOrWhiteSpace(phoneNumber))
+                    return Json(new { success = false, message = "Số điện thoại không được để trống." });
+
+                // Kiểm tra trùng email (trừ chính nó)
+                if (await _db.Employees.AnyAsync(e => e.Email == email && e.EmployeeID != employeeId))
+                    return Json(new { success = false, message = "Email đã tồn tại trong hệ thống." });
+
+                // Kiểm tra trùng số điện thoại (trừ chính nó)
+                if (await _db.Employees.AnyAsync(e => e.PhoneNumber == phoneNumber && e.EmployeeID != employeeId))
+                    return Json(new { success = false, message = "Số điện thoại đã tồn tại trong hệ thống." });
+
+                // Cập nhật thông tin
+                mm.FullName = fullName.Trim();
+                mm.Email = email.Trim();
+                mm.PhoneNumber = phoneNumber.Trim();
+                mm.DateOfBirth = dateOfBirth;
+                mm.Gender = gender;
+                mm.City = city;
+                mm.Nationality = nationality ?? "Việt Nam";
+                mm.Ethnicity = ethnicity ?? "Kinh";
+                mm.EmergencyPhone1 = emergencyPhone1;
+                mm.EmergencyPhone2 = emergencyPhone2;
+
+                await _db.SaveChangesAsync();
+
+                // Ghi AuditLog
+                await LogAuditAsync("UPDATE_MK", employeeId, mm.FullName,
+                    $"Cập nhật thông tin Marketing Manager: {mm.FullName}", "MK");
+
+                return Json(new { success = true, message = "Cập nhật Marketing Manager thành công!" });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Có lỗi xảy ra: " + ex.Message });
+            }
+        }
+
+        // GET /Admin/MarketingManagers/View/{id} - Xem chi tiết MK
+        public async Task<IActionResult> ViewMarketingManager(string id)
+        {
+            if (string.IsNullOrEmpty(CurrentEmpId) || CurrentRole != "AD")
+            {
+                TempData["ErrorMessage"] = "Bạn không có quyền truy cập tính năng này.";
+                return RedirectToAction("Employees", new { tab = "marketingManagers" });
+            }
+
+            var mm = await _db.Employees
+                .Include(e => e.Branch)
+                .Include(e => e.Role)
+                .FirstOrDefaultAsync(e => e.EmployeeID == id && e.RoleID == "MK");
+
+            if (mm == null)
+            {
+                TempData["ErrorMessage"] = "Không tìm thấy Marketing Manager.";
+                return RedirectToAction("Employees", new { tab = "marketingManagers" });
+            }
+
+            ViewBag.ActiveMenu = "Employees";
+            ViewBag.CurrentRole = CurrentRole;
+            ViewBag.ActiveTab = "marketingManagers";
+
+            return View(mm);
+        }
+
+        // POST /Admin/MarketingManagers/ToggleStatus - Bật/tắt trạng thái MK
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ToggleMarketingManagerStatus(string employeeId)
+        {
+            if (string.IsNullOrEmpty(CurrentEmpId) || CurrentRole != "AD")
+            {
+                return Json(new { success = false, message = "Bạn không có quyền thực hiện thao tác này." });
+            }
+
+            try
+            {
+                var mm = await _db.Employees
+                    .FirstOrDefaultAsync(e => e.EmployeeID == employeeId && e.RoleID == "MK");
+
+                if (mm == null)
+                    return Json(new { success = false, message = "Không tìm thấy Marketing Manager." });
+
+                var oldStatus = mm.IsActive;
+                mm.IsActive = !mm.IsActive;
+
+                await _db.SaveChangesAsync();
+
+                // Ghi AuditLog
+                var action = mm.IsActive ? "ACTIVATE_MK" : "DEACTIVATE_MK";
+                var description = mm.IsActive
+                    ? $"Đã kích hoạt Marketing Manager: {mm.FullName}"
+                    : $"Đã vô hiệu hóa Marketing Manager: {mm.FullName}";
+
+                await LogAuditAsync(action, employeeId, mm.FullName, description, "MK");
+
+                var message = mm.IsActive
+                    ? $"Đã kích hoạt Marketing Manager: {mm.FullName}"
+                    : $"Đã vô hiệu hóa Marketing Manager: {mm.FullName}";
+
+                return Json(new { success = true, message = message, isActive = mm.IsActive });
             }
             catch (Exception ex)
             {

@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using start.Models;
+using start.Models.System;
+
 
 namespace start.Data
 {
@@ -23,6 +25,7 @@ namespace start.Data
         public DbSet<ProductSize> ProductSizes { get; set; }
 
         public DbSet<Discount> Discounts { get; set; }
+        public DbSet<DiscountUsage> DiscountUsages { get; set; }
         public DbSet<DiscountRequest> DiscountRequests { get; set; }
         public DbSet<NewsRequest> NewsRequests { get; set; }
         public DbSet<EmployeeBranchRequest> EmployeeBranchRequests { get; set; }
@@ -41,9 +44,11 @@ namespace start.Data
         public DbSet<ProductCategory> ProductCategories { get; set; }
         public DbSet<News> News { get; set; }
         public DbSet<Wishlist> Wishlist { get; set; }
+        public DbSet<ProductReview> ProductReviews { get; set; }
         public DbSet<ChatHistory> ChatHistories { get; set; }
         public DbSet<AuditLog> AuditLogs { get; set; }
         public DbSet<MarketingKPI> MarketingKPIs { get; set; }
+        public DbSet<AdminSecurity> AdminSecurities { get; set; }
 
     }
 }

@@ -238,60 +238,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // ---- Quick View ----
 document.addEventListener('DOMContentLoaded', function () {
-    // Quick View
+    // Quick View - Redirect to Detail page
     document.querySelectorAll('.btn-quickview').forEach(btn => {
-        btn.addEventListener('click', function () {
+        btn.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
             const productId = this.dataset.id;
-            const productEl = this.closest('.product-item');
-            const titleText = productEl ? (productEl.querySelector('h3')?.textContent || 'Thông tin sản phẩm') : 'Thông tin sản phẩm';
-            fetch(`/Product/QuickView?id=${productId}`)
-                .then(res => res.text())
-                .then(html => {
-                    const contentEl = document.getElementById('quickViewContent');
-                    contentEl.innerHTML = html || '<p>Lỗi không lấy được chi tiết.</p>';
-
-                    // Sync modal heart with grid heart initial state
-                    const gridHeart = document.querySelector(`.btn-wishlist[data-id='${productId}'] .heart-icon`);
-                    const modalHeart = contentEl.querySelector('.btn-wishlist .heart-icon');
-                    if (gridHeart && modalHeart) {
-                        const active = gridHeart.classList.contains('text-danger');
-                        modalHeart.classList.toggle('text-danger', active);
-                        modalHeart.classList.toggle('text-secondary', !active);
-                    }
-
-                    // Initialize size options inside modal (scripts in innerHTML won't run)
-                    const sizeGroups = contentEl.querySelectorAll('.size-options');
-                    sizeGroups.forEach(group => {
-                        const options = group.querySelectorAll('.size-option');
-                        options.forEach((opt, idx) => {
-                            opt.addEventListener('click', () => {
-                                options.forEach(o => o.classList.remove('active'));
-                                opt.classList.add('active');
-                            });
-                            if (idx === 0) opt.classList.add('active');
-                        });
-                    });
-
-                    // Bind wishlist button inside modal
-                    const modalWishBtn = contentEl.querySelector('.btn-wishlist');
-                    if (modalWishBtn) {
-                        modalWishBtn.addEventListener('click', function () {
-                            const pid = this.dataset.id;
-                            fetch('/Wishlist/Toggle', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ productId: pid })
-                            }).then(r => r.json()).then(d => {
-                                if (d && d.success === true) {
-                                    setWishlistStateFor(pid, d.isWishlisted);
-                                }
-                            });
-                        });
-                    }
-
-                    const modal = new bootstrap.Modal(document.getElementById('quickViewModal'));
-                    modal.show();
-                });
+            if (productId) {
+                window.location.href = `/Product/Detail/${productId}`;
+            }
         });
     });
     // Wishlist
