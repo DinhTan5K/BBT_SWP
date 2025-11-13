@@ -42,121 +42,121 @@ namespace start.Services
         // 2. SALARY REPORT (BÁO CÁO TỔNG HỢP)
         // ---------------------------------------------------
         public async Task<List<SalaryReport>> GetSalaryReportAsync(string? name, int month, int year, int branchId)
+{
+    // 1. Lấy danh sách nhân viên hợp lệ trong chi nhánh
+    var employeesInBranch = await _context.Employees
+        .Where(e => e.BranchID == branchId && e.IsActive && (e.RoleID == "EM" || e.RoleID == "SL" || e.RoleID == "SH"))
+        .Where(e => string.IsNullOrEmpty(name) || e.FullName.Contains(name))
+        .Select(e => new { e.EmployeeID, e.FullName })
+        .ToListAsync();
+
+    if (!employeesInBranch.Any())
+    {
+        return new List<SalaryReport>();
+    }
+
+    var employeeIds = employeesInBranch.Select(e => e.EmployeeID).ToList();
+    var startDate = new DateTime(year, month, 1);
+    var endDate = startDate.AddMonths(1);
+
+    // 2. SỬA LỖI: Lấy tất cả bản ghi chấm công (Attendances) trong tháng của các nhân viên đó
+    var attendances = await _context.Attendances
+        .Where(a => employeeIds.Contains(a.EmployeeID) &&
+                    a.CheckInTime >= startDate &&
+                    a.CheckInTime < endDate &&
+                    a.CheckOutTime.HasValue)
+        .ToListAsync();
+
+    // 3. Lấy tất cả các khoản thưởng/phạt trong tháng
+    var adjustments = await _context.SalaryAdjustments
+        .Where(a => employeeIds.Contains(a.EmployeeID) &&
+                    a.AdjustmentDate >= startDate &&
+                    a.AdjustmentDate < endDate)
+        .ToListAsync();
+
+    var salaryReports = new List<SalaryReport>();
+
+    foreach (var emp in employeesInBranch)
+    {
+        var empAttendances = attendances.Where(a => a.EmployeeID == emp.EmployeeID).ToList();
+        var empAdjustments = adjustments.Where(a => a.EmployeeID == emp.EmployeeID).ToList();
+
+        double totalHours = 0;
+        decimal baseSalary = 0;
+
+        foreach (var attendance in empAttendances)
         {
-            // --- KHỞI TẠO VÀ TRUY VẤN DỮ LIỆU ---
-            month = (month == 0) ? DateTime.Now.Month : month;
-            year = (year == 0) ? DateTime.Now.Year : year;
+            var duration = (attendance.CheckOutTime.Value - attendance.CheckInTime).TotalHours;
+            totalHours += duration;
 
-            var targetMonth = new DateTime(year, month, 1);
-            var startDate = new DateTime(year, month, 1);
-            var endDate = startDate.AddMonths(1).AddDays(-1);
-
-            var query = _context.WorkSchedules
-                .Include(ws => ws.Employee)
-                .Where(ws => ws.IsActive == true && ws.BranchId == branchId &&
-                             ws.Date.Month == month && ws.Date.Year == year &&
-                             ws.CheckInTime.HasValue && ws.CheckOutTime.HasValue && ws.Employee != null)
-                .AsNoTracking();
-
-            if (!string.IsNullOrEmpty(name))
-                query = query.Where(ws => ws.EmployeeID == name || ws.Employee!.FullName.Contains(name));
-
-            var schedules = await query.ToListAsync();
-
-            // Truy vấn điều chỉnh lương và trạng thái chốt lương
-            var adjustments = await _context.SalaryAdjustments
-                .Where(a => a.AdjustmentDate >= startDate && a.AdjustmentDate <= endDate && a.Employee!.BranchID == branchId)
-                .ToListAsync();
-
-            var finalizedEmployeeIds = await _context.Salaries
-                .Where(s => s.SalaryMonth == targetMonth && s.Status == FinalizedStatus)
-                .Select(s => s.EmployeeID)
-                .ToListAsync();
-
-            var groupedSchedules = schedules.GroupBy(ws => ws.EmployeeID).ToList();
-            var reports = new List<SalaryReport>();
-
-            foreach (var group in groupedSchedules)
+            // Lấy hợp đồng có hiệu lực tại ngày check-in để tính lương theo giờ
+            var contract = await _contractService.GetActiveHourlyContractOnDateAsync(emp.EmployeeID, attendance.CheckInTime.Date);
+            if (contract != null && contract.PaymentType == "Giờ")
             {
-                string employeeId = group.Key!;
-                string fullName = group.First().Employee!.FullName;
-                double totalHours = 0;
-                decimal totalBaseSalary = 0; 
-                decimal totalOvertimeSalary = 0; 
-
-                foreach (var ws in group)
-                {
-                    double hours = (ws.CheckOutTime!.Value - ws.CheckInTime!.Value).TotalHours;
-                    totalHours += hours;
-
-                    var contract = await _contractService.GetActiveHourlyContractOnDateAsync(employeeId, ws.Date);
-                    decimal hourlyRate = (contract != null && contract.PaymentType == Contract.PaymentTypes.Gio) ? contract.BaseRate : 0m;
-
-                    // Sử dụng hàm helper chính thức
-                    double multiplier = GetHourlyMultiplier(ws.Date);
-
-                    decimal standardPayForShift = (decimal)hours * hourlyRate;
-                    totalBaseSalary += standardPayForShift;
-
-                    if (multiplier > 1.0)
-                    {
-                        decimal overtimePremiumRate = (decimal)(multiplier - 1.0);
-                        decimal overtimePremiumPay = standardPayForShift * overtimePremiumRate;
-                        totalOvertimeSalary += overtimePremiumPay;
-                    }
-                } 
-
-                var empAdj = adjustments.Where(a => a.EmployeeID == employeeId).ToList();
-                decimal bonus = empAdj.Where(a => a.Amount > 0).Sum(a => a.Amount);
-                decimal penalty = empAdj.Where(a => a.Amount < 0).Sum(a => Math.Abs(a.Amount));
-                decimal finalTotalSalary = totalBaseSalary + totalOvertimeSalary + bonus - penalty;
-
-                reports.Add(new SalaryReport
-                {
-                    EmployeeID = employeeId, FullName = fullName, TotalShifts = group.Count(), TotalHours = totalHours,
-                    BaseSalary = totalBaseSalary, TotalOvertimeSalary = totalOvertimeSalary, 
-                    Bonus = bonus, Penalty = penalty, TotalSalary = finalTotalSalary, 
-                    IsFinalized = finalizedEmployeeIds.Contains(employeeId)
-                });
+                baseSalary += (decimal)duration * contract.BaseRate;
             }
-
-            return reports.OrderBy(r => r.FullName).ToList();
         }
+
+        var bonus = empAdjustments.Where(a => a.Amount > 0).Sum(a => a.Amount);
+        var penalty = empAdjustments.Where(a => a.Amount < 0).Sum(a => a.Amount);
+
+        salaryReports.Add(new SalaryReport
+        {
+            EmployeeID = emp.EmployeeID,
+            FullName = emp.FullName,
+            TotalShifts = empAttendances.Count,
+            TotalHours = Math.Round(totalHours, 2),
+            BaseSalary = baseSalary,
+            Bonus = bonus,
+            Penalty = penalty,
+            TotalSalary = baseSalary + bonus + penalty
+        });
+    }
+
+    return salaryReports;
+}
+
 
         // ---------------------------------------------------
         // 3. DETAILED SHIFT REPORT (BÁO CÁO CA LÀM CHI TIẾT)
         // ---------------------------------------------------
         public async Task<List<DetailedShiftReport>> GetDetailedWorkSchedulesAsync(string employeeId, int month, int year, int branchId)
         {
-            var shifts = await _context.WorkSchedules
-                .Include(ws => ws.Employee) 
-                .Where(ws => ws.EmployeeID == employeeId && ws.BranchId == branchId &&
-                             ws.Date.Month == month && ws.Date.Year == year &&
-                             ws.CheckInTime.HasValue && ws.CheckOutTime.HasValue && ws.IsActive == true)
-                .OrderBy(ws => ws.Date)
-                .ThenBy(ws => ws.CheckInTime)
+            // SỬA LỖI: Truy vấn từ bảng Attendances để đảm bảo dữ liệu chính xác và nhất quán
+            var attendancesInMonth = await _context.Attendances
+                .Include(a => a.WorkSchedule.Employee)
+                .Where(a => a.EmployeeID == employeeId &&
+                             a.WorkSchedule.Employee.BranchID == branchId &&
+                             a.CheckInTime.Month == month &&
+                             a.CheckInTime.Year == year &&
+                             a.CheckOutTime.HasValue)
+                .OrderBy(a => a.CheckInTime)
                 .AsNoTracking()
                 .ToListAsync();
 
             var detailedReports = new List<DetailedShiftReport>();
-            string employeeName = shifts.FirstOrDefault()?.Employee?.FullName ?? "N/A";
-
-            foreach (var ws in shifts)
+            if (!attendancesInMonth.Any())
             {
-                double hours = (ws.CheckOutTime!.Value - ws.CheckInTime!.Value).TotalHours;
+                return detailedReports;
+            }
 
-                var contract = await _contractService.GetActiveHourlyContractOnDateAsync(employeeId, ws.Date);
-                decimal hourlyRate = (contract != null && contract.PaymentType == Contract.PaymentTypes.Gio) ? contract.BaseRate : 0m;
+            string employeeName = attendancesInMonth.First().WorkSchedule?.Employee?.FullName ?? "N/A";
 
-                double multiplier = GetHourlyMultiplier(ws.Date);
+            foreach (var att in attendancesInMonth)
+            {
+                double hours = (att.CheckOutTime!.Value - att.CheckInTime).TotalHours;
+
+                var contract = await _contractService.GetActiveHourlyContractOnDateAsync(employeeId, att.CheckInTime.Date);
+                decimal hourlyRate = (contract != null && contract.PaymentType == "Giờ") ? contract.BaseRate : 0m;
+
+                double multiplier = GetHourlyMultiplier(att.CheckInTime.Date);
                 decimal totalShiftPay = (decimal)hours * hourlyRate * (decimal)multiplier;
 
                 detailedReports.Add(new DetailedShiftReport
                 {
-                    WorkScheduleID = ws.WorkScheduleID, EmployeeID = ws.EmployeeID!, Date = ws.Date,
-                    CheckInTime = ws.CheckInTime, CheckOutTime = ws.CheckOutTime, Shift = ws.Shift,
+                    WorkScheduleID = att.WorkScheduleID ?? 0, EmployeeID = att.EmployeeID, Date = att.CheckInTime.Date,
+                    CheckInTime = att.CheckInTime, CheckOutTime = att.CheckOutTime, Shift = att.WorkSchedule?.Shift,
                     FullName = employeeName, 
-                    
                     BaseRate = hourlyRate, Multiplier = multiplier, TotalShiftPay = totalShiftPay,
                 });
             }

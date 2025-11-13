@@ -944,6 +944,15 @@ public async Task<IActionResult> GetEmployeeShiftsPartial(string employeeId, int
     {
 
         ModelState.Remove("Status");
+        // SỬA LỖI: Vì đã xóa trường ContractNumber khỏi UI, nó sẽ là null.
+        // Gán một giá trị mặc định để tránh lỗi 'Cannot insert NULL' từ database.
+        if (string.IsNullOrEmpty(contract.ContractNumber))
+        {
+            contract.ContractNumber = $"AUTO-{DateTime.Now:yyyyMMddHHmmss}";
+        }
+
+        // SỬA LỖI: Bỏ qua việc kiểm tra trường "Số hợp đồng" vì đã bị xóa khỏi giao diện
+        ModelState.Remove("ContractNumber");
         ModelState.Remove("Employee");
 
         if (ModelState.IsValid)

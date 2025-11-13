@@ -30,6 +30,11 @@
     var todayCheckIn = ViewBag.TodayCheckIn as start.Models.Attendance;
     var todaySchedules = ViewBag.TodaySchedules as List<WorkSchedule> ?? new List<WorkSchedule>();
     var employeeId = ViewBag.EmployeeId as string ?? "";
+
+    // SỬA LỖI: Di chuyển khai báo biến ra ngoài để có thể truy cập từ script
+    var hasCheckIn = todayCheckIn != null;
+    var hasCheckOut = todayCheckIn?.CheckOutTime != null;
+    var hasWorkSchedule = todaySchedules != null && todaySchedules.Any();
 }
 
 
@@ -165,18 +170,12 @@ for (int i = 0; i < pad; i++)
 @if (!string.IsNullOrEmpty(employeeId))
 {
     @if (TempData["ok"] != null && !Context.Request.Query.ContainsKey("ok"))
-{
-    <div class="alert alert-success alert-dismissible fade show mt-3 text-center" role="alert">
-        <i class="fas fa-check-circle me-2"></i>@TempData["ok"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-}
-
-
-    var hasCheckIn = todayCheckIn != null;
-    var hasCheckOut = todayCheckIn?.CheckOutTime != null;
-    var hasWorkSchedule = todaySchedules != null && todaySchedules.Any();
-
+    {
+        <div class="alert alert-success alert-dismissible fade show mt-3 text-center" role="alert">
+            <i class="fas fa-check-circle me-2"></i>@TempData["ok"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
     <div class="card shadow-sm mb-3 print-hidden attendance-card">
         <div class="card-header attendance-header">
             <h5 class="mb-0">
@@ -326,4 +325,22 @@ modalElement.addEventListener('shown.bs.modal', function () {
         alert('Lỗi khi tải giao diện Check-in/Check-out.');
     }
 }
+
+    // TỰ ĐỘNG MỞ MODAL CHECK-IN KHI VÀO TRANG
+    document.addEventListener('DOMContentLoaded', function() {
+        const autoCheckIn = @((hasWorkSchedule && !hasCheckIn).ToString().ToLower());
+        const workScheduleId = @(todaySchedules.FirstOrDefault()?.WorkScheduleID ?? 0);
+
+        if (autoCheckIn && workScheduleId > 0) {
+            // Thêm một khoảng trễ nhỏ để đảm bảo trang đã ổn định
+            setTimeout(() => {
+                // Kiểm tra lại lần nữa trước khi mở để chắc chắn
+                const checkinButton = document.querySelector('.btn-primary[onclick*="openCheckModal"]');
+                if (checkinButton) {
+                    console.log('Tự động mở modal check-in cho ca làm việc ID:', workScheduleId);
+                    openCheckModal(true, workScheduleId);
+                }
+            }, 500);
+        }
+    });
 </script>

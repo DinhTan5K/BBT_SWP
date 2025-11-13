@@ -36,7 +36,6 @@ else
     <table class="table table-sm table-striped">
         <thead>
             <tr>
-                <th>Số HĐ</th>
                 <th>Loại</th>
                 <th>Ngày hiệu lực</th>
                 <th>Mức lương</th>
@@ -47,7 +46,6 @@ else
             @foreach (var contract in Model.OrderByDescending(c => c.CreatedAt))
             {
                 <tr>
-                    <td>@contract.ContractNumber</td>
                     <td>@contract.ContractType</td>
                     <td>@contract.StartDate.ToString("dd/MM/yy") - @(contract.EndDate?.ToString("dd/MM/yy") ?? "Vô thời hạn")</td>
                     <td>@contract.BaseRate.ToString("N0") (@contract.PaymentType)</td>

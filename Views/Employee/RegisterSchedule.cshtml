@@ -135,19 +135,15 @@
 
                 // --- 5. XỬ LÝ SỰ KIỆN KÉO-THẢ CA MẪU VÀO LỊCH ---
                 eventReceive(info) {
-                    var workDate = info.event.start; // Lấy đối tượng Date
+                    const workDate = info.event.start;
                     var shiftType = info.draggedEl.dataset.shiftType; // Lấy loại ca từ data-shift-type
 
-                    
-                    // Tạo chuỗi "yyyy-MM-dd" thủ công, bỏ qua mọi múi giờ
-                    var year = workDate.getFullYear();
-                    var month = (workDate.getMonth() + 1).toString().padStart(2, '0'); // +1 vì tháng bắt đầu từ 0
-                    var day = workDate.getDate().toString().padStart(2, '0');
-                    var dateString = `${year}-${month}-${day}`;
-               
+                    // SỬA LỖI: Sử dụng phương thức của FullCalendar để lấy chuỗi ngày yyyy-MM-dd
+                    // Cách này sẽ bỏ qua múi giờ và luôn trả về ngày chính xác mà người dùng thấy trên lịch.
+                    const dateString = workDate.toISOString().split('T')[0];
 
                     // Kiểm tra ngày quá khứ
-                    if (workDate.setHours(0, 0, 0, 0) < new Date().setHours(0, 0, 0, 0)) { // So sánh chỉ ngày
+                    if (workDate < new Date().setHours(0, 0, 0, 0)) {
                         Swal.fire('Lỗi', 'Không thể đăng ký lịch cho ngày trong quá khứ.', 'error');
                         info.event.remove(); // Xóa ca vừa thả
                         return;

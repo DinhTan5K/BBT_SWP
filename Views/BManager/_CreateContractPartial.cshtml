@@ -15,12 +15,6 @@
     @Html.HiddenFor(m => m.EmployeeId)
 
     <div class="form-group mb-3">
-        <label asp-for="ContractNumber" class="form-label">Số hợp đồng</label>
-        <input asp-for="ContractNumber" class="form-control" placeholder="Ví dụ: HD-2024-001" />
-        <span asp-validation-for="ContractNumber" class="text-danger"></span>
-    </div>
-
-    <div class="form-group mb-3">
         <label asp-for="ContractType" class="form-label">Loại hợp đồng</label>
         <select asp-for="ContractType" class="form-select">
             <option value="">-- Chọn loại hợp đồng --</option>
