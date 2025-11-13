@@ -653,16 +653,21 @@ tr.completed-row td {
     color: white;
     border: none;
     border-radius: 0.5rem;
-    padding: 8px 14px;             /* tăng đều cho cân */
-    font-size: 15px;               /* đồng nhất chữ */
+    padding: 8px 14px;
+    /* tăng đều cho cân */
+    font-size: 15px;
+    /* đồng nhất chữ */
     font-weight: 500;
-    line-height: 1;                /* tránh nút bị cao hơn do line-height */
-    display: inline-flex;          /* canh giữa text & icon */
+    line-height: 1;
+    /* tránh nút bị cao hơn do line-height */
+    display: inline-flex;
+    /* canh giữa text & icon */
     align-items: center;
     justify-content: center;
     cursor: pointer;
     transition: all 0.2s ease;
-    height: 38px;                  /* ép cùng chiều cao luôn, cho chắc */
+    height: 38px;
+    /* ép cùng chiều cao luôn, cho chắc */
 }
 
 .refresh-btn:hover,
@@ -761,3 +766,10 @@ tr.completed-row td {
     height: 18px;
 }
 
+.export-btn i,
+.refresh-btn i {
+    width: 18px;
+    height: 18px;
+    margin-right: 6px;
+    vertical-align: middle;
+}

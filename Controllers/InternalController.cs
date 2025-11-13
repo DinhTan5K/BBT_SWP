@@ -2,34 +2,46 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using start.Data;
 using start.Models;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using OfficeOpenXml;
-using OfficeOpenXml.Style;
-using System.IO;
+using start.Services;
 using ClosedXML.Excel;
+
 namespace start.Controllers
 {
     public class InternalController : Controller
     {
         private readonly ApplicationDbContext _context;
         private readonly IOrderService _orderService;
-        private readonly ILogger<InternalController> _logger;
+        private readonly ILogger<InternalController> _logger;           
+        private readonly RevenueService _revenue;
+        private readonly ShiftService _shift;
+        private readonly SessionService _session;
 
-        public InternalController(ApplicationDbContext context, IOrderService orderService, ILogger<InternalController> logger)
+        public InternalController(
+            ApplicationDbContext context,
+            IOrderService orderService, 
+            ILogger<InternalController> logger,
+            RevenueService revenue,
+            ShiftService shift,
+            SessionService session)
         {
             _context = context;
-            _orderService = orderService;
+             _orderService = orderService;
             _logger = logger;
+            _revenue = revenue;
+            _shift = shift;
+            _session = session;
         }
 
-        // GET: /Internal/BranchOrders
+        // ============================================
+        // 1️⃣ BRANCH ORDERS – Dashboard chính
+        // ============================================
         [HttpGet]
         public async Task<IActionResult> BranchOrders()
         {
-            var branchIdString = HttpContext.Session.GetString("BranchId");
-            int? branchId = !string.IsNullOrEmpty(branchIdString) ? int.Parse(branchIdString) : (int?)null;
-            var employeeId = HttpContext.Session.GetString("EmployeeID");
-            if (branchId == null || string.IsNullOrEmpty(employeeId))
+            var branchId = _session.GetBranchId();
+            var employeeId = _session.GetEmployeeId();
+
+            if (branchId == null || employeeId == null)
                 return RedirectToAction("Login", "Account");
 
             var today = DateTime.Today;
@@ -42,44 +54,19 @@ namespace start.Controllers
 
             if (work == null)
             {
-                ModelState.AddModelError("", "❌ Bạn không có lịch làm việc hôm nay.");
                 ViewBag.Shift = "None";
                 ViewBag.Date = today.ToString("dd/MM/yyyy");
                 return View("~/Views/Internal/Internal.cshtml", new List<Order>());
             }
 
-            string shift = work.Shift?.Trim() ?? "Sáng";
+            string shiftName = work.Shift == "Sáng" ? "Morning" : "Night";
 
-            if (shift.Equals("Sáng", StringComparison.OrdinalIgnoreCase))
-                shift = "Morning";
-            else if (shift.Equals("Tối", StringComparison.OrdinalIgnoreCase))
-                shift = "Night";
+            var (shift, start, end) = _shift.GetShift(today, shiftName);
 
-            // Lưu vào session + ViewBag
             HttpContext.Session.SetString("SelectedShift", shift);
-            ViewBag.Shift = shift;// lưu lại để báo cáo đọc
 
-            DateTime startTime, endTime;
-            if (shift.Equals("Morning", StringComparison.OrdinalIgnoreCase))
-            {
-                startTime = today.AddHours(0);
-                endTime = today.AddHours(14).AddMinutes(59).AddSeconds(59);
-            }
-            else
-            {
-                startTime = today.AddHours(15);
-                endTime = today.AddHours(23).AddMinutes(59).AddSeconds(59);
-            }
-
-            var orders = await _context.Orders
-       .Include(o => o.Customer)
-       .Include(o => o.OrderDetails!)
-           .ThenInclude(od => od.Product)
-       .Where(o => o.BranchID == branchId &&
-                   o.CreatedAt >= startTime &&
-                   o.CreatedAt <= endTime)
-       .ToListAsync();
-
+            var (orders, productStats, summary) =
+                await _revenue.GetRevenueAsync(branchId.Value, start, end);
 
             ViewBag.Shift = shift;
             ViewBag.Date = today.ToString("dd/MM/yyyy");
@@ -99,12 +86,12 @@ namespace start.Controllers
 
             // 🔍 Thống kê chi tiết sản phẩm bán ra (theo số lượng)
             // Sửa: Chỉ tính trên các đơn hàng đã giao trong ca
-            var productStats = deliveredOrdersInShift
+            productStats = deliveredOrdersInShift
                 .Where(o => o.OrderDetails != null)
                 .SelectMany(o => o.OrderDetails!)
                 .Where(od => od.Product != null)
                 .GroupBy(od => od.Product!.ProductName)
-                .Select(g => new
+                .Select(g => new start.Services.ProductStat // Sửa: Tạo đối tượng ProductStat thay vì anonymous type
                 {
                     ProductName = g.Key,
                     Quantity = g.Sum(x => x.Quantity)
@@ -118,6 +105,11 @@ namespace start.Controllers
             // Gửi dữ liệu qua ViewBag để hiển thị
             ViewBag.TotalQuantity = totalQuantity;
             ViewBag.ProductStats = productStats;
+            ViewBag.TotalOrders = summary.TotalOrders;
+            ViewBag.Completed = summary.Completed;
+            ViewBag.Delivering = summary.Delivering;
+            ViewBag.Cancelled = summary.Cancelled;
+            ViewBag.TotalRevenue = summary.TotalRevenue;
 
             // 🔹 Gửi data cho ChartJS (ở dạng JSON)
             ViewBag.ProductChartData = System.Text.Json.JsonSerializer.Serialize(productStats);
@@ -151,21 +143,13 @@ namespace start.Controllers
                 })
             );
 
-
-            // Gán dữ liệu cho ViewBag
-            ViewBag.TotalOrders = totalOrders;
-            ViewBag.Completed = completed;
-            ViewBag.Delivering = delivering;
-            ViewBag.Cancelled = cancelled;
-            ViewBag.TotalRevenue = totalRevenue;
-            ViewBag.ProductStats = productStats;
-            ViewBag.HourlyRevenue = intervalRevenue;
-
             return View("~/Views/Internal/Internal.cshtml", orders);
         }
 
 
-
+        // ============================================
+        // 2️⃣ Xác nhận đơn
+        // ============================================
         [HttpPost]
         public async Task<IActionResult> ConfirmOrder(int id)
         {
@@ -181,15 +165,28 @@ namespace start.Controllers
                 TempData["Error"] = message; // Hiển thị lỗi nếu có
             }
 
+            var branchId = _session.GetBranchId();
+            if (branchId == null)
+                return RedirectToAction("Login", "Account");
+
+            var order = await _context.Orders.FindAsync(id);
+            if (order == null || order.BranchID != branchId)
+                return NotFound();
+
+            order.Status = "Đã xác nhận";
+            await _context.SaveChangesAsync();
+
+            TempData["Message"] = $"Đơn {order.OrderCode} đã được xác nhận";
             return RedirectToAction("BranchOrders");
         }
 
+        // ============================================
+        // 3️⃣ Xem chi tiết đơn hàng (Popup)
+        // ============================================
         [HttpGet]
         public async Task<IActionResult> OrderDetails(int id)
         {
-            var branchIdString = HttpContext.Session.GetString("BranchId");
-            int? branchId = !string.IsNullOrEmpty(branchIdString) ? int.Parse(branchIdString) : (int?)null;
-
+            var branchId = _session.GetBranchId();
             if (branchId == null) return Unauthorized();
 
             var order = await _context.Orders
@@ -205,16 +202,14 @@ namespace start.Controllers
             return PartialView("OrderDetailsModal", order);
         }
 
-
-        // 🔹 Xem chi tiết đơn hàng (popup trong tab Đơn hàng đang tiến hành)
+        // ============================================
+        // 4️⃣ Xem chi tiết đơn hàng (View)
+        // ============================================
         [HttpGet]
         public async Task<IActionResult> OrderDetailsView(int id)
         {
-            var branchIdString = HttpContext.Session.GetString("BranchId");
-            int? branchId = !string.IsNullOrEmpty(branchIdString) ? int.Parse(branchIdString) : (int?)null;
-
-            if (branchId == null)
-                return Unauthorized();
+            var branchId = _session.GetBranchId();
+            if (branchId == null) return Unauthorized();
 
             var order = await _context.Orders
                 .Include(o => o.Customer)
@@ -224,9 +219,7 @@ namespace start.Controllers
                     .ThenInclude(od => od.ProductSize)
                 .FirstOrDefaultAsync(o => o.OrderID == id && o.BranchID == branchId);
 
-            if (order == null)
-                return NotFound();
-
+            if (order == null) return NotFound();
 
             return PartialView("_OrderDetailsView", order);
         }
@@ -283,15 +276,19 @@ namespace start.Controllers
             return null;
         }
 
+        // ============================================
+        // 6️⃣ Lấy nhân viên trong ca
+        // ============================================
         public IActionResult GetEmployeesInCurrentShift()
         {
-            var branchIdString = HttpContext.Session.GetString("BranchId");
-            int? branchId = !string.IsNullOrEmpty(branchIdString) ? int.Parse(branchIdString) : (int?)null;
-
+            var branchId = _session.GetBranchId();
             if (branchId == null)
                 return Unauthorized("Không xác định chi nhánh");
 
-            var currentShift = GetCurrentShiftName(DateTime.Now);
+            var shiftName = _shift.GetCurrentShift();
+            if (shiftName == null)
+                return PartialView("EmployeesInShiftPartial", new List<Employee>());
+                 var currentShift = GetCurrentShiftName(DateTime.Now);
             if (currentShift == null)
                 return PartialView("EmployeesInShiftPartial", new List<Employee>());
 
@@ -306,11 +303,13 @@ namespace start.Controllers
                 .Distinct()
                 .ToList();
 
-            ViewBag.CurrentShift = currentShift;
+            ViewBag.CurrentShift = shiftName;
             return PartialView("EmployeesInShiftPartial", employees);
         }
 
-
+        // ============================================
+        // 7️⃣ Thêm thưởng/phạt
+        // ============================================
         [HttpPost]
         public async Task<IActionResult> AddSalaryAdjustment([FromBody] SalaryAdjustmentDto dto)
         {
@@ -351,20 +350,21 @@ namespace start.Controllers
             {
                 success = true,
                 message = dto.Type == "Penalty"
-                    ? $"❌ Đã ghi nhận phạt {Math.Abs(amount):N0}đ cho nhân viên {dto.EmployeeID}"
-                    : $"✅ Đã thưởng {amount:N0}đ cho nhân viên {dto.EmployeeID}"
+                    ? $"❌ Đã ghi nhận phạt {Math.Abs(amount):N0}đ"
+                    : $"✅ Đã thưởng {amount:N0}đ"
             });
         }
 
-
+        // ============================================
+        // 8️⃣ Shift Report – dùng RevenueService
+        // ============================================
         [HttpGet]
         public async Task<IActionResult> ShiftReport()
         {
-            var branchIdString = HttpContext.Session.GetString("BranchId");
-            int? branchId = !string.IsNullOrEmpty(branchIdString) ? int.Parse(branchIdString) : (int?)null;
-            var employeeId = HttpContext.Session.GetString("EmployeeID");
+            var branchId = _session.GetBranchId();
+            var employeeId = _session.GetEmployeeId();
 
-            if (branchId == null || string.IsNullOrEmpty(employeeId))
+            if (branchId == null || employeeId == null)
                 return RedirectToAction("Login", "Account");
 
             var today = DateTime.Today;
@@ -373,141 +373,65 @@ namespace start.Controllers
                 .FirstOrDefaultAsync(w => w.EmployeeID == employeeId && w.Date == today && w.IsActive);
 
             if (work == null)
-            {
-                ViewBag.Message = "❌ Không có lịch làm việc hôm nay.";
                 return View("~/Views/Internal/ShiftReport.cshtml", new List<Order>());
-            }
 
-            var shift = work.Shift ?? "Morning";
-            DateTime startTime, endTime;
-            if (shift.Equals("Morning", StringComparison.OrdinalIgnoreCase))
-            {
-                startTime = today.AddHours(0);
-                endTime = today.AddHours(14).AddMinutes(59).AddSeconds(59);
-            }
-            else
-            {
-                startTime = today.AddHours(15);
-                endTime = today.AddHours(23).AddMinutes(59).AddSeconds(59);
-            }
+            string shiftName = work.Shift == "Sáng" ? "Morning" : "Night";
 
-            // 📊 Lấy đơn trong ca
-            var orders = await _context.Orders
-                .Include(o => o.OrderDetails!)
-                    .ThenInclude(od => od.Product)
-                .Where(o => o.BranchID == branchId && o.CreatedAt >= startTime && o.CreatedAt <= endTime)
-                .ToListAsync();
+            var (shift, start, end) = _shift.GetShift(today, shiftName);
 
-            // ✅ Thống kê
-            var totalOrders = orders.Count;
-            var completed = orders.Count(o => o.Status == "Đã giao");
-            var delivering = orders.Count(o => o.Status == "Đang giao");
-            var cancelled = orders.Count(o => o.Status == "Đã hủy");
-            var totalRevenue = orders
-    .Where(o => o.Status == "Đã giao")
-    .Select(o => o.Total)
-    .DefaultIfEmpty(0m)
-    .Sum();
-
-
-            // 🔍 Thống kê chi tiết sản phẩm
-            var productStats = orders
-                .Where(o => o.Status == "Đã giao")
-                .SelectMany(o => o.OrderDetails!)
-                .GroupBy(od => od.Product!.ProductName)
-                .Select(g => new
-                {
-                    ProductName = g.Key,
-                    Quantity = g.Sum(x => x.Quantity),
-                    Revenue = g.Sum(x => x.Total)
-                })
-                .OrderByDescending(x => x.Revenue)
-                .ToList();
-
-            // 🕓 Biểu đồ doanh thu theo giờ
-            var hourlyRevenue = orders
-                .Where(o => o.Status == "Đã giao")
-                .GroupBy(o => o.CreatedAt.Hour)
-                .Select(g => new
-                {
-                    Hour = g.Key,
-                    Revenue = g.Sum(x => x.Total)
-                })
-                .OrderBy(x => x.Hour)
-                .ToList();
+            var (orders, productStats, summary) =
+                await _revenue.GetRevenueAsync(branchId.Value, start, end);
 
             ViewBag.Shift = shift;
             ViewBag.Date = today.ToString("dd/MM/yyyy");
-            ViewBag.TotalOrders = totalOrders;
-            ViewBag.Completed = completed;
-            ViewBag.Delivering = delivering;
-            ViewBag.Cancelled = cancelled;
-            ViewBag.TotalRevenue = totalRevenue;
             ViewBag.ProductStats = productStats;
-            ViewBag.HourlyRevenue = hourlyRevenue;
-
+            ViewBag.TotalOrders = summary.TotalOrders;
+            ViewBag.Completed = summary.Completed;
+            ViewBag.Delivering = summary.Delivering;
+            ViewBag.Cancelled = summary.Cancelled;
+            ViewBag.TotalRevenue = summary.TotalRevenue;
+            ViewBag.ProductChartData = Newtonsoft.Json.JsonConvert.SerializeObject(productStats);
+            ViewBag.ChartData = Newtonsoft.Json.JsonConvert.SerializeObject(
+                _revenue.GetRevenueChart(orders)
+            );
             return View("~/Views/Internal/ShiftReport.cshtml", orders);
         }
 
-
-
+        // ============================================
+        // 9️⃣ Export Excel
+        // ============================================
         [HttpGet]
         public async Task<IActionResult> ExportRevenueToExcel()
         {
-            var branchIdString = HttpContext.Session.GetString("BranchId");
-            int? branchId = !string.IsNullOrEmpty(branchIdString) ? int.Parse(branchIdString) : (int?)null;
-            var employeeId = HttpContext.Session.GetString("EmployeeID");
-            string leaderName = HttpContext.Session.GetString("EmployeeName") ?? "Không xác định";
-            var branch = await _context.Branches.FirstOrDefaultAsync(b => b.BranchID == branchId);
-            string branchName = branch?.Name ?? "Không rõ cơ sở";
-            if (branchId == null || string.IsNullOrEmpty(employeeId))
+            var branchId = _session.GetBranchId();
+            var employeeId = _session.GetEmployeeId();
+            var leaderName = _session.GetEmployeeName();
+
+            if (branchId == null || employeeId == null)
                 return RedirectToAction("Login", "Account");
+
+            var branch = await _context.Branches.FindAsync(branchId);
+            string branchName = branch?.Name ?? "Không rõ cơ sở";
 
             var today = DateTime.Today;
 
-            // Lấy ca từ Session (đã lưu ở BranchOrders)
-            var shift = HttpContext.Session.GetString("SelectedShift") ?? "Morning";
-            DateTime startTime, endTime;
-            if (shift.Equals("Morning", StringComparison.OrdinalIgnoreCase))
-            {
-                startTime = today.AddHours(0);
-                endTime = today.AddHours(14).AddMinutes(59).AddSeconds(59);
-            }
-            else
-            {
-                startTime = today.AddHours(15);
-                endTime = today.AddHours(23).AddMinutes(59).AddSeconds(59);
-            }
+            var shiftSessionName = HttpContext.Session.GetString("SelectedShift") ?? "Morning";
+            var (shift, start, end) = _shift.GetShift(today, shiftSessionName);
 
-            // Lấy đơn hàng trong khoảng thời gian ca làm
-            var orders = await _context.Orders
-                .Include(o => o.OrderDetails!)
-                    .ThenInclude(od => od.Product)
-                .Where(o => o.BranchID == branchId && o.CreatedAt >= startTime && o.CreatedAt <= endTime)
+            // 🔥 Lấy dữ liệu doanh thu
+            var (orders, productStats, summary) =
+                await _revenue.GetRevenueAsync(branchId.Value, start, end);
+
+            // 🔥 Lấy THƯỞNG / PHẠT theo ca
+            var adjustments = await _context.SalaryAdjustments
+                .Include(a => a.Employee)
+                .Where(a => a.AdjustmentDate >= start && a.AdjustmentDate <= end)
+                .OrderByDescending(a => a.AdjustmentDate)
                 .ToListAsync();
 
-            // Tính thống kê
-            var totalOrders = orders.Count;
-            var completed = orders.Count(o => o.Status == "Đã giao");
-            var delivering = orders.Count(o => o.Status == "Đang giao");
-            var cancelled = orders.Count(o => o.Status == "Đã hủy");
-            var totalRevenue = orders.Where(o => o.Status == "Đã giao").Sum(o => o.Total);
-
-            // Thống kê chi tiết sản phẩm
-            var productStats = orders
-                .Where(o => o.Status == "Đã giao")
-                .SelectMany(o => o.OrderDetails!)
-                .GroupBy(od => od.Product!.ProductName)
-                .Select(g => new
-                {
-                    ProductName = g.Key,
-                    Quantity = g.Sum(x => x.Quantity),
-                    Revenue = g.Sum(x => x.Total)
-                })
-                .OrderByDescending(x => x.Revenue)
-                .ToList();
-
-            // === Xuất Excel ===
+            // ======================================
+            //         TẠO FILE EXCEL
+            // ======================================
             using var workbook = new XLWorkbook();
             var ws = workbook.Worksheets.Add("Báo cáo doanh thu");
 
@@ -518,61 +442,59 @@ namespace start.Controllers
 
             ws.Cell("A3").Value = "Ngày:";
             ws.Cell("B3").Value = today.ToString("dd/MM/yyyy");
+
             ws.Cell("A4").Value = "Ca làm:";
             ws.Cell("B4").Value = shift == "Morning" ? "Ca sáng" : "Ca tối";
+
             ws.Cell("A5").Value = "Trưởng ca:";
             ws.Cell("B5").Value = leaderName;
+
             ws.Cell("A6").Value = "Cơ sở:";
             ws.Cell("B6").Value = branchName;
-            // Tổng quan
+
+            // ======================================
+            //          TỔNG QUAN DOANH THU
+            // ======================================
             ws.Cell("A7").Value = "Chỉ tiêu";
             ws.Cell("B7").Value = "Giá trị";
             ws.Range("A7:B7").Style.Font.Bold = true;
             ws.Range("A7:B7").Style.Fill.BackgroundColor = XLColor.LightGreen;
 
-
-
-            var summary = new List<(string Label, object Value)>
+            var summaryList = new List<(string Label, object Value)>
     {
-        ("Tổng đơn hàng", totalOrders),
-        ("Đơn hoàn tất", completed),
-        ("Đơn đang giao", delivering),
-        ("Đơn hủy", cancelled),
-        ("Tổng doanh thu (₫)", totalRevenue)
+        ("Tổng đơn hàng", summary.TotalOrders),
+        ("Đơn hoàn tất", summary.Completed),
+        ("Đơn đang giao", summary.Delivering),
+        ("Đơn hủy", summary.Cancelled),
+        ("Tổng doanh thu (₫)", summary.TotalRevenue)
     };
 
             int row = 8;
-            foreach (var s in summary)
+            foreach (var item in summaryList)
             {
-                ws.Cell(row, 1).Value = s.Label;
-
-                // ép kiểu thủ công, nếu là số thì giữ nguyên, còn không thì convert sang chuỗi
-                if (s.Value is int i)
-                    ws.Cell(row, 2).Value = i;
-                else if (s.Value is double d)
-                    ws.Cell(row, 2).Value = d;
-                else if (s.Value is decimal dec)
-                    ws.Cell(row, 2).Value = dec;
-                else
-                    ws.Cell(row, 2).Value = s.Value?.ToString();
-
+                ws.Cell(row, 1).Value = item.Label;
+                ws.Cell(row, 2).Value = item.Value switch
+                {
+                    int v => v,
+                    double v => v,
+                    decimal v => v,
+                    _ => item.Value?.ToString() ?? ""
+                };
                 row++;
             }
 
-
-
-            // Dòng trống rồi bảng chi tiết
+            // ======================================
+            //           SẢN PHẨM BÁN RA
+            // ======================================
             row += 2;
             ws.Cell(row, 1).Value = "SẢN PHẨM BÁN RA";
             ws.Range(row, 1, row, 3).Merge().Style.Font.Bold = true;
-            ws.Range(row, 1, row, 3).Style.Alignment.SetHorizontal(XLAlignmentHorizontalValues.Center);
             row++;
 
             ws.Cell(row, 1).Value = "Tên sản phẩm";
             ws.Cell(row, 2).Value = "Số lượng";
             ws.Cell(row, 3).Value = "Doanh thu (₫)";
             ws.Range(row, 1, row, 3).Style.Font.Bold = true;
-            ws.Range(row, 1, row, 3).Style.Fill.BackgroundColor = XLColor.LightYellow;
             row++;
 
             foreach (var p in productStats)
@@ -583,6 +505,43 @@ namespace start.Controllers
                 row++;
             }
 
+            // ======================================
+            //         THỐNG KÊ THƯỞNG / PHẠT
+            // ======================================
+            row += 2;
+            ws.Cell(row, 1).Value = "THỐNG KÊ THƯỞNG / PHẠT TRONG CA";
+            ws.Range(row, 1, row, 4).Merge().Style.Font.Bold = true;
+            ws.Range(row, 1, row, 4).Style.Fill.BackgroundColor = XLColor.LightBlue;
+            row++;
+
+            ws.Cell(row, 1).Value = "Nhân viên";
+            ws.Cell(row, 2).Value = "Loại";
+            ws.Cell(row, 3).Value = "Lý do";
+            ws.Cell(row, 4).Value = "Số tiền (₫)";
+            ws.Range(row, 1, row, 4).Style.Font.Bold = true;
+            row++;
+
+            if (adjustments.Any())
+            {
+                foreach (var adj in adjustments)
+                {
+                    ws.Cell(row, 1).Value = adj.Employee?.FullName ?? "Không rõ";
+                    ws.Cell(row, 2).Value = adj.Amount >= 0 ? "Thưởng" : "Phạt";
+                    ws.Cell(row, 3).Value = adj.Reason;
+                    ws.Cell(row, 4).Value = adj.Amount;
+                    row++;
+                }
+            }
+            else
+            {
+                ws.Cell(row, 1).Value = "Không có thưởng/phạt trong ca";
+                ws.Range(row, 1, row, 4).Merge();
+                row++;
+            }
+
+            // ======================================
+            //       TỰ ĐỘNG CĂN CHỈNH
+            // ======================================
             ws.Columns().AdjustToContents();
 
             using var stream = new MemoryStream();
@@ -590,92 +549,15 @@ namespace start.Controllers
             stream.Position = 0;
 
             string safeBranch = new string(branchName
-      .Where(c => !Path.GetInvalidFileNameChars().Contains(c))
-      .ToArray());
+                .Where(c => !Path.GetInvalidFileNameChars().Contains(c))
+                .ToArray());
 
             string fileName = $"BaoCao_DoanhThu_{safeBranch}_{DateTime.Now:ddMMyyyy_HHmm}.xlsx";
+
             return File(stream.ToArray(),
-                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                fileName);
         }
-
-        [HttpPost]
-        public async Task<IActionResult> UploadShiftReport(IFormFile excelFile, IFormFile? imageFile)
-        {
-            // 🟢 Lấy branchId và shift từ form thay vì session
-            var branchIdStr = Request.Form["branchId"].FirstOrDefault();
-            var shift = Request.Form["shift"].FirstOrDefault();
-            var today = DateTime.Today;
-
-            if (string.IsNullOrEmpty(branchIdStr) || string.IsNullOrEmpty(shift))
-                return BadRequest(new { success = false, message = "Không xác định được chi nhánh hoặc ca làm." });
-
-            int branchId = int.Parse(branchIdStr);
-
-            // Convert sang tiếng Việt cho đồng nhất DB
-            string shiftVN = shift.Equals("Morning", StringComparison.OrdinalIgnoreCase) ? "Sáng" : "Tối";
-
-            // Kiểm tra xem hôm nay, ca đó, chi nhánh đó đã nộp báo cáo chưa
-            var existingReport = await _context.ShiftReports
-                .FirstOrDefaultAsync(r => r.BranchID == branchId && r.Shift == shiftVN && r.Day == today);
-
-            // Lưu file Excel
-            string? excelPath = null;
-            if (excelFile != null && excelFile.Length > 0)
-            {
-                var fileName = $"BaoCao_{shiftVN}_{today:ddMMyyyy}_{Path.GetFileName(excelFile.FileName)}";
-                var filePath = Path.Combine("wwwroot/uploads/reports", fileName);
-                Directory.CreateDirectory(Path.GetDirectoryName(filePath)!);
-                using (var stream = new FileStream(filePath, FileMode.Create))
-                {
-                    await excelFile.CopyToAsync(stream);
-                }
-                var baseUrl = $"{Request.Scheme}://{Request.Host}";
-                excelPath = $"{baseUrl}/uploads/reports/{fileName}";
-            }
-
-            // Lưu ảnh (nếu có)
-            string? imgPath = null;
-            if (imageFile != null && imageFile.Length > 0)
-            {
-                var imgName = $"Chart_{shiftVN}_{today:ddMMyyyy}_{Path.GetFileName(imageFile.FileName)}";
-                var imgFilePath = Path.Combine("wwwroot/uploads/reports", imgName);
-                Directory.CreateDirectory(Path.GetDirectoryName(imgFilePath)!);
-                using (var stream = new FileStream(imgFilePath, FileMode.Create))
-                {
-                    await imageFile.CopyToAsync(stream);
-                }
-                imgPath = $"/uploads/reports/{imgName}";
-            }
-
-            if (existingReport != null)
-            {
-                // Cập nhật nếu đã tồn tại
-                if (excelPath != null) existingReport.Excel_Url = excelPath;
-                if (imgPath != null) existingReport.Report_Img = imgPath;
-                existingReport.LastUpdate = DateTime.Now;
-            }
-            else
-            {
-                // Tạo mới
-                var report = new ShiftReport
-                {
-                    Excel_Url = excelPath,
-                    Report_Img = imgPath,
-                    LastUpdate = DateTime.Now,
-                    Day = today,
-                    Shift = shiftVN,
-                    BranchID = branchId
-                };
-                _context.ShiftReports.Add(report);
-            }
-
-            await _context.SaveChangesAsync();
-
-            return Ok(new { success = true, message = "✅ Nộp báo cáo thành công!" });
-        }
-
-
 
     }
-
 }
