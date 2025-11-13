@@ -3,16 +3,19 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using start.Data;
 using start.Models;
+using start.Services.Interfaces;
 public class OrderService : IOrderService
 {
     private readonly ApplicationDbContext _context;
     private readonly ILogger<OrderService> _logger;
+    private readonly IDiscountService _discountService;
     private static readonly Random _random = new Random();
 
-    public OrderService(ApplicationDbContext context, ILogger<OrderService> logger)
+    public OrderService(ApplicationDbContext context, ILogger<OrderService> logger, IDiscountService discountService)
     {
         _context = context;
         _logger = logger;
+        _discountService = discountService;
     }
 
     private async Task<string> GenerateUniqueOrderCodeAsync()
@@ -84,7 +87,7 @@ public class OrderService : IOrderService
             var itemsTotal = orderDetails.Sum(d => d.Total);
 
             // Gọi hàm tính toán giảm giá đã được tái sử dụng
-            var calculationResult = await CalculateDiscountAsync(form.PromoCode, itemsTotal, form.ShippingFee, form.BranchID);
+            var calculationResult = await CalculateDiscountAsync(form.PromoCode, itemsTotal, form.ShippingFee, form.BranchID, customerId);
             _logger.LogInformation("[OrderService] CalculateDiscount: PromoInput='{Promo}', ItemsTotal={ItemsTotal}, ShippingFeeInput={ShipInput}, FinalTotal={FinalTotal}, FinalShippingFee={FinalShip}, AppliedCodes={Applied}",
                 form.PromoCode,
                 itemsTotal,
@@ -145,6 +148,32 @@ public class OrderService : IOrderService
                 order.ShippingFee,
                 order.Total);
 
+            // 3.5. Lưu DiscountUsage vào database cho TẤT CẢ các mã đã apply thành công (bao gồm cả shipping codes)
+            if (calculationResult.SuccessfullyAppliedCodes != null && calculationResult.SuccessfullyAppliedCodes.Any())
+            {
+                // Lấy thông tin discount để lưu vào DiscountUsage
+                var appliedDiscounts = await _context.Discounts
+                    .Where(d => calculationResult.SuccessfullyAppliedCodes.Contains(d.Code))
+                    .ToListAsync();
+
+                foreach (var discount in appliedDiscounts)
+                {
+                    try
+                    {
+                        _logger.LogInformation("[OrderService] Attempting to record DiscountUsage for code: {Code}, UserId: {UserId}, Type: {Type}", 
+                            discount.Code, customerId, discount.Type);
+                        await _discountService.ApplyDiscountAsync(customerId.ToString(), discount.Code);
+                        _logger.LogInformation("[OrderService] ✅ Successfully recorded DiscountUsage for code: {Code}", discount.Code);
+                    }
+                    catch (Exception ex)
+                    {
+                        // Log lỗi nhưng không fail order creation nếu đã tính toán discount thành công
+                        // Vì có thể user đã dùng mã này rồi nhưng vẫn cho phép tính toán (có thể do race condition)
+                        _logger.LogWarning(ex, "[OrderService] ⚠️ Failed to record DiscountUsage for code: {Code}. Error: {Error}", 
+                            discount.Code, ex.Message);
+                    }
+                }
+            }
 
             // 4. Thêm tất cả vào Context và dọn dẹp giỏ hàng
             _context.Orders.Add(order);
@@ -165,7 +194,7 @@ public class OrderService : IOrderService
         }
     }
 
-    public async Task<PromoCodeResponse> CalculateDiscountAsync(string promoCodes, decimal itemsTotal, decimal shippingFee, int branchID)
+    public async Task<PromoCodeResponse> CalculateDiscountAsync(string promoCodes, decimal itemsTotal, decimal shippingFee, int branchID, int? userId = null)
     {
         var response = new PromoCodeResponse
         {
@@ -198,7 +227,30 @@ public class OrderService : IOrderService
                             && (d.EndAt == null || d.EndAt >= now))
                 .ToListAsync()
             : new List<Discount>();
-        // 2. XỬ LÝ LỖI MÃ KHÔNG HỢP LỆ (Lọc ra những mã bị lỗi thời gian/active)
+        
+        // 2. KIỂM TRA USER ĐÃ DÙNG DISCOUNT CHƯA (nếu có userId)
+        if (userId.HasValue)
+        {
+            var usedDiscountIds = await _context.DiscountUsages
+                .Where(du => du.UserId == userId.Value.ToString())
+                .Select(du => du.DiscountId)
+                .ToListAsync();
+            
+            var alreadyUsedDiscounts = validDiscounts
+                .Where(d => usedDiscountIds.Contains(d.Id))
+                .ToList();
+            
+            if (alreadyUsedDiscounts.Any())
+            {
+                var firstUsedCode = alreadyUsedDiscounts.First().Code;
+                response.ErrorMessage = $"Bạn đã sử dụng mã '{firstUsedCode}' rồi. Mỗi mã chỉ được sử dụng một lần.";
+                response.FinalTotal = itemsTotal + shippingFee;
+                response.FinalShippingFee = shippingFee;
+                return response;
+            }
+        }
+        
+        // 3. XỬ LÝ LỖI MÃ KHÔNG HỢP LỆ (Lọc ra những mã bị lỗi thời gian/active)
         var appliedCodeList = validDiscounts.Select(d => d.Code).ToList();
         var firstTrulyInvalidCode = codeList.FirstOrDefault(c => !appliedCodeList.Contains(c));
 
@@ -211,7 +263,7 @@ public class OrderService : IOrderService
         }
 
 
-        // 3. ÁP DỤNG LOGIC GIẢM GIÁ ĐẦY ĐỦ (FixedAmount, FixedShipping, PercentShipping)
+        // 4. ÁP DỤNG LOGIC GIẢM GIÁ ĐẦY ĐỦ (FixedAmount, FixedShipping, PercentShipping)
         foreach (var discount in validDiscounts.OrderBy(d => (int)d.Type))
         {
             switch (discount.Type)
@@ -343,6 +395,27 @@ public class OrderService : IOrderService
             result.ErrorMessage = $"Mã '{firstInvalid}' không hợp lệ hoặc đã hết hạn.";
             result.InvalidCode = firstInvalid;
             return result;
+        }
+
+        // 🔹 KIỂM TRA USER ĐÃ DÙNG DISCOUNT CHƯA (nếu có userId)
+        if (request.UserId.HasValue)
+        {
+            var usedDiscountIds = await _context.DiscountUsages
+                .Where(du => du.UserId == request.UserId.Value.ToString())
+                .Select(du => du.DiscountId)
+                .ToListAsync();
+            
+            var alreadyUsedDiscounts = validDiscounts
+                .Where(d => usedDiscountIds.Contains(d.Id))
+                .ToList();
+            
+            if (alreadyUsedDiscounts.Any())
+            {
+                var firstUsedCode = alreadyUsedDiscounts.First().Code;
+                result.ErrorMessage = $"Bạn đã sử dụng mã '{firstUsedCode}' rồi. Mỗi mã chỉ được sử dụng một lần.";
+                result.InvalidCode = firstUsedCode;
+                return result;
+            }
         }
 
         // 🔹 Áp dụng logic tính toán

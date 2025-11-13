@@ -1,4 +1,5 @@
 @model start.Models.Employee
+@using start.Models.System
 @{
     Layout = "_AdminLayout";
     ViewData["Title"] = "Hồ sơ cá nhân";
@@ -8,6 +9,10 @@
         : Url.Content("https://res.cloudinary.com/do48qpmut/image/upload/v1761645429/uploads/tdppvgyas8bhvfs7lton.png");
 
     var roleText = "Quản trị viên";
+    var security = ViewBag.AdminSecurity as AdminSecurity;
+    var isTwoFactorEnabled = security?.IsTwoFactorEnabled ?? false;
+    var otpExpiresAt = security?.LastOtpExpiredAt;
+    var nowUtc = DateTime.UtcNow;
 }
 
 <link rel="stylesheet" href="/css/Admin/profile.css" />
@@ -69,6 +74,114 @@
 
         @* Main Content Area *@
         <div class="profile-main-area">
+            <div class="twofactor-card">
+                <div class="twofactor-header">
+                    <div class="twofactor-icon">
+                        <i class="fa fa-shield-halved"></i>
+                    </div>
+                    <div>
+                        <h4>Xác thực hai bước (2FA)</h4>
+                        <p>Tăng lớp bảo mật cho tài khoản Admin bằng mã OTP qua email.</p>
+                    </div>
+                </div>
+
+                @if (isTwoFactorEnabled)
+                {
+                    <div class="twofactor-status on">
+                        <i class="fa fa-check-circle"></i> 2FA đang được bật (Email OTP)
+                    </div>
+                    
+                    @if (security?.LastOtpCode != null && otpExpiresAt.HasValue && otpExpiresAt.Value > nowUtc)
+                    {
+                        <div class="twofactor-otp-panel">
+                            <div class="twofactor-otp-header">
+                                <h5>Nhập OTP để xác nhận tắt 2FA</h5>
+                                <span>Hết hạn lúc @otpExpiresAt.Value.ToLocalTime().ToString("HH:mm dd/MM")</span>
+                            </div>
+                            <form asp-action="DisableTwoFactor" method="post" class="twofactor-otp-form">
+                                @Html.AntiForgeryToken()
+                                <label for="disableOtp">Mã OTP</label>
+                                <input type="text"
+                                       id="disableOtp"
+                                       name="otp"
+                                       maxlength="6"
+                                       inputmode="numeric"
+                                       autocomplete="one-time-code"
+                                       placeholder="••••••"
+                                       required />
+                                <button type="submit" class="btn-success">
+                                    <i class="fa fa-lock"></i> Xác nhận tắt 2FA
+                                </button>
+                            </form>
+                        </div>
+                    }
+                    else if (security?.LastOtpCode != null && otpExpiresAt.HasValue && otpExpiresAt.Value <= nowUtc)
+                    {
+                        <div class="twofactor-alert warning">
+                            <i class="fa fa-hourglass-end"></i> Mã OTP đã hết hạn. Vui lòng gửi lại mã xác nhận.
+                        </div>
+                        <form asp-action="SendDisableTwoFactorOtp" method="post" class="twofactor-actions">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn-outline-danger">
+                                <i class="fa fa-power-off"></i> Tắt 2FA
+                            </button>
+                        </form>
+                    }
+                    else
+                    {
+                        <form asp-action="SendDisableTwoFactorOtp" method="post" class="twofactor-actions">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn-outline-danger">
+                                <i class="fa fa-power-off"></i> Tắt 2FA
+                            </button>
+                        </form>
+                    }
+                }
+                else
+                {
+                    <div class="twofactor-status off">
+                        <i class="fa fa-exclamation-triangle"></i> 2FA chưa bật – tài khoản dễ bị khai thác nếu mật khẩu bị lộ.
+                    </div>
+                    <form asp-action="SendTwoFactorSetupOtp" method="post" class="twofactor-actions">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn-primary">
+                            <i class="fa fa-paper-plane"></i> Gửi mã kích hoạt 2FA
+                        </button>
+                    </form>
+
+                    @if (security?.LastOtpCode != null && otpExpiresAt.HasValue && otpExpiresAt.Value > nowUtc)
+                    {
+                        <div class="twofactor-otp-panel">
+                            <div class="twofactor-otp-header">
+                                <h5>Nhập OTP để bật 2FA</h5>
+                                <span>Hết hạn lúc @otpExpiresAt.Value.ToLocalTime().ToString("HH:mm dd/MM")</span>
+                            </div>
+                            <form asp-action="VerifyTwoFactorSetup" method="post" class="twofactor-otp-form">
+                                @Html.AntiForgeryToken()
+                                <label for="setupOtp">Mã OTP</label>
+                                <input type="text"
+                                       id="setupOtp"
+                                       name="otp"
+                                       maxlength="6"
+                                       inputmode="numeric"
+                                       autocomplete="one-time-code"
+                                       placeholder="••••••"
+                                       required />
+                                <button type="submit" class="btn-success">
+                                    <i class="fa fa-lock"></i> Xác nhận bật 2FA
+                                </button>
+                            </form>
+                        </div>
+                    }
+                    else if (security?.LastOtpCode != null && otpExpiresAt.HasValue && otpExpiresAt.Value <= nowUtc)
+                    {
+                        <div class="twofactor-alert warning">
+                            <i class="fa fa-hourglass-end"></i> Mã OTP đã hết hạn. Vui lòng gửi lại mã kích hoạt.
+                        </div>
+                    }
+                }
+            </div>
+
             @* Personal Information *@
             <div class="detail-block">
                 <h4><i class="fa fa-user-circle"></i> Thông tin cá nhân</h4>
@@ -184,6 +297,216 @@
 </div>
 
 <style>
+    .twofactor-card {
+        background: linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.75));
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        border-radius: 16px;
+        padding: 24px;
+        margin-bottom: 24px;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.25);
+        color: #e2e8f0;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .twofactor-card::before {
+        content: "";
+        position: absolute;
+        inset: -150px;
+        background: radial-gradient(circle at top left, rgba(56, 189, 248, 0.15), transparent 65%);
+        z-index: 0;
+    }
+
+    .twofactor-card > * {
+        position: relative;
+        z-index: 1;
+    }
+
+    .twofactor-header {
+        display: flex;
+        gap: 18px;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+    .twofactor-header h4 {
+        margin: 0 0 6px;
+        font-size: 20px;
+        font-weight: 600;
+    }
+
+    .twofactor-header p {
+        margin: 0;
+        color: #94a3b8;
+        font-size: 14px;
+    }
+
+    .twofactor-icon {
+        width: 52px;
+        height: 52px;
+        border-radius: 16px;
+        background: rgba(56, 189, 248, 0.18);
+        color: #38bdf8;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+    }
+
+    .twofactor-status {
+        padding: 12px 16px;
+        border-radius: 12px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 18px;
+    }
+
+    .twofactor-status.on {
+        background: rgba(34, 197, 94, 0.15);
+        border: 1px solid rgba(34, 197, 94, 0.3);
+        color: #4ade80;
+    }
+
+    .twofactor-status.off {
+        background: rgba(248, 113, 113, 0.15);
+        border: 1px solid rgba(248, 113, 113, 0.3);
+        color: #fca5a5;
+    }
+
+    .twofactor-actions {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-bottom: 18px;
+    }
+
+    .twofactor-actions .btn-primary,
+    .twofactor-actions .btn-outline-danger {
+        border-radius: 12px;
+        padding: 12px 20px;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .twofactor-actions .btn-primary {
+        background: linear-gradient(135deg, #38bdf8, #0ea5e9);
+        color: #0f172a;
+    }
+
+    .twofactor-actions .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 15px 35px rgba(14, 165, 233, 0.35);
+    }
+
+    .twofactor-actions .btn-outline-danger {
+        background: transparent;
+        border: 1px solid rgba(248, 113, 113, 0.4);
+        color: #fca5a5;
+    }
+
+    .twofactor-actions .btn-outline-danger:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 15px 35px rgba(248, 113, 113, 0.25);
+        background: rgba(248, 113, 113, 0.1);
+    }
+
+    .twofactor-otp-panel {
+        background: rgba(15, 23, 42, 0.75);
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        border-radius: 14px;
+        padding: 20px;
+        margin-top: 8px;
+    }
+
+    .twofactor-otp-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 12px;
+        color: #94a3b8;
+        font-size: 13px;
+        margin-bottom: 14px;
+    }
+
+    .twofactor-otp-header h5 {
+        margin: 0;
+        font-size: 16px;
+        color: #e2e8f0;
+    }
+
+    .twofactor-otp-form {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+    }
+
+    .twofactor-otp-form label {
+        flex: 1 0 100%;
+        font-size: 13px;
+        font-weight: 600;
+        color: #94a3b8;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+    }
+
+    .twofactor-otp-form input[type="text"] {
+        flex: 1 1 220px;
+        background: rgba(15, 23, 42, 0.65);
+        border: 1px solid rgba(148, 163, 184, 0.25);
+        border-radius: 12px;
+        padding: 12px 14px;
+        color: #e2e8f0;
+        font-size: 18px;
+        letter-spacing: 0.25em;
+        text-align: center;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .twofactor-otp-form input[type="text"]:focus {
+        outline: none;
+        border-color: #38bdf8;
+        box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.18);
+    }
+
+    .twofactor-otp-form .btn-success {
+        flex: 0 0 auto;
+        border-radius: 12px;
+        padding: 12px 18px;
+        font-weight: 600;
+        background: linear-gradient(135deg, #4ade80, #22c55e);
+        border: none;
+        color: #052e16;
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .twofactor-otp-form .btn-success:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 12px 28px rgba(34, 197, 94, 0.35);
+    }
+
+    .twofactor-alert {
+        margin-top: 12px;
+        padding: 12px 14px;
+        border-radius: 12px;
+        font-weight: 600;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        font-size: 14px;
+    }
+
+    .twofactor-alert.warning {
+        background: rgba(248, 113, 113, 0.12);
+        color: #f87171;
+        border: 1px solid rgba(248, 113, 113, 0.2);
+    }
+
     #successToast, #errorToast {
         animation: slideIn 0.5s ease-out;
     }

@@ -1,0 +1,165 @@
+@model start.Models.Employee
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Chi tiết Marketing Manager";
+
+    var avatar = !string.IsNullOrWhiteSpace(Model.AvatarUrl)
+         ? Url.Content(Model.AvatarUrl) 
+        : Url.Content("https://res.cloudinary.com/do48qpmut/image/upload/v1761645429/uploads/tdppvgyas8bhvfs7lton.png");
+}
+
+<div style="padding: 24px;">
+    <div style="margin-bottom: 20px;">
+        <a href="@Url.Action("Employees", "Admin", new { tab = "marketingManagers" })" 
+           style="display: inline-flex; align-items: center; gap: 8px; color: var(--admin-primary); text-decoration: none; font-weight: 500;">
+            <i class="fas fa-arrow-left"></i> Quay lại danh sách
+        </a>
+    </div>
+
+    <div class="profile-head">
+        <div class="avatar"><img src="@avatar" alt="avatar"></div>
+        <div>
+            <h3 class="name">@Model.FullName</h3>
+            <div class="position">Marketing Manager</div>
+        </div>
+    </div>
+
+    <div style="margin-top: 32px; display: grid; gap: 20px;">
+        <div style="padding: 20px; background: var(--card); border: 1px solid var(--line); border-radius: 12px;">
+            <h4 style="font-size: 18px; font-weight: 600; margin-bottom: 16px; color: var(--ink);">Thông tin cá nhân</h4>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px;">
+                <div>
+                    <div style="font-size: 13px; color: var(--muted); margin-bottom: 4px;">Mã nhân viên</div>
+                    <div style="font-weight: 600; color: var(--ink);">@Model.EmployeeID</div>
+                </div>
+                <div>
+                    <div style="font-size: 13px; color: var(--muted); margin-bottom: 4px;">Email</div>
+                    <div style="color: var(--ink);">@(Model.Email ?? "-")</div>
+                </div>
+                <div>
+                    <div style="font-size: 13px; color: var(--muted); margin-bottom: 4px;">Số điện thoại</div>
+                    <div style="color: var(--ink);">@(Model.PhoneNumber ?? "-")</div>
+                </div>
+                <div>
+                    <div style="font-size: 13px; color: var(--muted); margin-bottom: 4px;">Ngày sinh</div>
+                    <div style="color: var(--ink);">@(Model.DateOfBirth?.ToString("dd/MM/yyyy") ?? "-")</div>
+                </div>
+                <div>
+                    <div style="font-size: 13px; color: var(--muted); margin-bottom: 4px;">Giới tính</div>
+                    <div style="color: var(--ink);">@(Model.Gender ?? "-")</div>
+                </div>
+                <div>
+                    <div style="font-size: 13px; color: var(--muted); margin-bottom: 4px;">Thành phố</div>
+                    <div style="color: var(--ink);">@(Model.City ?? "-")</div>
+                </div>
+                <div>
+                    <div style="font-size: 13px; color: var(--muted); margin-bottom: 4px;">Quốc tịch</div>
+                    <div style="color: var(--ink);">@(Model.Nationality ?? "-")</div>
+                </div>
+                <div>
+                    <div style="font-size: 13px; color: var(--muted); margin-bottom: 4px;">Dân tộc</div>
+                    <div style="color: var(--ink);">@(Model.Ethnicity ?? "-")</div>
+                </div>
+            </div>
+        </div>
+
+        <div style="padding: 20px; background: var(--card); border: 1px solid var(--line); border-radius: 12px;">
+            <h4 style="font-size: 18px; font-weight: 600; margin-bottom: 16px; color: var(--ink);">Thông tin công việc</h4>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px;">
+                <div>
+                    <div style="font-size: 13px; color: var(--muted); margin-bottom: 4px;">Vai trò</div>
+                    <div style="font-weight: 600; color: var(--ink);">
+                        <span style="display: inline-block; padding: 4px 12px; background: var(--admin-primary-bg); color: var(--admin-primary); border-radius: 999px; font-size: 13px; font-weight: 500;">
+                            <i class="fas fa-bullhorn"></i> Marketing Manager
+                        </span>
+                    </div>
+                </div>
+                <div>
+                    <div style="font-size: 13px; color: var(--muted); margin-bottom: 4px;">Ngày vào làm</div>
+                    <div style="color: var(--ink);">@Model.HireDate.ToString("dd/MM/yyyy")</div>
+                </div>
+                <div>
+                    <div style="font-size: 13px; color: var(--muted); margin-bottom: 4px;">Trạng thái</div>
+                    @if (Model.IsActive)
+                    {
+                        <span style="display: inline-block; padding: 4px 12px; background: #d1fae5; color: #065f46; border-radius: 999px; font-size: 13px; font-weight: 500;">
+                            Đang hoạt động
+                        </span>
+                    }
+                    else
+                    {
+                        <span style="display: inline-block; padding: 4px 12px; background: #fee2e2; color: #991b1b; border-radius: 999px; font-size: 13px; font-weight: 500;">
+                            Đã vô hiệu hóa
+                        </span>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div style="padding: 20px; background: var(--card); border: 1px solid var(--line); border-radius: 12px;">
+            <h4 style="font-size: 18px; font-weight: 600; margin-bottom: 16px; color: var(--ink);">Thông tin khẩn cấp</h4>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px;">
+                <div>
+                    <div style="font-size: 13px; color: var(--muted); margin-bottom: 4px;">Số điện thoại khẩn cấp 1</div>
+                    <div style="color: var(--ink);">@(Model.EmergencyPhone1 ?? "-")</div>
+                </div>
+                <div>
+                    <div style="font-size: 13px; color: var(--muted); margin-bottom: 4px;">Số điện thoại khẩn cấp 2</div>
+                    <div style="color: var(--ink);">@(Model.EmergencyPhone2 ?? "-")</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div style="margin-top: 24px; display: flex; gap: 12px;">
+        <a href="@Url.Action("EditMarketingManager", "Admin", new { id = Model.EmployeeID })" 
+           style="padding: 10px 20px; background: #f59e0b; color: white; border: none; border-radius: 8px; font-weight: 500; text-decoration: none; display: inline-block;">
+            <i class="fas fa-edit"></i> Sửa thông tin
+        </a>
+        <button onclick="toggleMMStatus('@Model.EmployeeID', @(Model.IsActive ? "true" : "false"), '@Model.FullName')" 
+                style="padding: 10px 20px; background: @(Model.IsActive ? "#ef4444" : "#10b981"); color: white; border: none; border-radius: 8px; font-weight: 500; cursor: pointer;">
+            <i class="fas fa-@(Model.IsActive ? "ban" : "check")"></i> @(Model.IsActive ? "Vô hiệu hóa" : "Kích hoạt")
+        </button>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function toggleMMStatus(employeeId, isActive, fullName) {
+            const action = isActive === 'true' ? 'vô hiệu hóa' : 'kích hoạt';
+            const message = `Bạn có chắc chắn muốn ${action} Marketing Manager "${fullName}" không?`;
+            
+            if (!confirm(message)) {
+                return;
+            }
+
+            const form = document.createElement('form');
+            form.innerHTML = '@Html.AntiForgeryToken()';
+            const tokenInput = form.querySelector('input[name="__RequestVerificationToken"]');
+            const token = tokenInput ? tokenInput.value : '';
+
+            fetch('@Url.Action("ToggleMarketingManagerStatus", "Admin")', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'RequestVerificationToken': token
+                },
+                body: `employeeId=${encodeURIComponent(employeeId)}&__RequestVerificationToken=${encodeURIComponent(token)}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    window.location.reload();
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Có lỗi xảy ra khi thực hiện thao tác.');
+            });
+        }
+    </script>
+}
+

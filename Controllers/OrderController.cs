@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using start.Models;
 using start.Data;
+using start.Services.Interfaces;
 using System.Security.Claims;
 using start.DTOs;
 
@@ -14,15 +15,17 @@ public class OrderController : Controller
     private readonly ICheckoutService _checkoutService;
     private readonly ApplicationDbContext _context;
     private readonly IPaymentService _paymentService;
+    private readonly IDiscountService _discountService;
 
 
-    public OrderController(IOrderService orderService, IOrderReadService orderReadService, ICheckoutService checkoutService, ApplicationDbContext context, IPaymentService paymentService)
+    public OrderController(IOrderService orderService, IOrderReadService orderReadService, ICheckoutService checkoutService, ApplicationDbContext context, IPaymentService paymentService, IDiscountService discountService)
     {
         _orderService = orderService;
         _orderReadService = orderReadService;
         _checkoutService = checkoutService;
         _context = context;
         _paymentService = paymentService;
+        _discountService = discountService;
     }
 
     // Helper method để lấy CustomerID từ Claims (CustomerScheme)
@@ -122,8 +125,55 @@ public class OrderController : Controller
     [IgnoreAntiforgeryToken]
     public async Task<IActionResult> ValidatePromoCodes([FromBody] PromoValidationRequest request)
     {
+        // Lấy userId nếu user đã đăng nhập
+        int? customerId = GetCustomerId();
+        if (customerId.HasValue)
+        {
+            request.UserId = customerId.Value;
+        }
+        
         var result = await _orderService.ValidateAndApplyPromoCodesAsync(request);
         return Json(result);
+    }
+
+    [HttpPost("ApplyDiscount")]
+    [Authorize(AuthenticationSchemes = "CustomerScheme")]
+    public async Task<IActionResult> ApplyDiscount([FromBody] ApplyDiscountRequest request)
+    {
+        int? customerId = GetCustomerId();
+        if (customerId == null)
+        {
+            return Json(new { success = false, message = "Bạn cần đăng nhập để sử dụng mã giảm giá." });
+        }
+
+        try
+        {
+            var success = await _discountService.ApplyDiscountAsync(customerId.Value.ToString(), request.Code);
+            
+            if (success)
+            {
+                // Get discount details for response
+                var discount = await _discountService.ValidateDiscountAsync(request.Code);
+                if (discount != null)
+                {
+                    return Json(new { 
+                        success = true, 
+                        message = "Áp dụng mã giảm giá thành công!",
+                        discount = new {
+                            code = discount.Code,
+                            percent = discount.Percent,
+                            amount = discount.Amount
+                        }
+                    });
+                }
+            }
+            
+            return Json(new { success = false, message = "Không thể áp dụng mã giảm giá." });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = ex.Message });
+        }
     }
 
     [HttpGet("OrderHistory")]

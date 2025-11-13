@@ -40,7 +40,7 @@ public class CheckoutService : ICheckoutService
             throw new System.InvalidOperationException("Giỏ hàng trống.");
 
         var itemsTotal = cart.CartDetails.Sum(cd => cd.Total);
-        var calc = await _orderService.CalculateDiscountAsync(form.PromoCode, itemsTotal, form.ShippingFee, form.BranchID);
+        var calc = await _orderService.CalculateDiscountAsync(form.PromoCode, itemsTotal, form.ShippingFee, form.BranchID, customerId);
         var finalTotal = calc.FinalTotal;
 
         var orderInfo = $"Thanh toán đơn hàng của KH {customerId}";

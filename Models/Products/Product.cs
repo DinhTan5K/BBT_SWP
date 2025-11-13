@@ -20,5 +20,7 @@ using start.Models;
         public bool IsActive { get; set; } = true;
 
         public ICollection<ProductSize> ProductSizes { get; set; } = new List<ProductSize>();
+        
+        public ICollection<ProductReview> Reviews { get; set; } = new List<ProductReview>();
     }
 

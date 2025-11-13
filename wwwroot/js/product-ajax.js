@@ -153,7 +153,7 @@ function renderProducts(products, requestId = null) {
                     </button>
                 </div>
                 <div class="product-info-wrapper">
-                    <h3>${p.productName}</h3>
+                    <h3><a href="/Product/Detail/${p.productID}" style="text-decoration: none; color: inherit;">${p.productName}</a></h3>
                     <p class="price">Giá: <span class="selected-price">${minPrice.toLocaleString('vi-VN')} đ</span></p>
                     <div class="product-actions">
                         <div class="size-options" data-product-id="${p.productID}">
@@ -250,75 +250,17 @@ function initializeProductInteractions() {
         newBtn.addEventListener('click', handleWishlistClick);
     });
     
-    // Quickview buttons (rebind)
+    // Quickview buttons (rebind) - Redirect to Detail page
     document.querySelectorAll('.btn-quickview').forEach(btn => {
         const newBtn = btn.cloneNode(true);
         btn.parentNode.replaceChild(newBtn, btn);
-        newBtn.addEventListener('click', function() {
+        newBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
             const productId = this.dataset.id;
-            const productEl = document.querySelector(`.product-item[data-product-id='${productId}']`);
-            const titleText = productEl ? (productEl.querySelector('h3')?.textContent || 'Thông tin sản phẩm') : 'Thông tin sản phẩm';
-            
-            fetch(`/Product/QuickView?id=${productId}`)
-                .then(res => res.text())
-                .then(html => {
-                    const contentEl = document.getElementById('quickViewContent');
-                    contentEl.innerHTML = html || '<p>Lỗi không lấy được chi tiết.</p>';
-
-                    // Sync modal heart with grid heart
-                    const gridHeart = document.querySelector(`.btn-wishlist[data-id='${productId}'] .heart-icon`);
-                    const modalHeart = contentEl.querySelector('.btn-wishlist .heart-icon');
-                    if (gridHeart && modalHeart) {
-                        const active = gridHeart.classList.contains('text-danger');
-                        modalHeart.classList.toggle('text-danger', active);
-                        modalHeart.classList.toggle('text-secondary', !active);
-                    }
-
-                    // Initialize size options inside modal
-                    const sizeGroups = contentEl.querySelectorAll('.size-options');
-                    sizeGroups.forEach(group => {
-                        const options = group.querySelectorAll('.size-option');
-                        options.forEach((opt, idx) => {
-                            opt.addEventListener('click', () => {
-                                options.forEach(o => o.classList.remove('active'));
-                                opt.classList.add('active');
-                            });
-                            if (idx === 0) opt.classList.add('active');
-                        });
-                    });
-
-                    // Bind wishlist button inside modal
-                    const modalWishBtn = contentEl.querySelector('.btn-wishlist');
-                    if (modalWishBtn) {
-                        modalWishBtn.addEventListener('click', function () {
-                            const pid = this.dataset.id;
-                            fetch('/Wishlist/Toggle', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ productId: pid })
-                            }).then(r => r.json()).then(d => {
-                                if (d && d.success === true) {
-                                    setWishlistStateFor(pid, d.isWishlisted);
-                                }
-                            });
-                        });
-                    }
-
-                    // Bind add to cart in modal
-                    const modalAddBtn = contentEl.querySelector('.btn-brand, .btn-add');
-                    if (modalAddBtn) {
-                        modalAddBtn.addEventListener('click', () => {
-                            const modalProductEl = contentEl.querySelector('.product-item');
-                            if (modalProductEl) {
-                                const pid = parseInt(modalProductEl.dataset.productId);
-                                addToCartFromModal(pid);
-                            }
-                        });
-                    }
-
-                    const modal = new bootstrap.Modal(document.getElementById('quickViewModal'));
-                    modal.show();
-                });
+            if (productId) {
+                window.location.href = `/Product/Detail/${productId}`;
+            }
         });
     });
 }
