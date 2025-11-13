@@ -197,7 +197,13 @@ for (int i = 0; i < pad; i++)
             else
             {
                 var firstSchedule = todaySchedules.First();
-                var shiftTimeDisplay = start.Services.ShiftTimeHelper.GetShiftTimeDisplay(firstSchedule.Shift);
+                // SỬA LỖI: Bỏ phương thức cũ, hiển thị giờ làm việc cụ thể
+                var shiftTimeDisplay = firstSchedule.Shift switch
+                {
+                    "Sáng" => "07:30 - 15:30",
+                    "Tối" => "15:00 - 22:30",
+                    _ => "Không xác định"
+                };
 
                 if (hasCheckIn && hasCheckOut)
                 {
