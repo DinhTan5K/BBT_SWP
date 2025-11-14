@@ -59,7 +59,18 @@
                                     <div class="shipping-info">
                                         <p><strong>Người nhận:</strong> @order.ReceiverName</p>
                                         <p><strong>Số điện thoại:</strong> @order.ReceiverPhone</p>
-                                        <p><strong>PTTT:</strong> @order.PaymentMethod</p>
+                                        <p><strong>PTTT:</strong> 
+                                            @{
+                                                var paymentMethodDisplay = string.IsNullOrWhiteSpace(order.PaymentMethod)
+                                                    ? "Không xác định"
+                                                    : (order.PaymentMethod.Trim().ToUpper() == "COD"
+                                                        ? "COD"
+                                                        : (order.PaymentMethod.Trim().ToUpper() == "MOMO"
+                                                            ? "Momo"
+                                                            : order.PaymentMethod));
+                                            }
+                                            @paymentMethodDisplay
+                                        </p>
                                         <p><strong>Địa chỉ:</strong> @order.Address, @order.DetailAddress</p>
                                         @if (!string.IsNullOrEmpty(order.NoteOrder))
                                         {

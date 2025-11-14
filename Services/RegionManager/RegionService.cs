@@ -27,8 +27,7 @@ namespace start.Services
 
         private static DateTime GetVietnamTime()
         {
-            var vnZone = TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time");
-            return TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, vnZone);
+            return DateTime.Now;
         }
 
         // Thêm điều kiện Status == "Đã giao" vào tất cả query
@@ -68,7 +67,14 @@ namespace start.Services
             var branches = await _db.Branches
                 .AsNoTracking()
                 .Where(b => b.RegionID == regionId)
+                .OrderBy(b => b.Name)
                 .ToListAsync();
+
+            // Loại bỏ duplicate theo BranchID (nếu có do lỗi data)
+            branches = branches.GroupBy(b => b.BranchID)
+                .Select(g => g.First())
+                .OrderBy(b => b.Name)
+                .ToList();
 
             var vm = new RegionDashboardViewModel
             {
@@ -153,21 +159,36 @@ namespace start.Services
 
             int regionId = manager.RegionID.Value;
 
-            // Left join Branch -> Employee (manager) via Employee.BranchID
-            var query = from b in _db.Branches.AsNoTracking()
-                        where b.RegionID == regionId
-                        join e in _db.Employees.AsNoTracking() on b.BranchID equals e.BranchID into je
-                        from e in je.DefaultIfEmpty()
-                            // only pick manager row (RoleID == "BM") if present; if e exists but not BM, set null
-                        select new BranchStatus
-                        {
-                            BranchId = b.BranchID,
-                            Name = b.Name,
-                            Address = b.Address,
-                            PhoneNumber = b.Phone,
-                            IsActive = b.IsActive,
-                            ManagerName = (e != null && e.RoleID == "BM") ? e.FullName : null
-                        };
+            // Load branches và managers riêng để tránh duplicate
+            var branches = await _db.Branches
+                .AsNoTracking()
+                .Where(b => b.RegionID == regionId)
+                .ToListAsync();
+
+            // Load tất cả managers (BM) trong region này
+            var branchIds = branches.Select(b => b.BranchID).ToList();
+            var managers = await _db.Employees
+                .AsNoTracking()
+                .Where(e => e.RoleID == "BM" && e.BranchID.HasValue && branchIds.Contains(e.BranchID.Value))
+                .ToListAsync();
+
+            // Tạo dictionary để map BranchID -> ManagerName
+            var managerDict = managers
+                .GroupBy(e => e.BranchID.Value)
+                .ToDictionary(g => g.Key, g => g.First().FullName);
+
+            // Tạo BranchStatus list từ branches
+            var branchStatusList = branches.Select(b => new BranchStatus
+            {
+                BranchId = b.BranchID,
+                Name = b.Name ?? string.Empty,
+                Address = b.Address,
+                PhoneNumber = b.Phone,
+                IsActive = b.IsActive,
+                ManagerName = managerDict.ContainsKey(b.BranchID) ? managerDict[b.BranchID] : null
+            }).ToList();
+
+            var query = branchStatusList.AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(q))
             {
@@ -175,7 +196,12 @@ namespace start.Services
                 query = query.Where(x => (x.Name ?? "").ToLower().Contains(s) || ((x.ManagerName ?? "").ToLower().Contains(s)));
             }
 
-            var list = await query.ToListAsync();
+            var list = query.ToList();
+
+            // Đảm bảo không có duplicate (mặc dù đã filter trong query)
+            list = list.GroupBy(b => b.BranchId)
+                .Select(g => g.First())
+                .ToList();
 
             // Apply filter param (controller may already do this, but keep consistent)
             if (!string.IsNullOrWhiteSpace(filter))
@@ -199,6 +225,64 @@ namespace start.Services
 
             var regionId = regionManager.RegionID.Value;
 
+            // Validate Name không được trống
+            var branchName = model.Name?.Trim() ?? "";
+            if (string.IsNullOrWhiteSpace(branchName))
+                return (false, "Tên chi nhánh không được để trống.");
+
+            // Validate Latitude và Longitude
+            if (model.Latitude.HasValue)
+            {
+                if (model.Latitude.Value < -90m || model.Latitude.Value > 90m)
+                    return (false, "Latitude phải nằm trong khoảng -90 đến 90.");
+            }
+
+            if (model.Longitude.HasValue)
+            {
+                if (model.Longitude.Value < -180m || model.Longitude.Value > 180m)
+                    return (false, "Longitude phải nằm trong khoảng -180 đến 180.");
+            }
+
+            // Kiểm tra duplicate: Tên chi nhánh không được trùng trong cùng region
+            var existingBranch = await _db.Branches
+                .AsNoTracking()
+                .FirstOrDefaultAsync(b => b.RegionID == regionId && 
+                                         b.Name != null && 
+                                         b.Name.Trim().ToLowerInvariant() == branchName.ToLowerInvariant());
+
+            if (existingBranch != null)
+            {
+                return (false, $"Đã tồn tại chi nhánh \"{branchName}\" trong khu vực này.");
+            }
+
+            // Kiểm tra duplicate: Phone number không được trùng (nếu có phone)
+            if (!string.IsNullOrWhiteSpace(model.Phone))
+            {
+                var phone = model.Phone.Trim();
+                var existingPhone = await _db.Branches
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(b => b.Phone != null && 
+                                             b.Phone.Trim() == phone);
+
+                if (existingPhone != null)
+                {
+                    return (false, $"Số điện thoại \"{phone}\" đã được sử dụng bởi chi nhánh khác.");
+                }
+            }
+
+            // Kiểm tra duplicate trong các request đang pending (cùng region, cùng tên)
+            var pendingRequest = await _db.BranchRequests
+                .AsNoTracking()
+                .FirstOrDefaultAsync(br => br.RegionID == regionId && 
+                                          br.Status == RequestStatus.Pending &&
+                                          br.Name != null &&
+                                          br.Name.Trim().ToLowerInvariant() == branchName.ToLowerInvariant());
+
+            if (pendingRequest != null)
+            {
+                return (false, $"Đã có yêu cầu thêm chi nhánh \"{branchName}\" đang chờ duyệt.");
+            }
+
             var req = new BranchRequest
             {
                 RequestType = RequestType.Add,
@@ -206,15 +290,15 @@ namespace start.Services
                 RequestedBy = regionManagerEmployeeId,
                 RequestedAt = DateTime.Now,
                 Status = RequestStatus.Pending,
-                Name = model.Name?.Trim() ?? "",
+                Name = branchName,
                 Address = model.Address?.Trim(),
                 Phone = model.Phone?.Trim(),
                 RegionID = regionId,
-                City = model.City,
+                City = model.City?.Trim(),
                 Latitude = model.Latitude,
                 Longitude = model.Longitude,
-                IsActive = model != null ? model.BranchID == 0 ? true : true : true,
-                Notes = note
+                IsActive = true,
+                Notes = note?.Trim()
             };
 
             try
@@ -283,6 +367,23 @@ namespace start.Services
             if (branch == null) return (false, "Chi nhánh không tồn tại.");
             if (regionManager.RegionID.Value != branch.RegionID) return (false, "Không có quyền.");
 
+            var phone = newPhone.Trim();
+            
+            // Kiểm tra duplicate phone number (nếu phone mới khác phone cũ)
+            if (branch.Phone?.Trim() != phone)
+            {
+                var existingPhone = await _db.Branches
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(b => b.BranchID != branchId && 
+                                             b.Phone != null && 
+                                             b.Phone.Trim() == phone);
+
+                if (existingPhone != null)
+                {
+                    return (false, $"Số điện thoại \"{phone}\" đã được sử dụng bởi chi nhánh khác.");
+                }
+            }
+
             var req = new BranchRequest
             {
                 RequestType = RequestType.Edit,
@@ -292,13 +393,13 @@ namespace start.Services
                 Status = RequestStatus.Pending,
                 Name = branch.Name ?? "",
                 Address = branch.Address,
-                Phone = newPhone, // lưu phone mới proposed
+                Phone = phone, // lưu phone mới proposed
                 RegionID = branch.RegionID,
                 City = branch.City,
                 Latitude = branch.Latitude,
                 Longitude = branch.Longitude,
                 IsActive = branch.IsActive,
-                Notes = note
+                Notes = note?.Trim()
             };
 
             try
@@ -610,8 +711,8 @@ namespace start.Services
                 Address = model.Address?.Trim(),
                 Phone = model.Phone?.Trim(),
                 City = model.City?.Trim(),
-                Latitude = model.Latitude,
-                Longitude = model.Longitude,
+                Latitude = model.Latitude ?? 0m,
+                Longitude = model.Longitude ?? 0m,
                 RegionID = regionId,
                 IsActive = true,
             };
@@ -975,7 +1076,7 @@ namespace start.Services
                     BranchName = g.Key.Name,
                     OrderCount = g.Select(o => o.OrderID).Distinct().Count(),
                     UnitsSold = g.Sum(o => o.OrderDetails.Sum(od => od.Quantity)),
-                    TotalRevenue = g.Sum(o => o.OrderDetails.Sum(od => od.UnitPrice * od.Quantity))
+                    TotalRevenue = g.Sum(o => o.Total) // Sửa: Lấy từ Total của Order thay vì tính UnitPrice * Quantity
                 })
                 .ToListAsync();
 
@@ -1026,7 +1127,7 @@ namespace start.Services
                     CustomerId = g.Key.CustomerID,
                     CustomerName = g.Key.CustomerName,
                     OrderCount = g.Select(o => o.OrderID).Distinct().Count(),
-                    TotalSpent = g.Sum(o => o.OrderDetails.Sum(od => od.UnitPrice * od.Quantity))
+                    TotalSpent = g.Sum(o => o.Total) // Sửa: Lấy từ Total của Order thay vì tính UnitPrice * Quantity
                 })
                 .OrderByDescending(c => c.TotalSpent)
                 .Take(top)
@@ -1053,7 +1154,7 @@ namespace start.Services
                     Year = g.Key.Year,
                     Month = g.Key.Month,
                     Day = g.Key.Day,
-                    Revenue = g.Sum(o => o.OrderDetails.Sum(od => od.UnitPrice * od.Quantity))
+                    Revenue = g.Sum(o => o.Total) // Sửa: Lấy từ Total của Order thay vì tính UnitPrice * Quantity
                 })
                 .OrderBy(x => x.Year).ThenBy(x => x.Month).ThenBy(x => x.Day)
                 .ToListAsync();
@@ -1094,16 +1195,28 @@ namespace start.Services
             }
 
             // Group by date parts + hour
+            // Sửa: Tính Revenue từ Total của Order, Units vẫn tính từ OrderDetails
             var grouped = await baseQuery
-                .GroupBy(x => new { x.o.CreatedAt.Year, x.o.CreatedAt.Month, x.o.CreatedAt.Day, Hour = x.o.CreatedAt.Hour })
+                .GroupBy(x => new { x.o.CreatedAt.Year, x.o.CreatedAt.Month, x.o.CreatedAt.Day, Hour = x.o.CreatedAt.Hour, OrderId = x.o.OrderID })
                 .Select(g => new
                 {
                     Year = g.Key.Year,
                     Month = g.Key.Month,
                     Day = g.Key.Day,
                     Hour = g.Key.Hour,
-                    Units = g.Sum(y => y.od.Quantity),
-                    Revenue = g.Sum(y => y.od.Quantity * y.od.UnitPrice)
+                    OrderId = g.Key.OrderId,
+                    Units = g.Sum(y => y.od.Quantity), // Units từ OrderDetails
+                    OrderTotal = g.First().o.Total // Revenue lấy từ Total của Order
+                })
+                .GroupBy(x => new { x.Year, x.Month, x.Day, x.Hour })
+                .Select(g => new
+                {
+                    Year = g.Key.Year,
+                    Month = g.Key.Month,
+                    Day = g.Key.Day,
+                    Hour = g.Key.Hour,
+                    Units = g.Sum(x => x.Units), // Tổng Units của tất cả OrderDetails
+                    Revenue = g.Sum(x => x.OrderTotal) // Tổng Total của các Order (không tính trùng)
                 })
                 .OrderBy(x => x.Year).ThenBy(x => x.Month).ThenBy(x => x.Day).ThenBy(x => x.Hour)
                 .ToListAsync();

@@ -21,6 +21,9 @@
     <PackageReference Include="PuppeteerSharp" Version="20.2.4" />
     <PackageReference Include="RestSharp" Version="112.1.0" />
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="9.0.10" />
+    <PackageReference Include="System.Drawing.Common" Version="9.0.0" />
+    <PackageReference Include="System.Net.Http.Json" Version="9.0.10" />
+    <PackageReference Include="System.Text.Json" Version="9.0.10" />
     <PackageReference Include="CloudinaryDotNet" Version="1.22.0" />
   </ItemGroup>
 
@@ -28,6 +31,7 @@
     <Folder Include="DTOs\" />
     <Folder Include="Repository\" />
     <Folder Include="Services\" />
+    <Folder Include="Services\HumanResources\" />
     <Folder Include="Temp\" />
   </ItemGroup>
 

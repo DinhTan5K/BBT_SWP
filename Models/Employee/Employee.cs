@@ -80,6 +80,8 @@ namespace start.Models
         [Column("AvatarUrl")]
         [StringLength(300)]
         public string? AvatarUrl { get; set; }
+
+       
         public bool IsHashed { get; set; } = false;
 
         [ForeignKey(nameof(RoleID))]
@@ -97,5 +99,8 @@ namespace start.Models
 
         [InverseProperty(nameof(SalaryAdjustment.Employee))]
         public ICollection<SalaryAdjustment> SalaryAdjustments { get; set; } = new List<SalaryAdjustment>();
+
+        [InverseProperty(nameof(Attendance.Employee))]
+        public ICollection<Attendance> Attendances { get; set; } = new List<Attendance>();
     }
 }

@@ -31,8 +31,8 @@ namespace start.Services
             security = new AdminSecurity
             {
                 EmployeeID = employeeId,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.Now,
+                UpdatedAt = DateTime.Now
             };
 
             _db.AdminSecurities.Add(security);
@@ -59,14 +59,14 @@ namespace start.Services
             }
 
             var security = await GetOrCreateAsync(admin.EmployeeID!);
-            var now = DateTime.UtcNow;
+            var now = DateTime.Now;
 
             if (security.LockedUntil.HasValue && security.LockedUntil.Value > now)
             {
                 return new AdminOtpResult
                 {
                     Succeeded = false,
-                    Message = $"Tài khoản đang bị khóa đăng nhập tới {security.LockedUntil.Value.ToLocalTime():HH:mm dd/MM}."
+                    Message = $"Tài khoản đang bị khóa đăng nhập tới {security.LockedUntil.Value:HH:mm dd/MM}."
                 };
             }
 
@@ -107,7 +107,7 @@ namespace start.Services
         public async Task<AdminOtpVerificationResult> VerifyOtpAsync(string employeeId, string otp)
         {
             var security = await GetOrCreateAsync(employeeId);
-            var now = DateTime.UtcNow;
+            var now = DateTime.Now;
 
             if (security.LockedUntil.HasValue && security.LockedUntil.Value > now)
             {
@@ -115,7 +115,7 @@ namespace start.Services
                 {
                     Succeeded = false,
                     IsLocked = true,
-                    Message = $"Tài khoản đang bị khóa tới {security.LockedUntil.Value.ToLocalTime():HH:mm dd/MM}."
+                    Message = $"Tài khoản đang bị khóa tới {security.LockedUntil.Value:HH:mm dd/MM}."
                 };
             }
 
@@ -158,7 +158,7 @@ namespace start.Services
                     {
                         Succeeded = false,
                         IsLocked = true,
-                        Message = $"Bạn đã nhập sai quá nhiều lần. Tài khoản bị khóa tới {security.LockedUntil.Value.ToLocalTime():HH:mm dd/MM}."
+                        Message = $"Bạn đã nhập sai quá nhiều lần. Tài khoản bị khóa tới {security.LockedUntil.Value:HH:mm dd/MM}."
                     };
                 }
 
@@ -188,7 +188,7 @@ namespace start.Services
             var security = await GetOrCreateAsync(employeeId);
             security.IsTwoFactorEnabled = true;
             security.TwoFactorType ??= "Email";
-            security.UpdatedAt = DateTime.UtcNow;
+            security.UpdatedAt = DateTime.Now;
             await _db.SaveChangesAsync();
         }
 
@@ -203,7 +203,7 @@ namespace start.Services
             security.LastOtpExpiredAt = null;
             security.FailedCount = 0;
             security.LockedUntil = null;
-            security.UpdatedAt = DateTime.UtcNow;
+            security.UpdatedAt = DateTime.Now;
             await _db.SaveChangesAsync();
         }
 
@@ -214,7 +214,7 @@ namespace start.Services
             security.LastOtpExpiredAt = null;
             security.FailedCount = 0;
             security.LockedUntil = null;
-            security.UpdatedAt = DateTime.UtcNow;
+            security.UpdatedAt = DateTime.Now;
             await _db.SaveChangesAsync();
         }
 

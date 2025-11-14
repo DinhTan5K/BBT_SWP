@@ -39,17 +39,9 @@ namespace start.Controllers
         #region Login
 
         [HttpGet]
-        public IActionResult Login()
-        {
-            // Kiểm tra nếu có lỗi từ Google OAuth
-            if (Request.Query.ContainsKey("error") && Request.Query["error"] == "google_connection_failed")
-            {
-                ViewBag.ErrorMessage = "Không thể kết nối với Google. Vui lòng kiểm tra kết nối internet và thử lại.";
-            }
-            return View();
-        }
-
-                [HttpPost]
+        public IActionResult Login() => View();
+        
+  [HttpPost]
     public async Task<IActionResult> Login(string loginId, string password)
     {
         if (string.IsNullOrWhiteSpace(loginId) || string.IsNullOrWhiteSpace(password))
@@ -163,8 +155,18 @@ namespace start.Controllers
             var email = emp.Email ?? string.Empty;
             var roleId = emp.RoleID ?? "EM";
 
-            // Xác định scheme dựa trên role
-            var authScheme = roleId == "AD" ? "AdminScheme" : "EmployeeScheme";
+            // Xác định scheme dựa trên role - mỗi role có scheme riêng
+            var authScheme = roleId switch
+            {
+                "AD" => "AdminScheme",
+                "BM" => "BranchManagerScheme",
+                "EM" => "EmployeeScheme",
+                "MK" => "MarketingScheme",
+                "RM" => "RegionManagerScheme",
+                "SL" => "ShiftLeaderScheme",
+                "SP" => "ShipperScheme",
+                _ => "EmployeeScheme" // Fallback cho các role khác
+            };
 
             var claims = new List<Claim>
             {
@@ -182,6 +184,15 @@ namespace start.Controllers
 
             HttpContext.Session.SetString("EmployeeID", employeeId);
             HttpContext.Session.SetString("EmployeeName", fullName);
+            // Chỉ set email vào session nếu có giá trị
+            if (!string.IsNullOrWhiteSpace(email))
+            {
+                HttpContext.Session.SetString("Email", email);
+            }
+            else
+            {
+                HttpContext.Session.Remove("Email");
+            }
             HttpContext.Session.SetString("Role", roleId);
             HttpContext.Session.SetString("RoleID", roleId);
 
@@ -382,7 +393,7 @@ namespace start.Controllers
                 return View(model);
             }
         }
-
+        
         #endregion
 
         #region Google Login
@@ -428,17 +439,19 @@ namespace start.Controllers
 
             // Sign in với CustomerScheme để tạo authentication cookie
             await HttpContext.SignInAsync("CustomerScheme", principal);
-            
+
             // Set Session để tương thích với code cũ
             HttpContext.Session.SetInt32("CustomerID", user.CustomerID);
             HttpContext.Session.SetString("CustomerName", user.Name ?? "");
             HttpContext.Session.SetString("Role", "Customer");
-            
+
             // Đảm bảo session được commit trước khi redirect
             await HttpContext.Session.CommitAsync();
 
             return RedirectToAction("Index", "Home");
         }
+    
+
 
         #endregion
 
@@ -447,91 +460,76 @@ namespace start.Controllers
         [HttpGet]
         public async Task<IActionResult> Logout()
         {
-            // Xác định scheme hiện tại của user dựa trên User.Identity
-            string? currentScheme = null;
-            
+            // Danh sách tất cả các schemes để kiểm tra
+            var allSchemes = new[]
+            {
+                "AdminScheme",
+                "BranchManagerScheme",
+                "EmployeeScheme",
+                "MarketingScheme",
+                "RegionManagerScheme",
+                "ShiftLeaderScheme",
+                "ShipperScheme",
+                "CustomerScheme"
+            };
+
+            // Danh sách các schemes đang active (có thể có nhiều nếu user đăng nhập nhiều role)
+            var activeSchemes = new List<string>();
+
             // Kiểm tra User.Identity để xác định scheme đang active
             if (User?.Identity?.IsAuthenticated == true)
             {
-                // Lấy authentication type từ User.Identity
                 var authType = User.Identity.AuthenticationType;
-                
-                if (authType == "AdminScheme")
+                if (!string.IsNullOrEmpty(authType) && allSchemes.Contains(authType))
                 {
-                    currentScheme = "AdminScheme";
-                    // Clear session keys của admin
-                    HttpContext.Session.Remove("EmployeeID");
-                    HttpContext.Session.Remove("EmployeeName");
-                    HttpContext.Session.Remove("Role");
-                    HttpContext.Session.Remove("RoleID");
-                    HttpContext.Session.Remove("BranchId");
+                    activeSchemes.Add(authType);
                 }
-                else if (authType == "EmployeeScheme")
+            }
+
+            // Kiểm tra từng scheme để tìm tất cả schemes đang active (fallback)
+            foreach (var scheme in allSchemes)
+            {
+                var result = await HttpContext.AuthenticateAsync(scheme);
+                if (result?.Succeeded == true && !activeSchemes.Contains(scheme))
                 {
-                    currentScheme = "EmployeeScheme";
-                    // Clear session keys của employee
-                    HttpContext.Session.Remove("EmployeeID");
-                    HttpContext.Session.Remove("EmployeeName");
-                    HttpContext.Session.Remove("Role");
-                    HttpContext.Session.Remove("RoleID");
-                    HttpContext.Session.Remove("BranchId");
+                    activeSchemes.Add(scheme);
                 }
-                else if (authType == "CustomerScheme")
+            }
+
+            // Clear session keys dựa trên scheme
+            foreach (var scheme in activeSchemes)
+            {
+                if (scheme == "CustomerScheme")
                 {
-                    currentScheme = "CustomerScheme";
-                    // Clear session keys của customer
                     HttpContext.Session.Remove("CustomerID");
                     HttpContext.Session.Remove("CustomerName");
                     HttpContext.Session.Remove("Role");
                 }
-            }
-            
-            // Nếu không tìm thấy từ User.Identity, thử kiểm tra từng scheme
-            if (string.IsNullOrEmpty(currentScheme))
-            {
-                // Kiểm tra từng scheme để tìm scheme đang active (fallback)
-                var adminResult = await HttpContext.AuthenticateAsync("AdminScheme");
-                if (adminResult?.Succeeded == true)
+                else
                 {
-                    currentScheme = "AdminScheme";
+                    // Tất cả employee schemes dùng chung session keys
                     HttpContext.Session.Remove("EmployeeID");
                     HttpContext.Session.Remove("EmployeeName");
                     HttpContext.Session.Remove("Role");
                     HttpContext.Session.Remove("RoleID");
                     HttpContext.Session.Remove("BranchId");
-                }
-                else
-                {
-                    var employeeResult = await HttpContext.AuthenticateAsync("EmployeeScheme");
-                    if (employeeResult?.Succeeded == true)
-                    {
-                        currentScheme = "EmployeeScheme";
-                        HttpContext.Session.Remove("EmployeeID");
-                        HttpContext.Session.Remove("EmployeeName");
-                        HttpContext.Session.Remove("Role");
-                        HttpContext.Session.Remove("RoleID");
-                        HttpContext.Session.Remove("BranchId");
-                    }
-                    else
-                    {
-                        var customerResult = await HttpContext.AuthenticateAsync("CustomerScheme");
-                        if (customerResult?.Succeeded == true)
-                        {
-                            currentScheme = "CustomerScheme";
-                            HttpContext.Session.Remove("CustomerID");
-                            HttpContext.Session.Remove("CustomerName");
-                            HttpContext.Session.Remove("Role");
-                        }
-                    }
+                    HttpContext.Session.Remove("RegionID");
+                    HttpContext.Session.Remove("RegionName");
                 }
             }
-            
-            // Chỉ sign out scheme của user hiện tại, KHÔNG sign out tất cả
-            if (!string.IsNullOrEmpty(currentScheme))
+
+            // Sign out tất cả các schemes đang active (cho phép logout nhiều role cùng lúc nếu cần)
+            foreach (var scheme in activeSchemes)
             {
-                await HttpContext.SignOutAsync(currentScheme);
+                await HttpContext.SignOutAsync(scheme);
             }
-            
+
+            // Nếu không có scheme nào active, vẫn clear session để đảm bảo
+            if (activeSchemes.Count == 0)
+            {
+                HttpContext.Session.Clear();
+            }
+
             return RedirectToAction("Index", "Home");
         }
 
@@ -706,8 +704,8 @@ namespace start.Controllers
         }
 
         #endregion
-
-        private static string MaskEmail(string? email)
+    
+    private static string MaskEmail(string? email)
         {
             if (string.IsNullOrWhiteSpace(email))
                 return "(chưa cập nhật)";

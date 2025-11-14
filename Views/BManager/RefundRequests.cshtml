@@ -1,0 +1,140 @@
+@model List<start.Models.Order>
+@{
+    Layout = "_BManagerLayout";
+    ViewData["Title"] = "Refund Requests";
+    }
+    
+<div class="container-fluid mt-4">
+    <h2 class="mb-3">Danh sách Yêu cầu Hoàn tiền</h2>
+
+    @* Hiển thị thông báo Success/Error *@
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i>
+            <strong>Thành công!</strong> @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            <strong>Lỗi!</strong> @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (Model == null || !Model.Any())
+    {
+        <div class="alert alert-info" role="alert">
+            <i class="fas fa-info-circle me-2"></i> Hiện tại không có yêu cầu hoàn tiền nào đang chờ xử lý.
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Mã đơn hàng</th>
+                        <th>Khách hàng</th>
+                        <th>Tổng tiền</th>
+                        <th>Trạng thái</th>
+                        <th>Ngày yêu cầu</th>
+                        <th>Hành động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>
+                                <strong>@item.OrderCode</strong>
+                            </td>
+                            <td>@(item.Customer?.Name ?? "N/A")</td>
+                            <td><strong>@item.Total.ToString("N0") VNĐ</strong></td>
+                            <td>
+                                @{
+                                    // Thay đổi màu sắc badge tùy theo trạng thái
+                                    string badgeClass = item.Status switch
+                                    {
+                                        "Pending Refund" => "bg-warning",
+                                        "Refunded" => "bg-success",
+                                        "Cancelled" => "bg-danger",
+                                        _ => "bg-secondary",
+                                    };
+                                }
+                                <span class="badge @badgeClass">@item.Status</span>
+                            </td>
+                            
+                            <td>@(item.RefundAt?.ToString("dd/MM/yyyy HH:mm") ?? "N/A")</td>
+                            
+                            <td>
+                                <div class="btn-group" role="group">
+                                    @* Nút Xem chi tiết MỚI *@
+                                    <button type="button" class="btn btn-sm btn-info btn-view-details" 
+                                            data-bs-toggle="modal" data-bs-target="#orderDetailsModal"
+                                            data-order-id="@item.OrderID">
+                                        <i class="fas fa-eye me-1"></i> Chi tiết
+                                    </button>
+
+                                    @* Nút Duyệt Hoàn tiền *@
+                                    <form asp-action="ApproveRefund" asp-controller="BManager" asp-route-orderId="@item.OrderID" method="post" class="me-2 d-inline">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-sm btn-success"
+                                                onclick="return confirm('Bạn có chắc chắn muốn DUYỆT hoàn tiền cho đơn hàng @item.OrderCode không?')">
+                                            <i class="fas fa-check-circle me-1"></i> Duyệt
+                                        </button>
+                                    </form>
+
+                                    @* Nút Từ chối Hoàn tiền (Giả định có action RejectRefund) *@
+                                    <form asp-action="RejectRefund" asp-controller="BManager" asp-route-orderId="@item.OrderID" method="post" class="d-inline">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-sm btn-danger"
+                                                onclick="return confirm('Bạn có chắc chắn muốn TỪ CHỐI yêu cầu hoàn tiền cho đơn hàng @item.OrderCode không?')">
+                                            <i class="fas fa-times-circle me-1"></i> Từ chối
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@* MODAL HIỂN THỊ CHI TIẾT ĐƠN HÀNG *@
+<div class="modal fade" id="orderDetailsModal" tabindex="-1" aria-labelledby="orderDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="orderDetailsModalLabel">Chi tiết Đơn hàng</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="orderDetailsModalBody">
+                <div class="text-center p-4"><div class="spinner-border" role="status"></div></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(function() {
+            $('.btn-view-details').on('click', function() {
+                var orderId = $(this).data('order-id');
+                var modalBody = $('#orderDetailsModalBody');
+                modalBody.html('<div class="text-center p-4"><div class="spinner-border" role="status"></div></div>');
+                
+                modalBody.load('@Url.Action("GetOrderDetailsForRefund")?orderId=' + orderId);
+            });
+        });
+    </script>
+    }

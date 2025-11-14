@@ -6,6 +6,13 @@ using start.Models;
 using start.Services.Interfaces;
 public class OrderService : IOrderService
 {
+    // Define constants for order statuses to avoid magic strings
+    private const string StatusPendingConfirmation = "Chờ xác nhận";
+    private const string StatusConfirmed = "Đã xác nhận";
+    private const string StatusShipping = "Đang giao";
+    private const string StatusDelivered = "Đã giao";
+    private const string StatusCancelled = "Đã hủy";
+
     private readonly ApplicationDbContext _context;
     private readonly ILogger<OrderService> _logger;
     private readonly IDiscountService _discountService;
@@ -67,7 +74,11 @@ public class OrderService : IOrderService
                 NoteOrder = form.Note,
                 ReceiverName = form.Name,
                 ReceiverPhone = form.Phone,
-                PaymentMethod = string.IsNullOrWhiteSpace(form.Payment) ? null : form.Payment.Trim(),
+                PaymentMethod = string.IsNullOrWhiteSpace(form.Payment) 
+                    ? null 
+                    : form.Payment.Trim().Equals("Momo", StringComparison.OrdinalIgnoreCase) 
+                        ? "MOMO" 
+                        : form.Payment.Trim().ToUpper(),
                 ShippingFee = form.ShippingFee,
                 PromoCode = string.IsNullOrWhiteSpace(form.PromoCode) ? null : form.PromoCode.Trim().ToUpper(),
                 Total = 0 // Sẽ được tính toán lại
@@ -148,7 +159,7 @@ public class OrderService : IOrderService
                 order.ShippingFee,
                 order.Total);
 
-            // 3.5. Lưu DiscountUsage vào database cho TẤT CẢ các mã đã apply thành công (bao gồm cả shipping codes)
+            // 3.5. Lưu DiscountUsage vào database cho TẤT CẢ các mã đã apply thành công (bao gồm cả FREESHIP và shipping codes)
             if (calculationResult.SuccessfullyAppliedCodes != null && calculationResult.SuccessfullyAppliedCodes.Any())
             {
                 // Lấy thông tin discount để lưu vào DiscountUsage
@@ -160,15 +171,40 @@ public class OrderService : IOrderService
                 {
                     try
                     {
-                        _logger.LogInformation("[OrderService] Attempting to record DiscountUsage for code: {Code}, UserId: {UserId}, Type: {Type}", 
-                            discount.Code, customerId, discount.Type);
-                        await _discountService.ApplyDiscountAsync(customerId.ToString(), discount.Code);
-                        _logger.LogInformation("[OrderService] ✅ Successfully recorded DiscountUsage for code: {Code}", discount.Code);
+                        // Kiểm tra xem user đã dùng mã này chưa (tránh duplicate)
+                        var existingUsage = await _context.DiscountUsages
+                            .FirstOrDefaultAsync(du => du.UserId == customerId.ToString() && du.DiscountId == discount.Id);
+                        
+                        if (existingUsage == null)
+                        {
+                            // Lưu DiscountUsage
+                            var discountUsage = new DiscountUsage
+                            {
+                                DiscountId = discount.Id,
+                                UserId = customerId.ToString(),
+                                UsedAt = DateTime.Now
+                            };
+                            _context.DiscountUsages.Add(discountUsage);
+                            _logger.LogInformation("[OrderService] Added DiscountUsage for code: {Code}, UserId: {UserId}, Type: {Type}", 
+                                discount.Code, customerId, discount.Type);
+
+                            // Giảm UsageLimit nếu có
+                            if (discount.UsageLimit.HasValue && discount.UsageLimit.Value > 0)
+                            {
+                                discount.UsageLimit = discount.UsageLimit.Value - 1;
+                                _logger.LogInformation("[OrderService] Decreased UsageLimit for code: {Code}, New Limit: {Limit}", 
+                                    discount.Code, discount.UsageLimit.Value);
+                            }
+                        }
+                        else
+                        {
+                            _logger.LogWarning("[OrderService] DiscountUsage already exists for code: {Code}, UserId: {UserId}", 
+                                discount.Code, customerId);
+                        }
                     }
                     catch (Exception ex)
                     {
                         // Log lỗi nhưng không fail order creation nếu đã tính toán discount thành công
-                        // Vì có thể user đã dùng mã này rồi nhưng vẫn cho phép tính toán (có thể do race condition)
                         _logger.LogWarning(ex, "[OrderService] ⚠️ Failed to record DiscountUsage for code: {Code}. Error: {Error}", 
                             discount.Code, ex.Message);
                     }
@@ -387,6 +423,19 @@ public class OrderService : IOrderService
             .Where(d => d.IsActive && now >= d.StartAt && now <= d.EndAt)
             .ToList();
 
+        // 🔹 KIỂM TRA USAGE LIMIT = 0 (hết lượt sử dụng)
+        var expiredDiscounts = validDiscounts
+            .Where(d => d.UsageLimit.HasValue && d.UsageLimit.Value <= 0)
+            .ToList();
+        
+        if (expiredDiscounts.Any())
+        {
+            var firstExpiredCode = expiredDiscounts.First().Code;
+            result.ErrorMessage = $"Mã '{firstExpiredCode}' đã hết lượt sử dụng.";
+            result.InvalidCode = firstExpiredCode;
+            return result;
+        }
+
         var validDiscountCodes = validDiscounts.Select(d => d.Code).ToList();
         var firstInvalid = distinctCodes.FirstOrDefault(c => !validDiscountCodes.Contains(c));
 
@@ -556,33 +605,33 @@ public class OrderService : IOrderService
     }
 
     public async Task<object?> GetOrderByCodeAsync(string orderCode)
-{
-    var order = await _context.Orders
-        .Where(o => o.OrderCode == orderCode)
-        .Select(o => new
-        {
-            o.OrderID,
-            o.CustomerID,
-            o.CreatedAt,
-            o.OrderCode,
-            o.Status,
-            o.Total,
-            o.DetailAddress,
-            o.NoteOrder,
-            o.ShippingFee,
-            o.PromoCode,
-            o.Address,
-            o.ReceiverName,
-            o.ReceiverPhone,
-            o.PaymentMethod,
-            o.TransId,
-            o.CancelledAt,
-            o.CancelReason
-        })
-        .FirstOrDefaultAsync();
+    {
+        var order = await _context.Orders
+            .Where(o => o.OrderCode == orderCode)
+            .Select(o => new
+            {
+                o.OrderID,
+                o.CustomerID,
+                o.CreatedAt,
+                o.OrderCode,
+                o.Status,
+                o.Total,
+                o.DetailAddress,
+                o.NoteOrder,
+                o.ShippingFee,
+                o.PromoCode,
+                o.Address,
+                o.ReceiverName,
+                o.ReceiverPhone,
+                o.PaymentMethod,
+                o.TransId,
+                o.CancelledAt,
+                o.CancelReason
+            })
+            .FirstOrDefaultAsync();
 
-    return order;
-}
+        return order;
+    }
 
     public async Task<(bool success, string message)> CancelByCustomerAsync(int orderId, int customerId, string? reason)
     {
@@ -677,12 +726,47 @@ public class OrderService : IOrderService
     }
 
     public async Task UpdateTransIdAsync(int orderId, string transId)
-{
-    var order = await _context.Orders.FindAsync(orderId);
-    if (order == null) return;
+    {
+        var order = await _context.Orders.FindAsync(orderId);
+        if (order == null) return;
 
-    order.TransId = transId;
-    await _context.SaveChangesAsync();
-}
+        order.TransId = transId;
+        await _context.SaveChangesAsync();
+    }
 
+    public async Task<(bool Success, string Message)> MarkOrderAsDelivered(int orderId)
+    {
+        // Hợp nhất logic: Gọi phương thức UpdateOrderStatusAsync để đảm bảo tính nhất quán.
+        // Phương thức này sẽ luôn cập nhật `UpdatedAt` khi thay đổi trạng thái.
+        // Điều này giải quyết vấn đề `UpdatedAt` bị null nếu trạng thái trước đó không hợp lệ.
+        return await UpdateOrderStatusAsync(orderId, StatusDelivered);
+    }
+
+    public async Task<(bool Success, string Message)> UpdateOrderStatusAsync(int orderId, string newStatus, string? shipperId = null)
+    {
+        var order = await _context.Orders.FindAsync(orderId);
+        if (order == null)
+        {
+            return (false, "Không tìm thấy đơn hàng.");
+        }
+
+        // Gán trạng thái mới
+        order.Status = newStatus;
+        order.UpdatedAt = DateTime.Now; // Luôn cập nhật thời gian thay đổi trạng thái
+
+        // Nếu trạng thái là "Đang giao", gán ShipperId
+        if (newStatus == StatusShipping && !string.IsNullOrEmpty(shipperId))
+        {
+            order.ShipperId = shipperId;
+        }
+
+        // Nếu trạng thái là "Đã giao", đảm bảo có thời gian cập nhật
+        if (newStatus == StatusDelivered)
+        {
+            _logger.LogInformation("Order {OrderId} was marked as DELIVERED at {Timestamp}", orderId, order.UpdatedAt);
+        }
+
+        await _context.SaveChangesAsync();
+        return (true, $"Cập nhật trạng thái đơn hàng thành '{newStatus}' thành công.");
+    }
 }

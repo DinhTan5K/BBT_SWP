@@ -35,89 +35,89 @@
                 currency: "VND",
             });
         }
-/**
- * Xây dựng thanh theo dõi tiến trình đơn hàng dựa trên trạng thái.
- * @@param {string} status - Trạng thái hiện tại của đơn hàng.
- * @@returns {string} Chuỗi HTML của thanh theo dõi tiến trình.
- */
-function buildProgressTracker(status) {
-    // 1. Cấu hình tập trung cho tất cả các bước (thêm "Chờ hoàn tiền")
-    const stepConfig = {
-        "Chờ xác nhận": { icon: "fa-hourglass-half" },
-        "Đã xác nhận": { icon: "fa-check-circle" },
-        "Đang giao": { icon: "fa-shipping-fast" },
-        "Đã giao": { icon: "fa-box-open" },
-        "Đã hủy": { icon: "fa-times-circle", stateClass: "failure" },
-        // TRẠNG THÁI MỚI
-        "Chờ hoàn tiền": { icon: "fa-history", stateClass: "pending-refund" }, 
-        "Đã hoàn tiền": { icon: "fa-undo", stateClass: "special" }
-    };
+        /**
+         * Xây dựng thanh theo dõi tiến trình đơn hàng dựa trên trạng thái.
+         * @@param {string} status - Trạng thái hiện tại của đơn hàng.
+         * @@returns {string} Chuỗi HTML của thanh theo dõi tiến trình.
+         */
+        function buildProgressTracker(status) {
+            // 1. Cấu hình tập trung cho tất cả các bước (thêm "Chờ hoàn tiền")
+            const stepConfig = {
+                "Chờ xác nhận": { icon: "fa-hourglass-half" },
+                "Đã xác nhận": { icon: "fa-check-circle" },
+                "Đang giao": { icon: "fa-shipping-fast" },
+                "Đã giao": { icon: "fa-box-open" },
+                "Đã hủy": { icon: "fa-times-circle", stateClass: "failure" },
+                // TRẠNG THÁI MỚI
+                "Chờ hoàn tiền": { icon: "fa-history", stateClass: "pending-refund" },
+                "Đã hoàn tiền": { icon: "fa-undo", stateClass: "special" }
+            };
 
-    // 2. Định nghĩa các luồng xử lý
-    const successFlow = ["Chờ xác nhận", "Đã xác nhận", "Đang giao", "Đã giao"];
-    // LUỒNG MỚI: Luồng hoàn tiền sẽ đi qua bước "Đã hủy"
-    const refundFlow = ["Chờ xác nhận", "Đã hủy", "Chờ hoàn tiền", "Đã hoàn tiền"];
-    
-    let stepsToDisplay;
+            // 2. Định nghĩa các luồng xử lý
+            const successFlow = ["Chờ xác nhận", "Đã xác nhận", "Đang giao", "Đã giao"];
+            // LUỒNG MỚI: Luồng hoàn tiền sẽ đi qua bước "Đã hủy"
+            const refundFlow = ["Chờ xác nhận", "Đã hủy", "Chờ hoàn tiền", "Đã hoàn tiền"];
 
-    // 3. Quyết định luồng nào sẽ được hiển thị (LOGIC MỚI)
-    switch (status) {
-        // Trường hợp chỉ hủy đơn, không có hoàn tiền
-        case "Đã hủy":
-            stepsToDisplay = ["Chờ xác nhận", "Đã hủy"];
-            break;
+            let stepsToDisplay;
 
-        // Cả hai trạng thái này đều thuộc cùng một luồng hiển thị
-        case "Chờ hoàn tiền":
-        case "Đã hoàn tiền":
-            stepsToDisplay = refundFlow;
-            break;
-            
-        // Mặc định là luồng thành công
-        default:
-            stepsToDisplay = successFlow;
-            break;
-    }
+            // 3. Quyết định luồng nào sẽ được hiển thị (LOGIC MỚI)
+            switch (status) {
+                // Trường hợp chỉ hủy đơn, không có hoàn tiền
+                case "Đã hủy":
+                    stepsToDisplay = ["Chờ xác nhận", "Đã hủy"];
+                    break;
 
-    const activeIndex = stepsToDisplay.indexOf(status);
+                // Cả hai trạng thái này đều thuộc cùng một luồng hiển thị
+                case "Chờ hoàn tiền":
+                case "Đã hoàn tiền":
+                    stepsToDisplay = refundFlow;
+                    break;
 
-    if (activeIndex === -1) {
-        console.error("Trạng thái không hợp lệ hoặc không nằm trong luồng xử lý:", status);
-        return '<div class="error-message">Trạng thái đơn hàng không hợp lệ.</div>';
-    }
+                // Mặc định là luồng thành công
+                default:
+                    stepsToDisplay = successFlow;
+                    break;
+            }
 
-    // 4. Xây dựng HTML (Không thay đổi)
-    let html = '<ul class="progress-tracker">';
-    stepsToDisplay.forEach((step, index) => {
-        const config = stepConfig[step];
-        let liClass = 'progress-step';
+            const activeIndex = stepsToDisplay.indexOf(status);
 
-        if (index < activeIndex) {
-            liClass += ' done';
-        } else if (index === activeIndex) {
-            liClass += ' active';
+            if (activeIndex === -1) {
+                console.error("Trạng thái không hợp lệ hoặc không nằm trong luồng xử lý:", status);
+                return '<div class="error-message">Trạng thái đơn hàng không hợp lệ.</div>';
+            }
+
+            // 4. Xây dựng HTML (Không thay đổi)
+            let html = '<ul class="progress-tracker">';
+            stepsToDisplay.forEach((step, index) => {
+                const config = stepConfig[step];
+                let liClass = 'progress-step';
+
+                if (index < activeIndex) {
+                    liClass += ' done';
+                } else if (index === activeIndex) {
+                    liClass += ' active';
+                }
+
+                if (config.stateClass) {
+                    liClass += ` ${config.stateClass}`;
+                }
+
+                // Sửa lỗi nhỏ: Cần kiểm tra config tồn tại trước khi truy cập
+                const iconClass = config ? config.icon : 'fa-question-circle';
+
+                html += `
+                <li class="${liClass}">
+                    <div class="progress-step-icon">
+                        <i class="fas ${iconClass}"></i>
+                    </div>
+                    <div class="progress-step-label">${step}</div>
+                </li>
+            `;
+            });
+            html += '</ul>';
+
+            return html;
         }
-
-        if (config.stateClass) {
-            liClass += ` ${config.stateClass}`;
-        }
-        
-        // Sửa lỗi nhỏ: Cần kiểm tra config tồn tại trước khi truy cập
-        const iconClass = config ? config.icon : 'fa-question-circle'; 
-
-        html += `
-            <li class="${liClass}">
-                <div class="progress-step-icon">
-                    <i class="fas ${iconClass}"></i>
-                </div>
-                <div class="progress-step-label">${step}</div>
-            </li>
-        `;
-    });
-    html += '</ul>';
-
-    return html;
-}
         async function trackOrder() {
             const orderCodeInput = document.getElementById("orderCode");
             let orderCode = orderCodeInput.value.trim();
@@ -158,88 +158,104 @@ function buildProgressTracker(status) {
                     const progressTrackerHTML = buildProgressTracker(order.status);
 
                     const isDelivery = order.address && !order.address.startsWith("Nhận tại:");
+                    
+                    // Format PaymentMethod function
+                    const formatPaymentMethod = (pm) => {
+                        if (!pm) return 'Không xác định';
+                        const pmUpper = pm.toUpperCase();
+                        if (pmUpper === 'COD') return 'COD';
+                        if (pmUpper === 'MOMO') return 'Momo';
+                        return pm;
+                    };
+                    
                     const deliveryInfo = isDelivery ? `
-                                                <div class="info-row">
-                                                    <i class="fas fa-map-marker-alt"></i>
-                                                    <div>
-                                                        <span>Địa chỉ nhận hàng: </span>
-                                                        <p>${order.address}, ${order.detailAddress || ''}</p>
-                                                        <span> Địa chỉ chi tiết: </span>
-                                                         <p>${order.detailAddress}</p>
+                                                    <div class="info-row">
+                                                        <i class="fas fa-map-marker-alt"></i>
+                                                        <div>
+                                                            <span>Địa chỉ nhận hàng: </span>
+                                                            <p>${order.address}, ${order.detailAddress || ''}</p>
+                                                            <span> Địa chỉ chi tiết: </span>
+                                                             <p>${order.detailAddress}</p>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                                <div class="info-row">
-                                                    <i class="fas fa-credit-card"></i>
-                                                    <div>
-                                                        <span>Thanh toán</span>
-                                                        <p>${order.paymentMethod || 'Khi nhận hàng (COD)'}</p>
+                                                ` : `
+                                                    <div class="info-row">
+                                                        <i class="fas fa-store"></i>
+                                                        <div>
+                                                            <span>Nhận tại</span>
+                                                            <p>${order.address}</p>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            ` : `
-                                                <div class="info-row">
-                                                    <i class="fas fa-store"></i>
-                                                    <div>
-                                                        <p>${order.address}</p>
+                                                `;
+                                                
+                    // PaymentMethod info row - hiển thị cho cả delivery và pickup
+                    const paymentInfo = `
+                                                    <div class="info-row">
+                                                        <i class="fas fa-credit-card"></i>
+                                                        <div>
+                                                            <span>Thanh toán</span>
+                                                            <p>${formatPaymentMethod(order.paymentMethod)}</p>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            `;
+                                                `;
 
                     resultDiv.innerHTML = `
-                                                <div class="order-card">
-                                                    <div class="card-header">
-                                                        <h3>Mã đơn hàng: #${order.orderCode}</h3>
-                                                        <p>Đặt lúc: ${new Date(order.createdAt).toLocaleString("vi-VN")}</p>
-                                                    </div>
-                                                    ${progressTrackerHTML}
-                                                    <div class="info-grid">
-                                                        <div class="info-row">
-                                                            <i class="fas fa-user"></i>
-                                                            <div>
-                                                                <span>Người nhận</span>
-                                                                <p>${order.receiverName}</p>
-                                                            </div>
+                                                    <div class="order-card">
+                                                        <div class="card-header">
+                                                            <h3>Mã đơn hàng: #${order.orderCode}</h3>
+                                                            <p>Đặt lúc: ${new Date(order.createdAt).toLocaleString("vi-VN")}</p>
                                                         </div>
-                                                        <div class="info-row">
-                                                            <i class="fas fa-phone"></i>
-                                                            <div>
-                                                                <span>Số điện thoại</span>
-                                                                <p>${order.receiverPhone}</p>
-                                                            </div>
-                                                        </div>
-                                                        ${deliveryInfo}
-                                                        <div class="info-row">
-                                                            <i class="fas fa-tag"></i>
-                                                            <div>
-                                                                <span>Khuyến mãi</span>
-                                                                <p>${order.promoCode || 'Không áp dụng'}</p>
-                                                            </div>
-                                                        </div>
-                                                        <div class="info-row">
-                                                            <i class="fas fa-coins"></i>
-                                                            <div>
-                                                                <span>Tổng cộng</span>
-                                                                <p>${formatCurrency(order.total)}</p>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    ${order.noteOrder ? `
-                                                        <div class="info-grid" style="grid-template-columns: 1fr;">
+                                                        ${progressTrackerHTML}
+                                                        <div class="info-grid">
                                                             <div class="info-row">
-                                                                <i class="fas fa-sticky-note"></i>
+                                                                <i class="fas fa-user"></i>
                                                                 <div>
-                                                                    <span>Ghi chú</span>
-                                                                    <p>${order.noteOrder}</p>
+                                                                    <span>Người nhận</span>
+                                                                    <p>${order.receiverName}</p>
+                                                                </div>
+                                                            </div>
+                                                            <div class="info-row">
+                                                                <i class="fas fa-phone"></i>
+                                                                <div>
+                                                                    <span>Số điện thoại</span>
+                                                                    <p>${order.receiverPhone}</p>
+                                                                </div>
+                                                            </div>
+                                                            ${deliveryInfo}
+                                                            ${paymentInfo}
+                                                            <div class="info-row">
+                                                                <i class="fas fa-tag"></i>
+                                                                <div>
+                                                                    <span>Khuyến mãi</span>
+                                                                    <p>${order.promoCode || 'Không áp dụng'}</p>
+                                                                </div>
+                                                            </div>
+                                                            <div class="info-row">
+                                                                <i class="fas fa-coins"></i>
+                                                                <div>
+                                                                    <span>Tổng cộng</span>
+                                                                    <p>${formatCurrency(order.total)}</p>
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                    ` : ''}
-                                                    <div class="button-actions text-center mt-4">
-                                                        <a href="/Order/OrderHistory" class="btn-back-order">
-                                                            <i class="fas fa-arrow-left me-2"></i> Quay Lại Lịch Sử Mua Hàng
-                                                        </a>
+                                                        ${order.noteOrder ? `
+                                                            <div class="info-grid" style="grid-template-columns: 1fr;">
+                                                                <div class="info-row">
+                                                                    <i class="fas fa-sticky-note"></i>
+                                                                    <div>
+                                                                        <span>Ghi chú</span>
+                                                                        <p>${order.noteOrder}</p>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        ` : ''}
+                                                        <div class="button-actions text-center mt-4">
+                                                            <a href="/Order/OrderHistory" class="btn-back-order">
+                                                                <i class="fas fa-arrow-left me-2"></i> Quay Lại Lịch Sử Mua Hàng
+                                                            </a>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            `;
+                                                `;
                     resultDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
             } catch (error) {
@@ -265,7 +281,7 @@ function buildProgressTracker(status) {
                 trackOrder();
             }
         });
-        
+
         // --- AUTO-TRACK FROM URL ---
         window.addEventListener("DOMContentLoaded", () => {
             const urlParams = new URLSearchParams(window.location.search);

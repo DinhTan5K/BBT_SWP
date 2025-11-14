@@ -1,0 +1,273 @@
+@{
+    Layout = "_EmployeeLayout";
+    ViewData["Title"] = "Đăng ký lịch làm";
+    ViewBag.ActiveMenu = "RegisterSchedule";
+}
+
+@Html.AntiForgeryToken()
+
+@section Styles {
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css" rel="stylesheet" />
+    <link href="~/css/employee/register-schedule.css" rel="stylesheet" asp-append-version="true" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+
+}
+
+<div class="schedule-card">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h5 class="title mb-0">📅 Đăng ký lịch làm việc</h5>
+            <div class="subtitle">Kéo thả ca mẫu vào lịch hoặc click vào ngày để đăng ký.</div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-3">
+            <h6 class="fw-semibold mb-3 text-secondary">Kéo thả ca mẫu</h6>
+            <div id="external-events" class="p-2 border rounded-3 bg-light">
+                <div class="fc-event-template" data-shift-type="Sáng" style="background-color:#f59e0b;">Ca Sáng (8h -
+                    15h)</div>
+                <div class="fc-event-template" data-shift-type="Tối" style="background-color:#3b82f6;">Ca Tối (15h -
+                    22h)</div>
+            </div>
+
+            <hr class="my-4" />
+
+            <h6 class="fw-semibold mb-3 text-secondary">Chú thích</h6>
+            <div class="legend"> @* Cập nhật chú thích để khớp với logic mới *@
+                <div class="legend-item"><span class="legend-box event-done"></span> Đã làm</div>
+                <div class="legend-item"><span class="legend-box event-approved"></span> Đã duyệt</div>
+                <div class="legend-item"><span class="legend-box event-pending"></span> Chờ duyệt</div>
+            </div>
+
+            <div class="summary-box mt-4">
+                Tổng số ca (chưa làm): <strong id="totalShifts">0</strong>
+            </div>
+        </div>
+
+        <div class="col-lg-9">
+            <div id="calendar"></div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="registerShiftModal" tabindex="-1" aria-labelledby="registerShiftModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content p-2">
+            <div class="modal-header">
+                <h5 class="modal-title" id="registerShiftModalLabel">Đăng ký ca làm</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Bạn muốn đăng ký ca cho ngày: <strong id="modalSelectedDate"></strong></p>
+                <div class="mb-3">
+                    <label for="shiftTypeSelect" class="form-label">Chọn ca làm:</label>
+                    <select id="shiftTypeSelect" class="form-select">
+                        <option value="Sáng">Ca Sáng (8h-15h)</option>
+                        <option value="Tối">Ca Tối (15h-22h)</option>
+                    </select>
+                </div>
+                <input type="hidden" id="workDate" />
+                <div id="register-error-message"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary" id="saveShiftBtn">Lưu</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // --- 1. KHỞI TẠO BIẾN ---
+            const token = $('input[name="__RequestVerificationToken"]').val();
+            const modal = new bootstrap.Modal(document.getElementById('registerShiftModal'));
+            const calendarEl = document.getElementById('calendar');
+            const errorMessageDiv = $('#register-error-message');
+
+            // --- 2. KÍCH HOẠT KÉO-THẢ CHO CA MẪU ---
+            new FullCalendar.Draggable(document.getElementById('external-events'), {
+                itemSelector: '.fc-event-template',
+                eventData: el => ({
+                    title: el.innerText,
+                    shiftType: el.dataset.shiftType,
+                    duration: '07:00'
+                })
+            });
+
+            // --- 3. KHỞI TẠO LỊCH (FULLCALENDAR) ---
+            const calendar = new FullCalendar.Calendar(calendarEl, {
+                locale: 'vi',
+                initialView: 'dayGridMonth',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek' // Cho phép xem tháng/tuần
+                },
+                events: {
+                    url: '@Url.Action("GetMySchedules", "Employee")',
+                    failure: () => Swal.fire('Lỗi', 'Không thể tải dữ liệu lịch làm việc.', 'error')
+                },
+                droppable: true,  // Cho phép thả ca vào
+                selectable: true, // Cho phép click vào ngày
+                editable: false,  // Không cho nhân viên kéo-thả ca đã có
+
+                // --- 4. XỬ LÝ SỰ KIỆN CLICK VÀO NGÀY (MỞ MODAL) ---
+                dateClick(info) {
+                    if (info.date < new Date().setHours(0, 0, 0, 0)) {
+                        Swal.fire('Lỗi', 'Không thể đăng ký lịch cho ngày trong quá khứ.', 'error');
+                        return;
+                    }
+                    $('#workDate').val(info.dateStr);
+                    $('#modalSelectedDate').text(new Date(info.dateStr).toLocaleDateString('vi-VN'));
+                    errorMessageDiv.removeClass('show').text('');
+                    modal.show();
+                },
+
+                // --- 5. XỬ LÝ SỰ KIỆN KÉO-THẢ CA MẪU VÀO LỊCH ---
+                eventReceive(info) {
+                    const workDate = info.event.start;
+                    var shiftType = info.draggedEl.dataset.shiftType; // Lấy loại ca từ data-shift-type
+
+                    // SỬA LỖI: Sử dụng phương thức của FullCalendar để lấy chuỗi ngày yyyy-MM-dd
+                    // Cách này sẽ bỏ qua múi giờ và luôn trả về ngày chính xác mà người dùng thấy trên lịch.
+                    const dateString = workDate.toISOString().split('T')[0];
+
+                    // Kiểm tra ngày quá khứ
+                    if (workDate < new Date().setHours(0, 0, 0, 0)) {
+                        Swal.fire('Lỗi', 'Không thể đăng ký lịch cho ngày trong quá khứ.', 'error');
+                        info.event.remove(); // Xóa ca vừa thả
+                        return;
+                    }
+                    const data = {
+                        WorkDate: dateString, // <-- Sử dụng dateString đã sửa
+                        ShiftType: shiftType
+                    };
+
+                    // Gửi AJAX để đăng ký
+                    $.ajax({
+                        url: '@Url.Action("RegisterSelfForShift", "Employee")',
+                        method: 'POST',
+                        headers: { 'RequestVerificationToken': token },
+                        contentType: 'application/json',
+                        data: JSON.stringify(data),
+                        success(res) {
+                            calendar.refetchEvents(); // Tải lại lịch
+                            if (res.success) {
+                                Swal.fire('Thành công', res.message, 'success');
+                            } else {
+                                Swal.fire('Lỗi', res.message, 'error');
+                            }
+                        },
+                        error(xhr) {
+                            Swal.fire('Lỗi', xhr.responseText, 'error');
+                            calendar.refetchEvents(); // Tải lại để xóa ca tạm
+                        }
+                    });
+                },
+
+                // --- 6. XỬ LÝ SỰ KIỆN CLICK VÀO CA (ĐỂ HỦY) ---
+                eventClick(info) {
+                    if (info.event.extendedProps.status === 'Chưa duyệt') { // Chỉ cho phép hủy ca "Chưa duyệt"
+                        Swal.fire({
+                            title: 'Hủy đăng ký ca?',
+                            text: `Bạn có chắc muốn hủy ca ${info.event.title} ngày ${info.event.start.toLocaleDateString('vi-VN')}?`,
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonColor: '#d33',
+                            cancelButtonText: 'Không',
+                            confirmButtonText: 'Đúng, hủy ca!'
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                // Gửi AJAX để hủy
+                                $.ajax({
+                                    url: '@Url.Action("CancelShift", "Employee")',
+                                    method: 'POST',
+                                    headers: { 'RequestVerificationToken': token },
+                                    contentType: 'application/json',
+                                    data: JSON.stringify({ id: info.event.id }),
+                                    success(res) {
+                                        if (res.success) {
+                                            info.event.remove(); // Xóa ca khỏi lịch
+                                            updateSummary(); // Cập nhật tổng số ca
+                                            Swal.fire('Đã hủy', res.message, 'success');
+                                        } else {
+                                            Swal.fire('Lỗi', res.message, 'error');
+                                        }
+                                    },
+                                    error(xhr) { Swal.fire('Lỗi', xhr.responseText, 'error'); }
+                                });
+                            }
+                        });
+                    }
+                },
+
+                // --- 7. TÙY CHỈNH HIỂN THỊ MÀU SẮC ---
+                eventClassNames(arg) {
+                    const s = arg.event.extendedProps.status;
+                    if (s === 'Đã làm') return ['event-done'];
+                    if (s === 'Đã duyệt') return ['event-approved'];
+                    if (s === 'Chưa duyệt') return ['event-pending'];
+                    return [];
+                },
+
+                // --- 8. CẬP NHẬT TỔNG SỐ CA SAU KHI TẢI ---
+                eventsSet: function (events) {
+                    updateSummary();
+                }
+            });
+
+            calendar.render(); // Vẽ lịch
+
+            // --- 9. XỬ LÝ NÚT "LƯU" TRONG MODAL ---
+            $('#saveShiftBtn').click(function () {
+                const data = {
+                    WorkDate: $('#workDate').val(),
+                    ShiftType: $('#shiftTypeSelect').val()
+                };
+
+                $.ajax({
+                    url: '@Url.Action("RegisterSelfForShift", "Employee")',
+                    method: 'POST',
+                    headers: { 'RequestVerificationToken': token },
+                    contentType: 'application/json',
+                    data: JSON.stringify(data),
+                    success(res) {
+                        if (res.success) {
+                            modal.hide();
+                            calendar.refetchEvents(); // Tải lại lịch
+                            Swal.fire('Thành công', res.message, 'success');
+                        } else {
+                            errorMessageDiv.addClass('show').text(res.message || "Lỗi khi đăng ký.");
+                        }
+                    },
+                    error(xhr) {
+                        errorMessageDiv.addClass('show').text(xhr.responseText || "Lỗi kết nối.");
+                    }
+                });
+            });
+
+            // --- 10. CÁC HÀM HELPER ---
+
+            // Xóa lỗi khi đóng modal
+            $('#registerShiftModal').on('hidden.bs.modal', function () {
+                errorMessageDiv.removeClass('show').text('');
+            });
+
+            // Cập nhật tổng số ca (chỉ đếm ca chưa làm)
+            function updateSummary() {
+                var validEvents = calendar.getEvents().filter(e => e.extendedProps.status === 'Đã duyệt' || e.extendedProps.status === 'Chưa duyệt');
+                $('#totalShifts').text(validEvents.length);
+            }
+        });
+    </script>
+}

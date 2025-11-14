@@ -1,0 +1,139 @@
+@model List<start.Models.Order>
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <title>Đơn hàng của tôi</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="~/css/Shipper/shipper.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
+</head>
+<body>
+<!-- Thanh góc phải -->
+<div class="shipper-container">
+    <div class="shipper-header d-flex justify-content-between align-items-center">
+        <div>
+            <h3 class="m-0 text-white"><i class="bi bi-truck me-2"></i>Đơn hàng của tôi hôm nay</h3>
+            <div class="shipper-meta mt-1 text-white-50">
+                
+            </div>
+        </div>
+
+        <div class="d-flex align-items-center gap-3">
+            <!-- Avatar -->
+           <a href="/Employee" class="d-flex align-items-center text-decoration-none profile-btn">
+    <img src="@(string.IsNullOrWhiteSpace(ViewBag.Employee?.AvatarUrl)
+        ? Url.Content("~/images/avatar_default.png")
+        : Url.Content(ViewBag.Employee.AvatarUrl))"
+        alt="Avatar" class="avatar-img me-2" />
+    <span class="fw-semibold text-white">Hồ sơ</span>
+</a>
+
+
+
+
+
+            <!-- Quay lại -->
+            <a href="@Url.Action("Profile", "Employee")" class="btn btn-outline-light btn-sm logout-btn">
+        <i class="bi bi-arrow-left me-1"></i>Quay lại
+    </a>
+
+        </div>
+    </div>
+
+
+        <div class="p-4">
+        @if (TempData["shipper_ok"] != null)
+{
+    <div class="alert alert-success text-center" role="alert">
+        <i class="bi bi-check2-circle me-2"></i>@TempData["shipper_ok"]
+    </div>
+}
+
+            @if (ViewBag.Message != null)
+            {
+                <div class="alert alert-warning">@ViewBag.Message</div>
+            }
+            else if (Model == null || !Model.Any())
+            {
+                <div class="empty-message">Không có đơn hàng nào trong ca làm hiện tại.</div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover text-center align-middle shipper-table">
+                        <thead>
+                            <tr>
+                                <th>Mã đơn</th>
+                                <th>Khách hàng</th>
+                                <th>Địa chỉ giao</th>
+                                <th>Ghi chú</th>
+                                <th>Trạng thái</th>
+                                <th>Tổng tiền</th>
+                                
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var o in Model)
+                            {
+                                var statusClass = o.Status switch
+                                {
+                                    "Đã xác nhận" => "status-confirmed",
+                                    "Đang giao" => "status-delivering",
+                                    "Đã giao" => "status-delivered",
+                                    "Đã hủy" => "status-cancelled",
+                                    _ => "status-confirmed"
+                                };
+
+                                <tr>
+                                    <td>@o.OrderCode</td>
+                                    <td>@o.Customer?.Name</td>
+                                    <td>@o.DetailAddress</td>
+                                    <td>@o.NoteOrder</td>
+                                    <td><span class="badge-status @statusClass">@o.Status</span></td>
+                                    <td>@string.Format("{0:N0} đ", o.Total)</td>
+                                    <td>
+   <td>
+    @if (o.Status == "Đã xác nhận")
+    {
+        <form method="post" action="/Shipper/UpdateStatus" style="display:inline;">
+            <input type="hidden" name="id" value="@o.OrderID" />
+            <input type="hidden" name="status" value="Đang giao" />
+            <button type="submit" class="btn-action btn-start">Nhận giao</button>
+        </form>
+    }
+    else if (o.Status == "Đang giao")
+    {
+        <form method="post" action="/Shipper/UpdateStatus" style="display:inline;">
+            <input type="hidden" name="id" value="@o.OrderID" />
+            <input type="hidden" name="status" value="Delivered" /> <!-- ✅ đổi -->
+            <button type="submit" class="btn-action btn-complete me-1">Hoàn tất</button>
+        </form>
+
+        <form method="post" action="/Shipper/UpdateStatus" style="display:inline;">
+            <input type="hidden" name="id" value="@o.OrderID" />
+            <input type="hidden" name="status" value="Cancelled" /> <!-- ✅ đổi -->
+            <button type="submit" class="btn-action btn-cancel">Hủy</button>
+        </form>
+    }
+    else
+    {
+        <span class="text-muted">—</span>
+    }
+</td>
+
+
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</body>
+</html>

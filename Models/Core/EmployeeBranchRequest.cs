@@ -11,7 +11,7 @@ namespace start.Models
         public int Id { get; set; }
 
         [Required]
-        public RequestType RequestType { get; set; } // Add, Edit, Delete
+        public RequestType RequestType { get; set; }// Add, Edit, Delete
 
         // ID của Employee nếu là Edit hoặc Delete (null nếu là Add)
         [StringLength(10)]
@@ -20,6 +20,8 @@ namespace start.Models
 
         // ID của Branch cần thêm/chuyển nhân viên vào
         public int? BranchId { get; set; }
+
+        public int? RegionID { get; set; }
 
         // Thông tin nhân viên (chỉ cần khi RequestType = Add, để tạo nhân viên mới)
         [StringLength(100)]
@@ -61,7 +63,9 @@ namespace start.Models
         [Column(TypeName = "varchar(10)")]
         public string RequestedBy { get; set; } = string.Empty;
 
-        public DateTime RequestedAt { get; set; } = DateTime.UtcNow;
+        public DateTime RequestedAt { get; set; } = DateTime.Now;
+
+        public bool IsActive { get; set; } = true;
 
         // Thông tin duyệt
         [Required]
@@ -82,11 +86,9 @@ namespace start.Models
 
         [ForeignKey(nameof(ReviewedBy))]
         public Employee? ReviewedByEmployee { get; set; }
-        public Employee? Employee { get; set; }
 
-         [Column("RegionID")]
-        public int? RegionID { get; set; }
-         public bool IsActive { get; set; } = true;
+        [ForeignKey(nameof(EmployeeId))]
+        public Employee? Employee { get; set; }
 
         public Region? Region { get; set; }
 

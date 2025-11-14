@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace start.Models;
 
-[Table("DayOffRequests")]
+[Table("DayOffRequest")]
 public class DayOffRequest
 {
     [Key] public int Id { get; set; }
@@ -25,7 +25,7 @@ public class DayOffRequest
     [StringLength(10)]
     public string? ApproverID { get; set; }
 
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime CreatedAt { get; set; } = DateTime.Now;
     public DateTime? UpdatedAt { get; set; }
 
     [ForeignKey(nameof(EmployeeID))]

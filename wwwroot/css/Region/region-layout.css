@@ -22,20 +22,34 @@ body{
     min-height:100vh;
 }
 
-/* Sidebar */
+/* Sidebar - Override bmanager.css */
+nav.sidebar,
 .sidebar{
-    width:260px;
-    background: linear-gradient(180deg, #f2b36f 0%, #d98c24 100%); /* warm gradient */
-    color:#fff;
-    padding:22px 18px;
-    display:flex;
-    flex-direction:column;
-    justify-content:flex-start; /* Đảm bảo nội dung bắt đầu từ trên cùng */
-    box-shadow: 2px 0 10px rgba(0,0,0,0.03);
-    position: fixed; /* Giữ sidebar cố định khi scroll */
-    height: 100vh; /* Chiều cao full màn hình */
-    overflow-y: auto; /* Cho phép scroll nếu nội dung dài */
-    z-index: 1000; /* Đảm bảo sidebar nằm trên cùng */
+    width:260px !important;
+    background: linear-gradient(180deg, #f2b36f 0%, #d98c24 100%) !important; /* warm gradient */
+    color:#fff !important;
+    padding:22px 18px !important;
+    display:flex !important;
+    flex-direction:column !important;
+    justify-content: space-between !important; /* Đẩy logout-section xuống dưới cùng */
+    box-shadow: 2px 0 10px rgba(0,0,0,0.03) !important;
+    position: fixed !important; /* Giữ sidebar cố định khi scroll */
+    height: 100vh !important; /* Chiều cao full màn hình */
+    overflow-y: auto !important; /* Cho phép scroll nếu nội dung dài */
+    z-index: 1000 !important; /* Đảm bảo sidebar nằm trên cùng */
+    top: 0 !important;
+    left: 0 !important;
+}
+
+/* Wrapper cho phần nav links - để không chiếm hết không gian */
+.sidebar > div:first-child {
+    flex-grow: 0; /* Không chiếm hết không gian */
+    flex-shrink: 0; /* Không co lại */
+}
+
+/* Đảm bảo nav links có khoảng cách hợp lý */
+.sidebar > div:first-child ul {
+    margin-bottom: 0;
 }
 
 .brand{
@@ -141,19 +155,136 @@ body{
     color: var(--brown-700);
 }
 
-/* user */
+/* Logout Section - luôn ở dưới cùng */
+.logout-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-top: 20px; /* Khoảng cách với phần trên */
+    flex-shrink: 0; /* Không co lại */
+}
+
+.logout-section hr {
+    margin: 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* User Profile Widget */
+.user-profile-widget {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 5px;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: background-color 0.2s ease;
+    background-color: transparent;
+    border: none;
+}
+
+.user-profile-widget:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.user-profile-widget .user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+    border: none;
+    box-shadow: none;
+}
+
+.user-profile-widget .user-avatar:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.user-info {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.user-name {
+    font-weight: bold;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 0.95rem;
+}
+
+.user-email {
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.8);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Logout Link */
+.logout-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 10px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    background-color: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.logout-link:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+.logout-link i {
+    width: 20px;
+    text-align: center;
+}
+
+/* Theme Toggle */
+.sidebar .form-check-label {
+    color: rgba(255, 255, 255, 0.9);
+    opacity: 0.9;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.sidebar .form-check-input {
+    background-color: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+.sidebar .form-check-input:checked {
+    background-color: #fff;
+    border-color: #fff;
+}
+
+.sidebar .form-check-input:checked ~ .form-check-label {
+    color: #fff;
+}
+
+/* user - giữ lại cho backward compatibility */
 .user-avatar{
-    /* BƯỚC 1: Đảm bảo kích thước cố định và vuông */
-    width:52px;   /* Đã tăng kích thước */
-    height:52px;  /* Đã tăng kích thước */
-    display: block; 
-    
-    /* BƯỚC 2: Buộc ảnh phải cắt và bao phủ không gian vuông */
-    object-fit:cover !important; 
-    
-    /* BƯỚC 3: Buộc hình tròn, chống ghi đè */
-    border-radius:50% !important; 
-    
+    width:52px;
+    height:52px;
+    display: block;
+    object-fit:cover !important;
+    border-radius:50% !important;
     box-shadow:0 4px 14px rgba(0,0,0,0.08);
     border:4px solid #fff;
     transition: all 0.2s;

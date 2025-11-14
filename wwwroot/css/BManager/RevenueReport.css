@@ -1,0 +1,182 @@
+/* Using variables from bmanager.css for consistency */
+
+/* Thẻ lọc */
+.report-filter-card {
+    background-color: var(--surface-color) !important; /* Thêm !important để ghi đè .card */
+    border-color: var(--border-color) !important;
+}
+.report-filter-card .card-body {
+    padding: 1.25rem;
+}
+
+.report-filter-card .form-label {
+    font-weight: 500;
+    margin-bottom: 0;
+    color: var(--text-muted-color) !important;
+}
+
+/* Thẻ KPI tóm tắt */
+.summary-card {
+    display: flex;
+    align-items: center;
+    padding: 24px;
+    border-radius: 12px;
+    color: #fff;
+    background-color: #f8f9fa; /* Màu nền dự phòng */
+    box-shadow: 0 4px 12px var(--shadow-color);
+    height: 100%;
+}
+
+.summary-card-icon {
+    font-size: 2.5rem; /* 40px */
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 20px;
+    flex-shrink: 0;
+    opacity: 0.8;
+}
+
+.summary-card-content {
+    flex-grow: 1;
+}
+
+.summary-card-label {
+    font-size: 1rem; /* 16px */
+    font-weight: 600;
+    opacity: 0.9;
+    margin-bottom: 4px;
+}
+
+.summary-card-value {
+    font-size: 2.25rem; /* 36px */
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.summary-card-sub {
+    font-size: 0.875rem; /* 14px */
+    opacity: 0.7;
+    margin-top: 4px;
+}
+
+/* Màu sắc cho thẻ KPI */
+.summary-card.green {
+    background: linear-gradient(135deg, var(--green-color), #059669);
+}
+
+.summary-card.blue {
+    background: linear-gradient(135deg, var(--blue-color), #2563eb);
+}
+
+.summary-card.purple {
+    background: linear-gradient(135deg, var(--accent-color), #9333ea);
+}
+
+.summary-card.orange {
+    background: linear-gradient(135deg, var(--brand-color), #ea580c);
+}
+
+
+/* Kiểu cho danh sách chi tiết theo ngày (mới) */
+.daily-detail-header,
+.daily-detail-row-toggle {
+    display: grid;
+    /* Cột: Ngày | Tổng Đơn | Doanh Thu | Icon */
+    grid-template-columns: 2fr 1fr 1.5fr 50px;
+    align-items: center;
+    padding: 1rem 1.25rem;
+    gap: 1rem;
+}
+
+.daily-detail-header {
+    font-weight: 600;
+    color: var(--text-muted-color);
+    border-bottom: 2px solid var(--border-color);
+    font-size: 0.9rem;
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+}
+
+.daily-detail-item {
+    border-bottom: 1px solid var(--border-color);
+}
+.daily-detail-item:last-child {
+    border-bottom: none;
+}
+
+.daily-detail-row-toggle {
+    cursor: pointer;
+    transition: background-color 0.2s;
+    color: var(--text-color); /* Thêm màu chữ để tương thích với theme */
+}
+
+.daily-detail-row-toggle:hover {
+    background-color: var(--bg-color);
+}
+
+/* Căn lề cho các cột */
+.daily-detail-header .revenue,
+.daily-detail-row-toggle .revenue {
+    text-align: right;
+    font-weight: 600;
+    color: var(--green-color);
+}
+
+.daily-detail-header .chevron,
+.daily-detail-row-toggle .chevron {
+    text-align: center;
+}
+
+.daily-detail-row-toggle .chevron i {
+    transition: transform 0.3s;
+}
+
+/* Khi hàng được mở rộng (expanded) */
+.daily-detail-row-toggle.expanded {
+    background-color: var(--bg-color);
+    font-weight: 600;
+}
+
+.daily-detail-row-toggle.expanded .chevron i {
+    transform: rotate(90deg);
+}
+
+.daily-detail-content {
+    background-color: var(--bg-color);
+    padding: 1rem;
+    border-top: 1px dashed var(--border-color);
+}
+
+/* Dark mode overrides for Chart.js */
+html.dark-mode #revenueChart {
+    color: var(--text-color);
+}
+
+html.dark-mode .card {
+    background-color: var(--surface-color);
+    border-color: var(--border-color);
+}
+
+html.dark-mode .card-header {
+    background-color: rgba(255, 255, 255, 0.03); /* Màu nền tối nhẹ */
+    border-bottom-color: var(--border-color);
+}
+
+html.dark-mode .card-header h5 {
+    color: var(--text-color); /* Đảm bảo màu chữ tiêu đề đúng với theme */
+}
+
+/* Dark mode cho bảng chi tiết đơn hàng (AJAX content) */
+html.dark-mode .order-detail-table {
+    color: var(--text-color);
+}
+html.dark-mode .order-detail-table thead {
+    color: var(--text-muted-color);
+    border-bottom-color: var(--border-color);
+}
+html.dark-mode .order-detail-table tbody tr {
+    border-bottom-color: var(--border-color);
+}

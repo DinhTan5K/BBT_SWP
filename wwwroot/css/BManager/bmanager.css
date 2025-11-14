@@ -1,0 +1,724 @@
+/* File: wwwroot/css/bmanager.css */
+
+/* === BẢNG MÀU CHỦ ĐỀ & BIẾN TOÀN CỤC === */
+html {
+    /* --- Light Mode Colors (Default) --- */
+    --bg-color: #fffaf5;         /* Nền chính */
+    --surface-color: #ffffff;    /* Nền thẻ, modal */
+    --text-color: #3a2d24;       /* Chữ chính */
+    --text-muted-color: #85766b; /* Chữ phụ */
+    --border-color: #f3eade;     /* Viền */
+    --shadow-color: rgba(0,0,0,0.08);
+
+    /* Brand & Accent Colors */
+    --brand-color: #ffca7a;
+    --brand-dark-color: #e6a758;
+    --accent-color: #7b5541;     /* Sidebar BG, Nút chính */
+    --accent-text-color: #fffaf5; /* Chữ trên nền accent */
+
+    /* State Colors */
+    --green-color: #10b981;
+    --red-color: #dc3545;
+    --blue-color: #3b82f6;
+}
+
+/* === SIDEBAR === */
+.sidebar {
+    width: 250px;
+    height: 100vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    background-color: var(--accent-color);
+    color: var(--accent-text-color);
+    padding: 20px;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.sidebar h4 { color: var(--surface-color); }
+.sidebar h5 { color: var(--brand-color); }
+.sidebar hr { border-top: 1px solid var(--border-color); opacity: 0.2; }
+
+/* === NAV MENU === */
+.sidebar .nav-link {
+    color: var(--accent-text-color);
+    display: flex;
+    align-items: center;
+    padding: 10px 15px;
+    border-radius: 0.3rem;
+    transition: background-color 0.2s, color 0.2s;
+    font-weight: 500;
+}
+.sidebar .nav-link i { width: 20px; margin-right: 12px; text-align: center; }
+.sidebar .nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--surface-color);
+}
+.sidebar .nav-link.active {
+    background-color: var(--brand-color);
+    color: var(--text-color);
+    font-weight: 700;
+}
+
+/* === TOGGLE CHẾ ĐỘ TỐI === */
+.sidebar .form-check-input {
+    background-color: #495057;
+    border-color: var(--text-muted-color);
+}
+.sidebar .form-check-input:checked {
+    background-color: var(--brand-color);
+    border-color: var(--brand-color);
+}
+.sidebar .form-check-label { 
+    color: var(--accent-text-color);
+    opacity: 0.7; /* Hơi mờ (Giống ảnh) */
+    cursor: pointer; 
+}
+
+/* === KHUNG NỘI DUNG CHÍNH === */
+.main-content, body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    transition: background-color 0.3s, color 0.3s;
+}
+.main-content {
+    margin-left: 250px;
+    padding: 30px;
+    width: calc(100% - 250px);
+}
+
+/* === DARK MODE OVERRIDES === */
+html.dark-mode {
+    --bg-color: #111827;
+    --surface-color: #1f2937;
+    --text-color: #e5e7eb;
+    --text-muted-color: #9ca3af;
+    --border-color: #374151;
+    --shadow-color: rgba(0,0,0,0.4);
+
+    --brand-color: #f59e0b;      /* Orange */
+    --brand-dark-color: #d97706;
+    --accent-color: #0f172a;     /* Sidebar BG */
+    --accent-text-color: #e5e7eb;
+
+    --green-color: #10b981;
+    --red-color: #ef4444;
+    --blue-color: #3b82f6;
+}
+
+/* Ghi đè các style khi ở chế độ tối */
+html.dark-mode .sidebar .nav-link.active { 
+    background-color: var(--blue-color);
+    color: white; 
+}
+
+/* Ghi đè các style khi ở chế độ tối */
+html.dark-mode .sidebar h4 {
+    color: var(--accent-text-color); /* Đảm bảo chữ "Buble Tea" sáng */
+}
+html.dark-mode .sidebar h5 {
+    color: var(--accent-text-color); /* Đảm bảo chữ "Quản lý Chi nhánh" sáng */
+}
+html.dark-mode .sidebar .text-muted {
+    color: var(--accent-text-color) !important; /* Ghi đè class .text-muted của Bootstrap */
+    opacity: 0.8; /* Giảm độ sáng một chút để phân biệt với tiêu đề chính */
+}
+/* === PHẦN RESPONSIVE CHO THIẾT BỊ DI ĐỘNG === */
+.sidebar-toggle { display: none; }
+@media (max-width: 768px) {
+    .sidebar { 
+        transform: translateX(-100%); 
+        transition: transform 0.3s ease-in-out; 
+        z-index: 1050; 
+    }
+    .sidebar.is-visible { transform: translateX(0); }
+    .main-content { margin-left: 0; width: 100%; }
+    .sidebar-toggle {
+        display: block;
+        position: fixed;
+        top: 15px;
+        left: 15px;
+        z-index: 1051;
+        background: var(--mt-accent);
+        color: white;
+        border: 1px solid var(--mt-brand);
+        border-radius: 5px;
+        padding: 5px 12px;
+        font-size: 20px;
+    }
+}
+
+
+/* === BMANAGER DASHBOARD STYLES (Dùng biến --mt-...) === */
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+.dashboard-header .header-greeting h1 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin: 0;
+    color: var(--text-color);
+}
+.dashboard-header .header-meta {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    color: var(--text-muted-color);
+}
+.dashboard-header .header-meta .badge {
+    font-size: 0.9rem;
+    padding: 0.5em 1em;
+    background-color: #d1fae5 !important;
+    color: var(--green-color) !important;
+}
+
+/* Stat Cards */
+.stat-card {
+    background-color: var(--surface-color);
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 16px var(--shadow-color);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+.stat-card-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+    font-size: 1.25rem;
+}
+.stat-card-icon.primary { background-color: #dbeafe; color: var(--blue-color); }
+.stat-card-icon.green { background-color: #d1fae5; color: var(--green-color); }
+.stat-card-icon.orange { background-color: #ffedd5; color: var(--brand-color); }
+
+.stat-card-title {
+    font-size: 0.9rem;
+    color: var(--text-muted-color);
+    margin-bottom: 0.25rem;
+}
+.stat-card-value {
+    font-size: 2.25rem;
+    font-weight: 700;
+    color: var(--text-color);
+    line-height: 1.2;
+}
+.stat-card-value span { font-size: 1.5rem; color: var(--text-muted-color); }
+.stat-card-change { font-size: 0.875rem; margin-top: 0.5rem; }
+.stat-card-change .text-success { color: var(--green-color) !important; }
+.stat-card-change .text-danger { color: var(--red-color) !important; }
+
+/* Chart Container */
+.chart-container {
+    background-color: var(--surface-color);
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 16px var(--shadow-color);
+    margin-top: 2rem;
+}
+.chart-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 1.5rem;
+}
+.chart-tabs .nav-link {
+    color: var(--text-muted-color);
+    font-weight: 600;
+    padding: 0.75rem 1rem;
+    border: none;
+    border-bottom: 3px solid transparent;
+}
+.chart-tabs .nav-link.active {
+    color: var(--accent-color);
+    border-bottom-color: var(--accent-color);
+}
+.chart-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-color);
+    margin-bottom: 1rem;
+}
+
+/* Bottom Widgets */
+.widget-card {
+    background-color: var(--surface-color);
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 16px var(--shadow-color);
+    height: 100%;
+}
+.widget-card .widget-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-color);
+    margin-bottom: 1.5rem;
+}
+.widget-card.dark {
+    background-color: var(--accent-color);
+    color: #f3eade;
+}
+.widget-card.dark .widget-title { color: white; }
+.widget-card.dark .progress-label { color: white; font-weight: 600; }
+.widget-card.dark .progress-meta { color: var(--brand-color); font-size: 0.875rem; }
+.widget-card.dark .progress-bar { background-color: var(--brand-dark-color); }
+.widget-card.dark .progress { background-color: rgba(0,0,0,0.2); }
+
+/* Activity Feed */
+.activity-feed .activity-item { display: flex; gap: 1rem; margin-bottom: 1.5rem; }
+.activity-feed .activity-time {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-muted-color);
+    width: 60px;
+}
+.activity-feed .activity-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--bg-color);
+    color: var(--accent-color);
+}
+.activity-feed .activity-desc { font-size: 0.9rem; color: var(--text-color); }
+.activity-feed .activity-desc span { color: var(--text-muted-color); font-size: 0.8rem; }
+
+/* Progress Bars */
+.progress-label {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--text-color);
+}
+.progress-meta { color: var(--text-muted-color); }
+
+/* Help FAB */
+.help-fab {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    width: 50px;
+    height: 50px;
+    background-color: var(--accent-color);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    z-index: 1040;
+    cursor: pointer;
+}
+
+/* CSS cho các trang quản lý khác */
+.table {
+    --bs-table-bg: var(--surface-color);
+    --bs-table-border-color: var(--border-color);
+    --bs-table-color: var(--text-color);
+    --bs-table-striped-bg: var(--bg-color);
+    --bs-table-hover-bg: var(--bg-color);
+}
+
+.table-dark {
+    --bs-table-bg: var(--accent-color);
+    --bs-table-color: var(--accent-text-color);
+    --bs-table-border-color: var(--brand-dark-color);
+}
+
+html.dark-mode .table-dark {
+    --bs-table-bg: var(--sidebar-hover-bg);
+    --bs-table-color: var(--text-color);
+    --bs-table-border-color: var(--border-color);
+}
+
+.modal-content {
+    background-color: var(--surface-color);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+}
+.modal-header { border-bottom: 1px solid var(--border-color); }
+.modal-footer { border-top: 1px solid var(--border-color); }
+
+/* Ghi đè cho form controls để tương thích theme */
+.form-control, .form-select {
+    background-color: var(--surface-color);
+    color: var(--text-color);
+    border-color: var(--border-color);
+}
+.form-control:focus, .form-select:focus {
+    background-color: var(--surface-color);
+    color: var(--text-color);
+    border-color: var(--brand-color);
+    box-shadow: 0 0 0 0.25rem rgba(var(--brand-color), 0.25);
+}
+/* Fix màu cho date/month picker icon trong dark mode */
+html.dark-mode .form-control::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+}
+/* === SỬA LỖI MÀU CHỮ TRONG MODAL (DARK MODE) - MỞ RỘNG === */
+html.dark-mode .modal-body {
+    color: var(--text-color); /* Áp dụng màu chữ sáng cho toàn bộ modal body */
+}
+
+/* === SỬA LỖI MÀU CHỮ TRONG MODAL (DARK MODE) === */
+html.dark-mode .modal-body label,
+html.dark-mode .modal-body .form-label {
+    color: var(--text-color); /* Đảm bảo label có màu sáng */
+}
+
+html.dark-mode .modal-body .form-control[readonly],
+html.dark-mode .modal-body .form-control:disabled {
+    background-color: #374151; /* Màu nền tối hơn cho input bị vô hiệu hóa */
+    color: var(--text-muted-color);
+    opacity: 0.7;
+}
+
+/* === SỬA LỖI MÀU CHỮ CHO CÁC THÀNH PHẦN KHÁC (DARK MODE) === */
+/* Ghi đè lớp .text-muted của Bootstrap để đảm bảo nó luôn sáng trong theme tối */
+html.dark-mode .text-muted {
+    color: var(--text-muted-color) !important;
+}
+
+/* Đảm bảo các ô trong bảng (td, th) trong modal cũng có màu chữ đúng */
+html.dark-mode .modal-body .table td,
+html.dark-mode .modal-body .table th {
+    color: var(--text-color);
+}
+
+/* === GIẢI PHÁP TRIỆT ĐỂ: GHI ĐÈ CÁC LỚP UTILITY CỦA BOOTSTRAP (DARK MODE) === */
+/* Ghi đè các lớp màu văn bản phổ biến để chúng hiển thị sáng trên nền tối */
+html.dark-mode .text-dark,
+html.dark-mode .text-black,
+html.dark-mode .text-body {
+    color: var(--text-color) !important;
+}
+
+html.dark-mode .text-secondary {
+    color: var(--text-muted-color) !important;
+}
+
+/* === GIẢI PHÁP TỔNG QUÁT: ÁP DỤNG CHO CẢ TRANG (DARK MODE) === */
+/* Đảm bảo tất cả label trên trang đều có màu chữ đúng */
+html.dark-mode .form-label,
+html.dark-mode label {
+    color: var(--text-color) !important;
+}
+
+/* Đảm bảo các input bị vô hiệu hóa có style phù hợp */
+html.dark-mode .form-control[readonly],
+html.dark-mode .form-control:disabled {
+    background-color: #374151; /* Màu nền tối hơn */
+    color: var(--text-muted-color);
+}
+
+/* === SỬA LỖI NỀN TRẮNG VÀ CHỮ TỐI (DARK MODE) - GIẢI PHÁP CUỐI CÙNG === */
+/* Buộc tất cả .form-control phải có nền tối và chữ sáng */
+html.dark-mode .form-control {
+    background-color: var(--surface-color) !important;
+    color: var(--text-color) !important;
+    border-color: var(--border-color) !important;
+}
+
+/* === SỬA NỀN TRẮNG CHO CARD VÀ INPUT (DARK MODE) === */
+html.dark-mode .card {
+    background-color: var(--surface-color);
+    border-color: var(--border-color);
+}
+
+
+
+
+tr.inactive-row td:not(:last-child),
+tr.product-inactive td:not(:last-child) {
+    opacity: 0.5;
+    transition: opacity 0.3s ease-in-out;
+}
+tr.inactive-row .btn-warning,
+tr.product-inactive .btn-warning {
+    opacity: 0.5;
+    pointer-events: none;
+}
+/* === CSS CHO LỊCH TĨNH (STATIC CALENDAR) === */
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    border-left: 1px solid var(--theme-border);
+    border-top: 1px solid var(--theme-border);
+}
+.cal-cell {
+    border-right: 1px solid var(--theme-border);
+    border-bottom: 1px solid var(--theme-border);
+    padding: 8px;
+    min-height: 100px;
+    position: relative;
+}
+.cal-head {
+    min-height: auto;
+    font-weight: 600;
+    background-color: var(--theme-bg);
+    padding: 12px 8px;
+    text-align: center;
+}
+.cal-cell.cal-empty {
+    background-color: var(--theme-bg);
+}
+.cal-day .cal-date {
+    font-size: 0.9em;
+    font-weight: 600;
+    color: var(--theme-muted);
+}
+.cal-day.today .cal-date {
+    background-color: #0d6efd;
+    color: white;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.cal-day:hover {
+    background-color: var(--theme-bg);
+    cursor: pointer;
+}
+
+/* === DẤU NHÁY ĐỎ === */
+.pending-dot {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 10px;
+    height: 10px;
+    background-color: var(--color-red); /* Màu đỏ */
+    border-radius: 50%;
+    box-shadow: 0 0 5px var(--color-red);
+}
+/* === ACTION DROPDOWN (NÚT 3 CHẤM) === */
+.btn-icon {
+    background-color: transparent;
+    border: none;
+    color: var(--text-muted-color);
+    padding: 0.375rem 0.75rem;
+    border-radius: 8px;
+}
+
+.btn-icon:hover,
+.btn-icon:focus {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    box-shadow: none;
+}
+
+.action-dropdown-menu {
+    background-color: var(--surface-color);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 16px var(--shadow-color);
+}
+
+.action-dropdown-menu .dropdown-item {
+    color: var(--text-color);
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+.action-dropdown-menu .dropdown-item:hover {
+    background-color: var(--theme-bg);
+    color: var(--theme-text);
+}
+
+.action-dropdown-menu .dropdown-item.text-danger:hover {
+    background-color: #ffebeb;
+    color: #dc3545 !important;
+}
+
+.action-dropdown-menu .dropdown-item.text-success:hover {
+    background-color: #d1e7dd;
+    color: #198754 !important;
+}
+
+.btn-edit-target {
+    background: none;
+    border: none;
+    color: var(--text-muted-color);
+    opacity: 0.5;
+    transition: opacity 0.2s;
+}
+.btn-edit-target:hover {
+    opacity: 1;
+    color: var(--text-color);
+}
+html.dark-mode .btn-edit-target:hover {
+    color: var(--brand-dark-color);
+}
+.widget-card.dark .btn-edit-target {
+    color: #f3eade;
+    opacity: 0.6;
+}
+
+.widget-card.dark .btn-edit-target:hover {
+    opacity: 1;
+    color: var(--brand-dark-color);
+}
+
+/* === EMPLOYEE PERFORMANCE WIDGET === */
+.performance-table .employee-avatar-sm {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background-color: var(--bg-color);
+    color: var(--accent-color);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+    border: 2px solid var(--border-color);
+}
+
+.performance-table .progress {
+    background-color: var(--bg-color);
+}
+
+.performance-table .progress-bar {
+    background-color: var(--blue-color);
+}
+html.dark-mode .performance-table .employee-avatar-sm {
+    border-color: var(--accent-color);
+}
+
+
+/* ==================================
+   SỬA LẠI: PROFILE WIDGET & LOGOUT MỚI
+   (Khớp với ảnh mới nhất)
+   ================================== */
+
+/* 1. Căn chỉnh layout cho khối cuối sidebar */
+.logout-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px; /* Khoảng cách giữa các mục */
+}
+
+.logout-section hr {
+    margin: 0; 
+}
+
+/* 2. Khối thông tin cá nhân (KHÔNG NỀN) */
+.user-profile-widget {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 5px; /* Padding nhẹ */
+    border-radius: 8px;
+    text-decoration: none;
+    transition: background-color 0.2s ease;
+    background-color: transparent; /* KHÔNG CÓ NỀN */
+    border: none;
+}
+
+.user-profile-widget:hover {
+    background-color: rgba(255, 255, 255, 0.1); /* Giống hover nav-link */
+}
+
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
+    color: white; 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+}
+
+.user-info {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.user-name {
+    font-weight: bold;
+    color: var(--surface-color); /* Chữ Tên (Trắng) */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.user-email {
+    font-size: 0.85rem;
+    color: var(--brand-color); /* Chữ Email (Vàng) */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 3. Nút Đăng xuất (KHÔNG NỀN) */
+.logout-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 10px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    background-color: transparent; /* KHÔNG CÓ NỀN */
+    border: none;
+    color: var(--accent-text-color);
+}
+
+.logout-link:hover {
+    background-color: rgba(255, 255, 255, 0.1); /* Giống hover nav-link */
+    color: var(--surface-color);
+}
+
+/* GHI ĐÈ DARK MODE CHO PROFILE MỚI */
+html.dark-mode .user-name {
+    color: var(--text-color);
+}
+html.dark-mode .user-email {
+    color: var(--text-muted-color);
+}
+html.dark-mode .logout-link {
+    color: var(--text-muted-color);
+}
+html.dark-mode .user-profile-widget:hover,
+html.dark-mode .logout-link:hover {
+    background-color: var(--surface-color);
+    color: var(--text-color);
+}
+
+/* === DAY OFF MANAGER - DARK MODE FIX === */
+/* Sửa lỗi nền cho khung lý do trong trang duyệt đơn nghỉ phép */
+html.dark-mode .dayoff-grid .blockquote.bg-light {
+    background-color: var(--bg-color) !important; /* Dùng màu nền chính, tối hơn màu thẻ một chút */
+    border-color: var(--border-color) !important; /* Dùng màu viền của theme tối */
+}
+
+/* Đảm bảo chữ "Lý do:" có màu sáng */
+html.dark-mode .dayoff-grid .blockquote .text-dark {
+    color: var(--text-color) !important;
+}

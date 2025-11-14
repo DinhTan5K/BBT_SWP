@@ -33,8 +33,8 @@ public class Branch
 
     [Precision(18, 15)]
     public decimal Longitude { get; set; }
-    
-    // Navigation properties
+    public int TargetOrders { get; set; }
+    public decimal TargetRevenue { get; set; }
     public ICollection<Order>? Orders { get; set; }
     
     [ForeignKey(nameof(RegionID))]

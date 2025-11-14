@@ -154,7 +154,7 @@ function renderProducts(products, requestId = null) {
                 </div>
                 <div class="product-info-wrapper">
                     <h3><a href="/Product/Detail/${p.productID}" style="text-decoration: none; color: inherit;">${p.productName}</a></h3>
-                    <p class="price">Giá: <span class="selected-price">${minPrice.toLocaleString('vi-VN')} đ</span></p>
+                    <p class="price">Giá:&nbsp<span class="selected-price">${minPrice.toLocaleString('vi-VN')} đ</span></p>
                     <div class="product-actions">
                         <div class="size-options" data-product-id="${p.productID}">
                             ${sizesHtml}
@@ -268,16 +268,38 @@ function initializeProductInteractions() {
 function handleWishlistClick() {
     const productId = this.dataset.id;
     const icon = this.querySelector('.heart-icon');
+    
+    if (!productId) {
+        console.error('ProductId is missing');
+        return;
+    }
+    
     fetch('/Wishlist/Toggle', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productId: productId })
-    }).then(res => res.json())
-      .then(data => {
-          if (data && data.success === true) {
-              setWishlistStateFor(productId, data.isWishlisted);
-          }
-      });
+        headers: { 
+            'Content-Type': 'application/json',
+            'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+        },
+        body: JSON.stringify({ productId: parseInt(productId) })
+    })
+    .then(res => {
+        if (!res.ok) {
+            throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        return res.json();
+    })
+    .then(data => {
+        if (data && data.success === true) {
+            setWishlistStateFor(productId, data.isWishlisted);
+        } else if (data && data.error) {
+            console.error('Wishlist error:', data.error);
+            alert(data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Wishlist toggle error:', error);
+        alert('Có lỗi xảy ra khi thao tác với wishlist. Vui lòng thử lại.');
+    });
 }
 
 // Add to cart from modal

@@ -463,6 +463,9 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         const paymentMethod = document.querySelector('input[name="Payment"]:checked')?.value || 'COD';
+        // Đảm bảo Payment được thêm vào formData
+        formData.set('Payment', paymentMethod);
+        
         try {
             const response = await fetch('/Order/CreateOrder', {
                 method: 'POST',

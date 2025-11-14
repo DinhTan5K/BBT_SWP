@@ -20,9 +20,11 @@
     using DocumentFormat.OpenXml.ExtendedProperties;
     using start.Data;
     using Microsoft.EntityFrameworkCore;
+    using Microsoft.AspNetCore.Authorization;
 
     namespace start.Controllers
     {
+        [Authorize(AuthenticationSchemes = "RegionManagerScheme")]
         public class RegionController : Controller
         {
             private readonly IRegionService _regionService;
@@ -86,11 +88,18 @@
 
                 var branches = vm.Branches ?? new List<Branch>();
 
+                // Loại bỏ duplicate theo BranchID trước khi filter/search
+                branches = branches.GroupBy(b => b.BranchID)
+                    .Select(g => g.First())
+                    .ToList();
+
+                // Apply filter
                 if (f == "active")
                     branches = branches.Where(b => b.IsActive).ToList();
                 else if (f == "inactive")
                     branches = branches.Where(b => !b.IsActive).ToList();
 
+                // Apply search
                 if (!string.IsNullOrEmpty(search))
                 {
                     var s = search.ToLowerInvariant();
@@ -147,6 +156,11 @@
                 // Always fetch branches (we will pass to view). Service returns all branches in region.
                 var branches = await _regionService.GetBranchesForStatusAsync(empId, null, query);
 
+                // Loại bỏ duplicate theo BranchId (đảm bảo an toàn)
+                branches = branches.GroupBy(b => b.BranchId)
+                    .Select(g => g.First())
+                    .ToList();
+
                 // Determine requested tab
                 var activeTab = string.IsNullOrWhiteSpace(view) ? "branches" : view.Trim().ToLowerInvariant();
                 ViewData["ActiveTab"] = activeTab;
@@ -199,6 +213,11 @@
                 var query = (q ?? "").Trim();
 
                 var branches = await _regionService.GetBranchesForStatusAsync(empId, null, query);
+
+                // Loại bỏ duplicate theo BranchId (đảm bảo an toàn)
+                branches = branches.GroupBy(b => b.BranchId)
+                    .Select(g => g.First())
+                    .ToList();
 
                 if (f == "active")
                     branches = branches.Where(b => b.IsActive).ToList();
@@ -783,8 +802,14 @@
             [HttpGet]
             public async Task<IActionResult> Statistics(DateTime? from, DateTime? to)
             {
-                var regionId = CurrentRegionId ?? 0;
-                if (regionId == 0) return View("NoRegionAssigned");
+                var empId = CurrentEmpId;
+                if (string.IsNullOrEmpty(empId)) return RedirectToAction("Login", "Account");
+
+                // Lấy RegionID từ Employee thay vì từ session
+                var dashboard = await _regionService.GetDashboardForManagerAsync(empId);
+                if (dashboard == null) return View("NoRegionAssigned");
+
+                var regionId = dashboard.RegionId;
 
                 var f = from ?? DateTime.Now.AddDays(-7);
                 var t = (to ?? DateTime.Now).Date.AddDays(1).AddSeconds(-1);
@@ -815,8 +840,14 @@
             [HttpGet]
             public async Task<IActionResult> GetStatisticsData(DateTime? from, DateTime? to, int? branchId, string? q)
             {
-                var regionId = CurrentRegionId ?? 0;
-                if (regionId == 0) return BadRequest("No region assigned");
+                var empId = CurrentEmpId;
+                if (string.IsNullOrEmpty(empId)) return BadRequest("Not authenticated");
+
+                // Lấy RegionID từ Employee thay vì từ session
+                var dashboard = await _regionService.GetDashboardForManagerAsync(empId);
+                if (dashboard == null) return BadRequest("No region assigned");
+
+                var regionId = dashboard.RegionId;
 
                 var f = from ?? DateTime.Now.AddDays(-7);
                 var t = (to ?? DateTime.Now).Date.AddDays(1).AddSeconds(-1);
@@ -847,8 +878,14 @@
             [HttpGet]
             public async Task<IActionResult> ExportStatisticsCsv(DateTime? from, DateTime? to, int? branchId, string? q)
             {
-                var regionId = CurrentRegionId ?? 0;
-                if (regionId == 0) return BadRequest("No region assigned");
+                var empId = CurrentEmpId;
+                if (string.IsNullOrEmpty(empId)) return BadRequest("Not authenticated");
+
+                // Lấy RegionID từ Employee thay vì từ session
+                var dashboard = await _regionService.GetDashboardForManagerAsync(empId);
+                if (dashboard == null) return BadRequest("No region assigned");
+
+                var regionId = dashboard.RegionId;
 
                 var f = from ?? DateTime.Now.AddDays(-7);
                 var t = (to ?? DateTime.Now).Date.AddDays(1).AddSeconds(-1);
@@ -946,8 +983,14 @@
             [HttpGet]
             public async Task<IActionResult> ExportStatisticsPdf(DateTime? from, DateTime? to, int? branchId, string? q)
             {
-                var regionId = CurrentRegionId ?? 0;
-                if (regionId == 0) return BadRequest("No region assigned");
+                var empId = CurrentEmpId;
+                if (string.IsNullOrEmpty(empId)) return BadRequest("Not authenticated");
+
+                // Lấy RegionID từ Employee thay vì từ session
+                var dashboard = await _regionService.GetDashboardForManagerAsync(empId);
+                if (dashboard == null) return BadRequest("No region assigned");
+
+                var regionId = dashboard.RegionId;
 
                 var f = from ?? DateTime.Now.AddDays(-7);
                 var t = (to ?? DateTime.Now).Date.AddDays(1).AddSeconds(-1);

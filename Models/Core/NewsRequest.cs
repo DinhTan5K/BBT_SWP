@@ -22,7 +22,7 @@ namespace start.Models
         [Column(TypeName = "varchar(10)")]
         public string RequestedBy { get; set; } = string.Empty;
 
-        public DateTime RequestedAt { get; set; } = DateTime.UtcNow;
+        public DateTime RequestedAt { get; set; } = DateTime.Now;
 
         // Thông tin duyệt
         [Required]
@@ -47,7 +47,7 @@ namespace start.Models
 
         public string? ImageUrl { get; set; }
 
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime CreatedAt { get; set; } = DateTime.Now;
 
         // Mã giảm giá đi kèm với tin tức
         public int? DiscountId { get; set; }

@@ -1,0 +1,33 @@
+/* Attendance History Styles */
+.attendance-table {
+    margin-top: 20px;
+}
+
+.attendance-table thead {
+    background-color: #f8f9fa;
+}
+
+.attendance-table th {
+    font-weight: 600;
+    color: #495057;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.attendance-table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+.badge {
+    font-size: 0.85em;
+    padding: 0.35em 0.65em;
+}
+
+.alert-info,
+.alert-success,
+.alert-warning {
+    border-radius: 8px;
+}
+
+
+
+

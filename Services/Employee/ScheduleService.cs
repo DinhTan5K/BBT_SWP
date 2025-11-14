@@ -33,8 +33,8 @@ public class ScheduleService : IScheduleService
         var items = _db.WorkSchedules
                        .AsNoTracking()
                        .Where(w => w.EmployeeID == employeeId &&
-                                   w.WorkDate >= first && w.WorkDate < lastEx)
-                       .OrderBy(w => w.WorkDate)
+                                   w.Date >= first && w.Date < lastEx)
+                       .OrderBy(w => w.Date)
                        .ToList();
 
         return new MonthScheduleDto

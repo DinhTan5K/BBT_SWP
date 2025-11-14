@@ -167,7 +167,7 @@ namespace start.Services
                 existingKpi.IsKPIAchieved = kpiVm.IsKPIAchieved;
                 existingKpi.TargetScore = kpiVm.TargetScore;
                 existingKpi.KPIBonus = kpiVm.KPIBonus;
-                existingKpi.UpdatedAt = DateTime.UtcNow;
+                existingKpi.UpdatedAt = DateTime.Now;
             }
             else
             {
@@ -191,7 +191,7 @@ namespace start.Services
                     IsKPIAchieved = kpiVm.IsKPIAchieved,
                     TargetScore = kpiVm.TargetScore,
                     KPIBonus = kpiVm.KPIBonus,
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = DateTime.Now
                 };
                 _db.MarketingKPIs.Add(newKpi);
             }

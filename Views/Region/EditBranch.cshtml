@@ -7,6 +7,11 @@
 <!-- existing main css -->
 <link rel="stylesheet" href="~/css/Region/branch-info-details.css" />
 
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" 
+      crossorigin=""/>
+
 <!-- small inline CSS for autocomplete (keeps it local and simple) -->
 <style>
     .address-search-wrapper {
@@ -109,13 +114,20 @@
             <div class="row g-3 align-items-center">
                 <div class="col-md-6">
                     <label class="form-label">Latitude</label>
-                    <input asp-for="Latitude" class="form-control" name="Latitude" />
+                    <input asp-for="Latitude" class="form-control" name="Latitude" type="number" 
+                           step="0.0000001" min="-90" max="90" 
+                           placeholder="Ví dụ: 16.0555" />
+                    <span asp-validation-for="Latitude" class="text-danger"></span>
                 </div>
                 <div class="col-md-6">
                     <label class="form-label">Longitude</label>
-                    <input asp-for="Longitude" class="form-control" name="Longitude" />
+                    <input asp-for="Longitude" class="form-control" name="Longitude" type="number" 
+                           step="0.0000001" min="-180" max="180" 
+                           placeholder="Ví dụ: 108.2230" />
+                    <span asp-validation-for="Longitude" class="text-danger"></span>
                 </div>
             </div>
+            <small class="text-muted">Tọa độ sẽ được cập nhật tự động khi bạn chọn vị trí trên bản đồ hoặc tìm địa chỉ. Bạn cũng có thể nhập thủ công.</small>
             
             <div class="mb-3">
                 <label for="note" class="form-label">Ghi chú (lý do / mô tả)</label>
@@ -142,34 +154,22 @@
 </div>
 
 @section Scripts {
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+            crossorigin=""></script>
+    
     <script>
         (function () {
-            // --- Utilities ---
-            function loadScriptOnce(src, cb) {
-                var exists = Array.from(document.getElementsByTagName('script')).some(s => s.src && s.src.indexOf(src) !== -1);
-                if (exists) { cb(); return; }
-                var s = document.createElement('script'); s.src = src; s.onload = cb; s.onerror = function () { console.error('Failed to load', src); cb(); };
-                document.head.appendChild(s);
-            }
-            function ensureLeafletCss() {
-                var href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-                var exists = Array.from(document.getElementsByTagName('link')).some(l => l.href && l.href.indexOf('leaflet') !== -1);
-                if (!exists) { var link = document.createElement('link'); link.rel = 'stylesheet'; link.href = href; document.head.appendChild(link); }
-            }
-
-            // --- Main initialiser (map + autocomplete + submit confirm) ---
-            function initAll() {
-                ensureLeafletCss();
-
-                // load leaflet if needed then init features
+            // Đợi DOM và Leaflet sẵn sàng
+            function initMap() {
+                // Kiểm tra Leaflet đã load chưa
                 if (typeof L === 'undefined' || !L || !L.map) {
-                    loadScriptOnce('https://unpkg.com/leaflet@1.9.4/dist/leaflet.js', function () { setTimeout(initFeatures, 40); });
-                } else {
-                    setTimeout(initFeatures, 10);
+                    console.error('Leaflet chưa được load!');
+                    setTimeout(initMap, 100);
+                    return;
                 }
-            }
 
-            function initFeatures() {
                 // Elements
                 var addrInput = document.getElementById('addressInput');
                 var sugBox = document.getElementById('addressSuggestions');
@@ -177,21 +177,68 @@
                 var form = document.getElementById('editBranchForm');
                 var confirmBtn = document.getElementById('confirmBtn');
 
-                if (!mapEl) { console.warn('edit-map not found'); return; }
+                if (!mapEl) { 
+                    console.error('edit-map element not found'); 
+                    return; 
+                }
 
                 // parse server values
-                var latRaw = @System.Text.Json.JsonSerializer.Serialize(Model.Latitude);
-                var lngRaw = @System.Text.Json.JsonSerializer.Serialize(Model.Longitude);
-                var lat0 = (latRaw !== null && latRaw !== "null") ? Number(latRaw) : null;
-                var lng0 = (lngRaw !== null && lngRaw !== "null") ? Number(lngRaw) : null;
+                var latRaw = @System.Text.Json.JsonSerializer.Serialize(Model?.Latitude);
+                var lngRaw = @System.Text.Json.JsonSerializer.Serialize(Model?.Longitude);
+                var lat0 = (latRaw !== null && latRaw !== "null" && latRaw !== 0 && !isNaN(Number(latRaw))) ? Number(latRaw) : null;
+                var lng0 = (lngRaw !== null && lngRaw !== "null" && lngRaw !== 0 && !isNaN(Number(lngRaw))) ? Number(lngRaw) : null;
+                
+                // Validate range
+                if (lat0 !== null && (lat0 < -90 || lat0 > 90)) lat0 = null;
+                if (lng0 !== null && (lng0 < -180 || lng0 > 180)) lng0 = null;
 
-                // create/cleanup map
-                try { if (window.editMap && typeof window.editMap.remove === 'function') window.editMap.remove(); } catch (e) { /*ignore*/ }
-                window.editMap = L.map('edit-map', { zoomControl: true }).setView([(lat0 !== null ? lat0 : 16.0555), (lng0 !== null ? lng0 : 108.2230)], (lat0 !== null && lng0 !== null) ? 16 : 7);
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap contributors' }).addTo(window.editMap);
+                // Cleanup map cũ nếu có
+                if (window.editMap && typeof window.editMap.remove === 'function') {
+                    try {
+                        window.editMap.remove();
+                    } catch (e) {
+                        console.warn('Error removing old map:', e);
+                    }
+                }
+
+                // Tạo map mới
+                try {
+                    var defaultLat = lat0 !== null && !isNaN(lat0) ? lat0 : 16.0555;
+                    var defaultLng = lng0 !== null && !isNaN(lng0) ? lng0 : 108.2230;
+                    var defaultZoom = (lat0 !== null && lng0 !== null && !isNaN(lat0) && !isNaN(lng0)) ? 16 : 7;
+                    
+                    window.editMap = L.map('edit-map', { 
+                        zoomControl: true,
+                        preferCanvas: false
+                    }).setView([defaultLat, defaultLng], defaultZoom);
+                    
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
+                        maxZoom: 19, 
+                        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' 
+                    }).addTo(window.editMap);
+                    
+                    // Đảm bảo map render đúng kích thước
+                    setTimeout(function() {
+                        if (window.editMap) {
+                            window.editMap.invalidateSize();
+                        }
+                    }, 100);
+                } catch (e) {
+                    console.error('Error creating map:', e);
+                    return;
+                }
 
                 var marker = null;
                 function setLatLngInputs(a, b) {
+                    // Validate range before setting
+                    if (isNaN(a) || a < -90 || a > 90) {
+                        console.warn('Latitude out of range:', a);
+                        return;
+                    }
+                    if (isNaN(b) || b < -180 || b > 180) {
+                        console.warn('Longitude out of range:', b);
+                        return;
+                    }
                     var latIn = document.querySelector('input[name="Latitude"]');
                     var lngIn = document.querySelector('input[name="Longitude"]');
                     if (latIn) latIn.value = Number(a).toFixed(9);
@@ -236,10 +283,22 @@
                     function onCoordChange() {
                         var a = parseFloat(latInputField.value);
                         var b = parseFloat(lngInputField.value);
-                        if (!isNaN(a) && !isNaN(b)) placeMarker(a, b);
+                        // Validate range
+                        if (!isNaN(a) && !isNaN(b)) {
+                            if (a >= -90 && a <= 90 && b >= -180 && b <= 180) {
+                                placeMarker(a, b);
+                            } else {
+                                alert('Tọa độ không hợp lệ!\nLatitude phải từ -90 đến 90\nLongitude phải từ -180 đến 180');
+                                // Reset to empty if invalid
+                                if (a < -90 || a > 90) latInputField.value = '';
+                                if (b < -180 || b > 180) lngInputField.value = '';
+                            }
+                        }
                     }
                     latInputField.addEventListener('change', onCoordChange);
+                    latInputField.addEventListener('blur', onCoordChange);
                     lngInputField.addEventListener('change', onCoordChange);
+                    lngInputField.addEventListener('blur', onCoordChange);
                 }
 
                 // --- autocomplete using Nominatim ---
@@ -304,10 +363,6 @@
                     }
                 }
 
-                // ensure map renders nicely
-                setTimeout(function () { try { window.editMap.invalidateSize(); } catch (e) { } }, 200);
-                window.addEventListener('resize', function () { try { window.editMap.invalidateSize(); } catch (e) { } });
-
                 // --- submit confirmation (native confirm) ---
                 if (form) {
                     form.addEventListener('submit', function (e) {
@@ -315,21 +370,25 @@
                         var ok = window.confirm('Xác nhận chỉnh sửa thông tin chi nhánh?');
                         if (ok) {
                             // optionally disable button to avoid double submit
-                            if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.style.opacity = 0.8; }
+                            if (confirmBtn) { 
+                                confirmBtn.disabled = true; 
+                                confirmBtn.style.opacity = 0.8; 
+                            }
                             form.submit();
-                        } else {
-                            // cancelled
-                            return false;
                         }
+                        return false;
                     });
                 }
-            } // end initFeatures
+            } // end initMap
 
-            // kick off
-            if (typeof L === 'undefined') {
-                loadScriptOnce('https://unpkg.com/leaflet@1.9.4/dist/leaflet.js', function () { setTimeout(initAll, 20); });
+            // Khởi tạo khi DOM sẵn sàng
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', function() {
+                    setTimeout(initMap, 150);
+                });
             } else {
-                setTimeout(initAll, 10);
+                // DOM đã sẵn sàng
+                setTimeout(initMap, 150);
             }
         })();
     </script>

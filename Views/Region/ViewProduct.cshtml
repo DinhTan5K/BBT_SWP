@@ -1,6 +1,6 @@
 @model IEnumerable<Product>
 @{
-    ViewData["Title"] = "Product List";
+    ViewData["Title"] = "Danh Sách Sản Phẩm";
     Layout = "~/Views/Shared/_RegionLayout.cshtml";
 
     var categories = ViewBag.Categories as IEnumerable<ProductCategory> ?? new List<ProductCategory>();
@@ -8,120 +8,155 @@
     var currentQuery = (ViewData["CurrentQuery"] as string) ?? "";
 }
 
-<link rel="stylesheet" href="~/css/Region/region-dashboard.css" />
+<link rel="stylesheet" href="~/css/Region/view-product.css" />
 
-<div style="margin-top: 80px;">
-    <h2>Danh Sách Sản Phẩm</h2>
+<div class="view-product-container">
+    <div class="product-header">
+        <h2>Danh Sách Sản Phẩm</h2>
+    </div>
 
-    <div id="ajaxAlert" style="margin-bottom:12px;"></div>
+    <div id="ajaxAlert"></div>
 
     @if (TempData["SuccessMessage"] != null)
     {
-        <div class="alert alert-success" role="alert">@TempData["SuccessMessage"]</div>
+        <div class="alert alert-success" role="alert">
+            <i class="fas fa-check-circle me-2"></i>@TempData["SuccessMessage"]
+        </div>
     }
     @if (TempData["ErrorMessage"] != null)
     {
-        <div class="alert alert-danger" role="alert">@TempData["ErrorMessage"]</div>
+        <div class="alert alert-danger" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i>@TempData["ErrorMessage"]
+        </div>
     }
 
-    <div style="margin:12px 0;">
-    
-    <div style="display:flex; justify-content: flex-end; margin-bottom: 12px; gap: 8px; align-items: center;">
-        <button id="createCategoryBtn" type="button" class="btn create-category-btn" title="Tạo danh mục">Tạo danh mục</button>
-    </div>
-
-    <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-
-        <div class="filter-segment" role="tablist" aria-label="Filter products"
-              style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-            <button type="button" class="btn btn-light filter-btn @(currentCategory == "all" ? "active" : "")"
-                    data-cat="all">Tất cả</button>
-
-            @* render category pills inside wrapper so we can show delete icon *@
-            @foreach (var c in categories)
-            {
-                <div class="category-pill" data-cat-id="@c.CategoryID">
-                    <button type="button"
-                        class="btn btn-light filter-btn @(currentCategory == c.CategoryID.ToString() ? "active" : "")"
-                        data-cat="@c.CategoryID">@c.CategoryName</button>
-                    <button type="button" class="category-remove" title="Xóa danh mục" data-cat-id="@c.CategoryID" aria-label="Xóa danh mục">
-                        &times;
-                    </button>
-                </div>
-            }
-        </div>
-
-        <div style="flex:1;"></div>
-
-        <div style="display:flex;gap:8px;align-items:center;">
-            <button id="toggleHiddenBtn" type="button" class="filter-btn" data-hidden="0"
-                    title="Bật để hiển thị sản phẩm đang ẩn">
-                Đang ẩn
+    <div class="filter-toolbar">
+        <div class="filter-toolbar-top">
+            <button id="createCategoryBtn" type="button" class="create-category-btn" title="Tạo danh mục mới">
+                <i class="fas fa-plus"></i> Tạo danh mục
             </button>
+        </div>
 
-            <input id="productSearch" type="text" class="form-control" placeholder="Tìm theo tên hoặc mô tả..."
-                    value="@currentQuery" style="min-width:260px; max-width: 300px;" />
+        <div class="filter-toolbar-main">
+            <div class="filter-segment" role="tablist" aria-label="Filter products">
+                <button type="button" class="filter-btn @(currentCategory == "all" ? "active" : "")"
+                        data-cat="all">
+                    <i class="fas fa-th-large me-1"></i>Tất cả
+                </button>
+
+                @foreach (var c in categories)
+                {
+                    <div class="category-pill" data-cat-id="@c.CategoryID">
+                        <button type="button"
+                            class="filter-btn @(currentCategory == c.CategoryID.ToString() ? "active" : "")"
+                            data-cat="@c.CategoryID">@c.CategoryName</button>
+                        <button type="button" class="category-remove" title="Xóa danh mục" data-cat-id="@c.CategoryID" aria-label="Xóa danh mục">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                }
+            </div>
+
+            <div style="flex: 1;"></div>
+
+            <div style="display: flex; gap: 0.75rem; align-items: center;">
+                <button id="toggleHiddenBtn" type="button" class="filter-btn" data-hidden="0"
+                        title="Bật để hiển thị sản phẩm đang ẩn">
+                    <i class="fas fa-eye-slash me-1"></i>Đang ẩn
+                </button>
+
+                <input id="productSearch" type="text" class="form-control" placeholder="🔍 Tìm theo tên hoặc mô tả..."
+                        value="@currentQuery" style="min-width: 280px; max-width: 350px;" />
+            </div>
         </div>
     </div>
-</div>
 
-          
+    @Html.AntiForgeryToken()
 
-    @Html.AntiForgeryToken() @* page-level token (useful fallback) *@
-
-    <table class="table table-hover align-middle text-center">
-        <thead>
-            <tr>
-                <th>Product Name</th>
-                <th>Description</th>
-                <th>Image</th>
-                <th>Sizes & Prices</th>
-                <th>Active</th>
-                <th>Action</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var item in Model)
-            {
-                <tr data-id="@item.ProductID" class="@(item.IsActive ? "" : "product-inactive")">
-                    <td style="max-width:200px;white-space:normal;">@item.ProductName</td>
-                    <td style="white-space:normal;">@item.Description</td>
-                    <td>
-                        @if (!string.IsNullOrEmpty(item.Image_Url))
-                        {
-                            <img src="@item.Image_Url" width="60" height="60" />
-                        }
-                    </td>
-                    <td style="text-align:left;">
-                        <ul style="list-style:disc; text-align:left; padding-left:18px; margin:0;">
-                            @foreach (var size in item.ProductSizes)
-                            {
-                                <li>@size.Size - @size.Price.ToString("N0") đ</li>
-                            }
-                        </ul>
-                    </td>
-                    <td>@(item.IsActive ? "Yes" : "No")</td>
-                    <td>
-                        <a asp-action="EditProduct" asp-route-id="@item.ProductID" class="btn btn-warning">Edit</a>
-                        @if (item.IsActive)
-                        {
-                            <button type="button" class="btn btn-danger btn-sm hide-btn">Hide</button>
-                        }
-                        else
-                        {
-                            <button type="button" class="btn btn-success btn-sm restore-btn">Restore</button>
-                        }
-                    </td>
+    <div class="product-table-wrapper">
+        <table class="table table-hover align-middle">
+            <thead>
+                <tr>
+                    <th><i class="fas fa-box me-2"></i>Tên sản phẩm</th>
+                    <th><i class="fas fa-align-left me-2"></i>Mô tả</th>
+                    <th><i class="fas fa-image me-2"></i>Hình ảnh</th>
+                    <th><i class="fas fa-ruler me-2"></i>Kích thước & Giá</th>
+                    <th><i class="fas fa-toggle-on me-2"></i>Trạng thái</th>
+                    <th><i class="fas fa-cogs me-2"></i>Thao tác</th>
                 </tr>
-            }
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr data-id="@item.ProductID" class="@(item.IsActive ? "" : "product-inactive")">
+                        <td data-label="Tên sản phẩm" style="font-weight: 600; color: var(--text-color);">@item.ProductName</td>
+                        <td data-label="Mô tả" style="max-width: 300px; white-space: normal; color: var(--text-muted-color);">@(item.Description ?? "Không có mô tả")</td>
+                        <td data-label="Hình ảnh">
+                            @if (!string.IsNullOrEmpty(item.Image_Url))
+                            {
+                                <img src="@item.Image_Url" alt="@item.ProductName" style="width: 80px; height: 80px; object-fit: cover; border-radius: var(--radius-md);" />
+                            }
+                            else
+                            {
+                                <div style="width: 80px; height: 80px; background: var(--bg-color); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; color: var(--text-muted-color);">
+                                    <i class="fas fa-image" style="font-size: 2rem;"></i>
+                                </div>
+                            }
+                        </td>
+                        <td data-label="Kích thước & Giá">
+                            <ul>
+                                @foreach (var size in item.ProductSizes)
+                                {
+                                    <li>
+                                        <span style="font-weight: 600;">@size.Size</span>
+                                        <span style="color: var(--primary-green-dark); font-weight: 700; margin-left: 0.5rem;">@size.Price.ToString("N0") đ</span>
+                                    </li>
+                                }
+                            </ul>
+                        </td>
+                        <td data-label="Trạng thái">
+                            @if (item.IsActive)
+                            {
+                                <span class="status-badge active">
+                                    <i class="fas fa-check-circle me-1"></i>Hoạt động
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="status-badge inactive">
+                                    <i class="fas fa-times-circle me-1"></i>Ẩn
+                                </span>
+                            }
+                        </td>
+                        <td data-label="Thao tác">
+                            <div class="action-buttons">
+                                <a asp-action="EditProduct" asp-route-id="@item.ProductID" class="btn btn-warning">
+                                    <i class="fas fa-edit"></i>Sửa
+                                </a>
+                                @if (item.IsActive)
+                                {
+                                    <button type="button" class="btn btn-danger btn-sm hide-btn">
+                                        <i class="fas fa-eye-slash"></i>Ẩn
+                                    </button>
+                                }
+                                else
+                                {
+                                    <button type="button" class="btn btn-success btn-sm restore-btn">
+                                        <i class="fas fa-eye"></i>Hiện
+                                    </button>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
 </div>
 
 <div class="modal fade" id="createCategoryModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <form id="createCategoryForm" class="modal-content" method="post" novalidate>
-      @* Anti-forgery token INSIDE the form so we can read it specifically *@
       @Html.AntiForgeryToken()
       <div class="modal-header">
         <h5 class="modal-title">Tạo danh mục mới</h5>
@@ -146,7 +181,7 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="productModalLabel">Create New Product</h5>
+                <h5 class="modal-title" id="productModalLabel">Tạo sản phẩm mới</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -155,84 +190,42 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" id="saveProductBtn">Create Product</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-primary" id="saveProductBtn">Tạo sản phẩm</button>
             </div>
         </div>
     </div>
 </div>
 
-<button id="addProductBtn" class="fab" title="Create New Product">+</button>
+<button id="addProductBtn" class="fab" title="Tạo sản phẩm mới">
+    <i class="fas fa-plus"></i>
+</button>
 
 @section Styles {
     <style>
-        .table-hover tbody tr:hover { background-color: #f1f1f1; }
-        tr.product-inactive td:not(:last-child) { opacity: 0.5; transition: opacity 0.3s ease-in-out; }
-        tr.product-inactive .btn-warning { opacity: 0.5; pointer-events: none; }
-
-        .fab { position: fixed; width: 60px; height: 60px; bottom: 40px; right: 40px; background-color: #0d6efd; color: white; border-radius: 50%; text-align: center; font-size: 30px; line-height: 55px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 1050; border: none; cursor: pointer; transition: all 0.2s ease-in-out; }
-        .fab:hover { background-color: #0b5ed7; transform: scale(1.05); }
-
-        .filter-segment .filter-btn { border-radius: 20px; padding:6px 12px; border:1px solid rgba(0,0,0,0.08); background: #fff; }
-        .filter-segment .filter-btn.active { background: #f6e6d8; border-color: #e0c6a3; color:#5a3f2a; font-weight:600; }
-
-        #toggleHiddenBtn.filter-btn { border-radius: 20px; padding:6px 12px; border:1px solid rgba(0,0,0,0.08); background: #fff; }
-        #toggleHiddenBtn.filter-btn.active { background: #f6e6d8; border-color: #e0c6a3; color:#5a3f2a; font-weight:600; }
-
-        /* Chỉnh sửa 1: Nút Tạo danh mục hình chữ nhật cân đối */
-        .create-category-btn {
-            background-color: #0d6efd;
-            color: #fff;
-            border: none;
-            padding: 8px 16px; /* Tăng padding để cân đối và hình chữ nhật hơn */
-            border-radius: 8px; /* Bo góc nhẹ */
-            font-weight: 600;
-            line-height: 1.2; /* Cân bằng chiều cao với input/filter */
-            height: 40px; /* Cố định chiều cao (phù hợp với form-control mặc định) */
+        /* Additional inline styles if needed */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--text-muted-color);
         }
-        .create-category-btn:hover { background-color: #0b5ed7; color: #fff; }
         
-        /* Chỉnh sửa 2: category pill và icon xóa */
-        .category-pill { 
-            margin-right:6px; 
-            position:relative; 
-            display:inline-block; 
-            transition: all 0.2s; /* Thêm hiệu ứng chuyển động cho pill */
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            color: var(--text-muted-color);
+            opacity: 0.5;
         }
-        .category-pill .filter-btn { 
-            padding-right: 28px; 
-            position:relative; 
-            z-index: 1; 
-            transition: all 0.2s;
-        } 
-        /* icon xóa: dùng icon thay vì &times;, ẩn đi */
-        .category-remove {
-            display:none; 
-            position:absolute;
-            right: 0px; /* Đẩy sát ra cạnh phải */
-            top: 50%;
-            transform: translateY(-50%); /* Căn giữa dọc */
-            background:transparent;
-            border:none;
-            color: #5a3f2a; /* Màu tối hơn, ít gây khó chịu hơn màu đỏ */
-            font-size:12px; /* Kích thước nhỏ hơn */
-            z-index: 20;
-            line-height:1;
-            padding: 0 8px; /* Vùng nhấp chuột rộng hơn */
-            cursor:pointer;
-            transition: color 0.2s, background 0.2s;
+        
+        .empty-state h3 {
+            font-family: var(--font-main);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
         }
-
-        /* Hover: đổi màu pill, hiển thị icon, icon đỏ hơn khi hover riêng */
-        .category-pill:hover { background-color: #fcece0; border-radius: 20px; }
-        .category-pill:hover .filter-btn { background-color: transparent; border-color: #e0c6a3; color:#5a3f2a; }
-
-        .category-pill:hover .category-remove { 
-            display:block; /* Hiển thị icon khi hover pill */
-            color: #5a3f2a;
-        }
-        .category-remove:hover { 
-            color: #d9534f; /* Đỏ nhẹ khi hover riêng icon */
+        
+        .empty-state p {
+            font-family: var(--font-main);
+            color: var(--text-muted-color);
         }
     </style>
 }
@@ -430,8 +423,8 @@ $(function () {
                 var id = c.CategoryID || c.categoryID || c.categoryId;
                 var name = c.CategoryName || c.categoryName || c.category;
                 var pill = $('<div>').addClass('category-pill').attr('data-cat-id', id);
-                var btn = $('<button>').attr('type', 'button').addClass('btn btn-light filter-btn').attr('data-cat', id).text(name);
-                var remove = $('<button>').addClass('category-remove').attr('data-cat-id', id).html('&times;');
+                var btn = $('<button>').attr('type', 'button').addClass('filter-btn').attr('data-cat', id).text(name);
+                var remove = $('<button>').attr('type', 'button').addClass('category-remove').attr('title', 'Xóa danh mục').attr('data-cat-id', id).attr('aria-label', 'Xóa danh mục').html('<i class="fas fa-times"></i>');
                 pill.append(btn).append(remove);
                 seg.append(pill);
             });
@@ -464,6 +457,7 @@ $(function () {
             $('table.table tbody').replaceWith(html);
         }).fail(function (xhr) {
             console.error('Lỗi load products:', xhr.responseText || xhr.statusText);
+            showAlert('danger', 'Không thể tải danh sách sản phẩm. Vui lòng thử lại.');
         });
     }
 });

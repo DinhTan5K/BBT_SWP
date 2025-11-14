@@ -1,32 +1,19 @@
 @using Microsoft.AspNetCore.Http
+@using System.Security.Claims
 @{
     // Tên hiển thị
+    var currentAction = ViewContext.RouteData.Values["Action"]?.ToString();
     var empName = Context.Session.GetString("EmployeeName") ?? User?.Identity?.Name ?? "Tài khoản";
     var regionName = Context.Session.GetString("RegionName") ?? "Chưa xác định";
-
-    // Avatar: ưu tiên lưu trong session, fallback sang claim "AvatarUrl" nếu có, rồi fallback sang ảnh mặc định
-    var avatarUrl = Context.Session.GetString("AvatarUrl");
-    if (string.IsNullOrEmpty(avatarUrl))
+    var userEmailRaw = Context.Session.GetString("Email");
+    var userEmail = string.IsNullOrWhiteSpace(userEmailRaw) ? "Email không xác định" : userEmailRaw;
+    
+    // Tạo initials từ tên
+    var userInitials = "RM";
+    if (!string.IsNullOrEmpty(empName) && empName != "Tài khoản")
     {
-        try
-        {
-            // nếu bạn lưu avatar url trong claim (khi đăng nhập), đọc từ User
-            var claimAvatar = User?.FindFirst("AvatarUrl")?.Value;
-            if (!string.IsNullOrEmpty(claimAvatar))
-            {
-                avatarUrl = claimAvatar;
-            }
-        }
-        catch
-        {
-            // ignore
-        }
-    }
-
-    // Nếu vẫn null => dùng ảnh mặc định trong wwwroot/images/default-avatar.png
-    if (string.IsNullOrEmpty(avatarUrl))
-    {
-        avatarUrl = Url.Content("~/images/default-avatar.png");
+        var names = empName.Split(' ').Where(s => !string.IsNullOrEmpty(s)).Select(s => s[0]);
+        userInitials = string.Concat(names.Take(2)).ToUpper();
     }
 
     Layout = null;
@@ -41,109 +28,136 @@
     <title>@ViewData["Title"] - Region Management</title>
 
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
+    <link rel="stylesheet" href="~/css/BManager/bmanager.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/Region/region-layout.css" />
 
+    <script>
+        // IIFE to prevent FOUC (Flash of Unstyled Content) on dark mode
+        (function() {
+            try {
+                var theme = localStorage.getItem('theme');
+                if (theme === 'dark') {
+                    document.documentElement.classList.add('dark-mode');
+                }
+            } catch (e) { }
+        })();
+    </script>
     @* Render optional per-view styles section (fix for the exception you saw) *@
     @RenderSection("Styles", required: false)
 </head>
 
 <body>
-    <div class="app-shell">
-        <aside class="sidebar">
-            <div class="sidebar-top">
-                <div class="brand">
-                    <div class="brand-icon">🌍</div>
-                    <div class="brand-text">
-                        <div class="brand-title">Region Management Portal</div>
-                        <div class="brand-sub">Quản lý khu vực</div>
-                    </div>
-                </div>
-            </div>
-
-            <nav class="sidebar-nav">
-                <ul>
-                    <li>
-                        <a asp-controller="Region" asp-action="RegionHome" class="nav-link">
-                            <span class="nav-dot"></span> Tất cả chi nhánh
-                        </a>
-                    </li>
-                    <li>
-                        <a asp-controller="Region" asp-action="ManageBranchStatus" class="nav-link">
-                            <span class="nav-dot"></span> Quản lý tình trạng chi nhánh
-                        </a>
-                    </li>
-                    <li>
-                        <a asp-controller="Region" asp-action="ViewProduct" class="nav-link">
-                            <span class="nav-dot"></span> Quản lý sản phẩm
-                        </a>
-                    </li>
-                    <li>
-                        <a asp-controller="Region" asp-action="Statistics" class="nav-link">
-                            <span class="nav-dot"></span> Thống kê & Báo cáo doanh thu
-                        </a>
-                    </li>
-                    <li><a asp-controller="Region" asp-action="SentRequests" class="nav-link">Yêu cầu đã gửi</a></li>
-                </ul>
-            </nav>
-
-            <div class="sidebar-footer">
-            </div>
-        </aside>
-
-        <div class="main-area">
-            <header class="top-header">
-                <div class="header-left">
-                    <div class="region-info-box">
-                        <div class="region-label">Khu vực: <span class="region-name-highlight">Miền @regionName</span>
-                        </div>
-                        <div class="manager-name"><span class="manager-name-highlight">Người quản lý: @empName</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="header-right">
-                    <div class="user-block dropdown">
-                        <a class="user-toggle" href="#" id="userMenu" data-bs-toggle="dropdown" aria-expanded="false">
-                            @* Avatar dùng avatarUrl; onerror fallback về ảnh mặc định *@
-                            <img src="@avatarUrl" alt="avatar" class="user-avatar"
-                                 onerror="this.onerror=null;this.src='@Url.Content("~/images/default-avatar.png")';" />
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenu">
-                            <li><a class="dropdown-item" asp-controller="Employee" asp-action="Profile">Hồ sơ</a></li>
-                            <li>
-                                <hr class="dropdown-divider" />
-                            </li>
-                            <li><a class="dropdown-item text-danger" asp-controller="Account" asp-action="Logout">Đăng
-                                    Xuất</a></li>
-                        </ul>
-                    </div>
-                </div>
-            </header>
-
-            <main class="page-body">
-                <div class="container-fluid">
-                    @RenderBody()
-                </div>
-            </main>
+    <nav class="sidebar">
+        <div>
+            <h4 class="mb-1">Buble Tea</h4>
+            <h5 class="text-muted">Quản lý Khu vực</h5>
+            <hr /> 
+            
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link @(currentAction == "RegionHome" ? "active" : "")" asp-controller="Region" asp-action="RegionHome">
+                        <i class="fas fa-tachometer-alt fa-fw"></i> Tổng quan
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link @(currentAction == "ManageBranchStatus" ? "active" : "")" asp-controller="Region" asp-action="ManageBranchStatus">
+                        <i class="fas fa-store fa-fw"></i> Quản lý tình trạng chi nhánh
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link @(currentAction == "ViewProduct" ? "active" : "")" asp-controller="Region" asp-action="ViewProduct">
+                        <i class="fas fa-box fa-fw"></i> Quản lý sản phẩm
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link @(currentAction == "Statistics" ? "active" : "")" asp-controller="Region" asp-action="Statistics">
+                        <i class="fas fa-chart-line fa-fw"></i> Thống kê & Báo cáo doanh thu
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link @(currentAction == "SentRequests" ? "active" : "")" asp-controller="Region" asp-action="SentRequests">
+                        <i class="fas fa-paper-plane fa-fw"></i> Yêu cầu đã gửi
+                    </a>
+                </li>
+            </ul>
         </div>
-    </div>
+
+        <div class="logout-section">
+            <div class="form-check form-switch mb-3" id="theme-switch-wrapper">
+                <input class="form-check-input" type="checkbox" id="theme-toggle">
+                <label class="form-check-label" for="theme-toggle" id="theme-label">
+                    <i class="fas fa-moon"></i> Chế độ tối
+                </label>
+            </div>
+            
+            <hr />
+
+            <a class="user-profile-widget" asp-controller="Employee" asp-action="Profile" asp-area="">
+                <div class="user-avatar">
+                    @userInitials
+                </div>
+                <div class="user-info">
+                    <span class="user-name">@empName</span>
+                    <span class="user-email">@userEmail</span>
+                </div>
+            </a>
+
+            <a class="logout-link" asp-controller="Account" asp-action="Logout" asp-area="">
+                <i class="fas fa-sign-out-alt"></i> Đăng xuất
+            </a>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        @if (TempData["Success"] != null)
+        {
+            <div class="alert alert-success">@TempData["Success"]</div>
+        }
+        @if (TempData["Error"] != null)
+        {
+            <div class="alert alert-danger">@TempData["Error"]</div>
+        }
+        @RenderBody()
+    </main>
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-
+    <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+    <script src="~/lib/jquery-validation-unobtrusive/dist/jquery.validate.unobtrusive.min.js"></script>
     <script>
-        // Thêm hiệu ứng active dựa trên route hiện tại
-        $(document).ready(function () {
-            var currentUrl = window.location.pathname;
+        $(function() {
+            // --- LOGIC BẬT/TẮT THEME ---
+            const themeToggle = $('#theme-toggle');
+            const themeLabel = $('#theme-label');
+            const sunIcon = '<i class="fas fa-sun"></i> Chế độ sáng';
+            const moonIcon = '<i class="fas fa-moon"></i> Chế độ tối';
 
-            $('.sidebar-nav a.nav-link').each(function () {
-                // Lấy href đầy đủ (có thể là đường dẫn tương đối)
-                var linkUrl = $(this).attr('href');
-                if (linkUrl && currentUrl.indexOf(linkUrl) !== -1) {
-                    $(this).addClass('active');
+            function setTheme(theme) {
+                if (theme === 'dark') {
+                    document.documentElement.classList.add('dark-mode');
+                    themeLabel.html(sunIcon);
+                    themeToggle.prop('checked', true);
+                    localStorage.setItem('theme', 'dark');
+                } else {
+                    document.documentElement.classList.remove('dark-mode');
+                    themeLabel.html(moonIcon);
+                    themeToggle.prop('checked', false);
+                    localStorage.setItem('theme', 'light');
                 }
+            }
+            themeToggle.on('change', function() {
+                setTheme($(this).is(':checked') ? 'dark' : 'light');
             });
-        });
+            let savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                setTheme(savedTheme);
+            } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                setTheme('dark');
+            } else {
+                setTheme('light');
+            }
+        }); 
     </script>
 
     <partial name="_ValidationScriptsPartial" />

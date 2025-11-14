@@ -518,7 +518,18 @@
         if (revenueCtx) {
             // Đảm bảo có dữ liệu
             const revenueData = monthlyRevenueData || [];
-            const labels = revenueData.map(m => (m.month || m.Month || '')).filter(l => l !== '');
+ const labels = revenueData.map(m =>
+{
+    let raw = m.month || m.Month || '';     // ví dụ: "2025-11-01T00:00:00+07:00"
+
+    // Xóa timezone
+    raw = raw.replace(/\+.*$/, "");         // bỏ +07:00:00
+
+    // Parse lại tháng
+    const dt = new Date(raw);
+    return `Tháng ${dt.getMonth() + 1}`;               // trả về số tháng
+});
+
             const data = revenueData.map(m => parseFloat(m.revenue || m.Revenue || 0));
             
             console.log('Revenue Chart - Labels:', labels);

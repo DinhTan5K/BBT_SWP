@@ -1,5 +1,27 @@
 @model start.Models.Employee
-@{ Layout = "_EmployeeLayout"; ViewBag.ActiveMenu="Profile"; ViewBag.ActiveTab="chat"; }
+@using System.Security.Claims
+@{
+    // Kiểm tra role để dùng layout phù hợp
+    var roleFromViewBag = ViewBag.CurrentRole as string;
+    var roleFromClaims = User?.FindFirst("Role")?.Value ?? User?.FindFirst("RoleID")?.Value;
+    var roleFromEmployee = Model?.RoleID;
+    
+    var roleRaw = roleFromViewBag ?? roleFromClaims ?? roleFromEmployee;
+    var role = !string.IsNullOrWhiteSpace(roleRaw) ? roleRaw.Trim().ToUpperInvariant() : "";
+    
+    // Chọn layout dựa trên role
+    if (role == "MK")
+    {
+        Layout = "~/Views/Shared/_MarketingLayout.cshtml";
+    }
+    else
+    {
+        Layout = "~/Views/Shared/_EmployeeLayout.cshtml";
+    }
+    
+    ViewBag.ActiveMenu = "Profile";
+    ViewBag.ActiveTab = "chat";
+}
 
 @await Html.PartialAsync("~/Views/Employee/_Header.cshtml", Model)
 @await Html.PartialAsync("~/Views/Employee/_Tabs.cshtml", Model)

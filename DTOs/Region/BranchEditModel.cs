@@ -20,8 +20,11 @@ using System.ComponentModel.DataAnnotations;
         public string? Phone { get; set; }
 
         // Latitude / Longitude (nullable: branch may not have coords)
-        public decimal Latitude { get; set; }
-        public decimal Longitude { get; set; }
+        [Range(-90.0, 90.0, ErrorMessage = "Latitude phải nằm trong khoảng -90 đến 90")]
+        public decimal? Latitude { get; set; }
+        
+        [Range(-180.0, 180.0, ErrorMessage = "Longitude phải nằm trong khoảng -180 đến 180")]
+        public decimal? Longitude { get; set; }
 
 
     }

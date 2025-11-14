@@ -1,0 +1,143 @@
+@model List<start.Models.Attendance>
+@{
+    Layout = "_EmployeeLayout";
+    ViewBag.ActiveMenu = "Profile";
+    ViewBag.ActiveTab = "attendance";
+}
+
+<link rel="stylesheet" href="~/css/employee/attendance.css" />
+
+<div class="card shadow-sm mb-3">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-clock"></i> Lịch sử Check-in/Check-out
+        </h5>
+    </div>
+    <div class="card-body">
+        @* Filter form *@
+        <form method="get" asp-controller="Employee" asp-action="Attendance" class="mb-3">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Từ ngày</label>
+                    <input type="date" name="fromDate" class="form-control" value="@(ViewBag.FromDate?.ToString("yyyy-MM-dd"))" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Đến ngày</label>
+                    <input type="date" name="toDate" class="form-control" value="@(ViewBag.ToDate?.ToString("yyyy-MM-dd"))" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">&nbsp;</label>
+                    <div>
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-search"></i> Tìm kiếm
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+        @* Attendance list *@
+        @if (Model != null && Model.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Ngày</th>
+                            <th>Check-in</th>
+                            <th>Check-out</th>
+                            <th>Ca làm việc</th>
+                            <th>Tổng giờ</th>
+                            <th>Trạng thái</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var attendance in Model)
+                        {
+                            var totalHours = attendance.CheckOutTime.HasValue
+                                ? (attendance.CheckOutTime.Value - attendance.CheckInTime).TotalHours
+                                : (double?)null;
+
+                            <tr>
+                                <td>@attendance.CheckInTime.ToString("dd/MM/yyyy")</td>
+                                <td>
+                                    <div>@attendance.CheckInTime.ToString("HH:mm:ss")</div>
+                                    @if (!string.IsNullOrEmpty(attendance.CheckInImageUrl))
+                                    {
+                                        <small class="text-muted">
+                                            <i class="fas fa-image"></i> Có ảnh
+                                        </small>
+                                    }
+                                </td>
+                                <td>
+                                    @if (attendance.CheckOutTime.HasValue)
+                                    {
+                                        <div>@attendance.CheckOutTime.Value.ToString("HH:mm:ss")</div>
+                                        @if (!string.IsNullOrEmpty(attendance.CheckOutImageUrl))
+                                        {
+                                            <small class="text-muted">
+                                                <i class="fas fa-image"></i> Có ảnh
+                                            </small>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="text-warning">Chưa check-out</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (attendance.WorkSchedule != null)
+                                    {
+                                        <span class="badge bg-primary">@(attendance.WorkSchedule.Shift ?? "N/A")</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (totalHours.HasValue)
+                                    {
+                                        <span>@totalHours.Value.ToString("F2") giờ</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (attendance.IsFaceVerified)
+                                    {
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check-circle"></i> Đã xác thực
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-warning">
+                                            <i class="fas fa-exclamation-triangle"></i> Chưa xác thực
+                                        </span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="mt-3 text-muted small">
+                Tổng số bản ghi: @Model.Count
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> Không có dữ liệu check-in/check-out trong khoảng thời gian này.
+            </div>
+        }
+    </div>
+</div>
+
+
+
+

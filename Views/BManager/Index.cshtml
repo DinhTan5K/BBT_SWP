@@ -1,0 +1,326 @@
+@model BranchManagerDashboardViewModel
+@{
+    Layout = "_BManagerLayout";
+}
+@{
+    ViewData["Title"] = "Tổng quan";
+}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div class="dashboard-header">
+    <div class="header-greeting">
+        <h1>Chào mừng, @Model.ManagerName! </h1>
+        <div class="header-meta">
+            <span><i class="fas fa-store me-2"></i>Chi nhánh @Model.BranchName</span>
+            <span><i class="fas fa-calendar-alt me-2"></i>@DateTime.Now.ToString("dddd, dd MMMM, yyyy")</span>
+        </div>
+    </div>
+    <div class="header-status">
+        <span class="badge bg-success rounded-pill"><i class="fas fa-circle me-1"></i> Đang hoạt động</span>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-4 col-md-6 mb-4">
+        <div class="stat-card">
+            <div class="stat-card-icon primary">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="stat-card-title">Tổng nhân viên</div>
+            <div class="stat-card-value">@Model.EmployeeCount</div>
+            <div class="stat-card-change text-success">
+
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4 col-md-6 mb-4">
+        <div class="stat-card">
+            <div class="stat-card-icon green">
+                <i class="fas fa-box"></i>
+            </div>
+            <div class="stat-card-title">Đơn hàng hôm nay </div>
+            <div class="stat-card-value">@Model.TodayOrdersCount</div>
+            <div class="stat-card-change text-success">
+
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4 col-md-12 mb-4">
+        <div class="stat-card">
+            <div class="stat-card-icon orange">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="stat-card-title">Doanh thu hôm nay </div>
+            <div class="stat-card-value">@Model.TodayRevenue.ToString("N0") <span
+                    style="font-size: 1.5rem; color: var(--dash-text);">VNĐ</span></div>
+            <div class="stat-card-change text-success">
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="chart-container">
+    <div class="d-flex justify-content-between align-items-center">
+        <nav class="chart-tabs nav">
+            <a class="nav-link active" data-bs-toggle="tab" href="#revenueTab" role="tab">Doanh thu</a>
+            <a class="nav-link" data-bs-toggle="tab" href="#ordersTab" role="tab">Đơn hàng</a>
+            <a class="nav-link" data-bs-toggle="tab" href="#productsTab" role="tab">Sản phẩm</a>
+        </nav>
+    </div>
+
+    <div class="tab-content mt-3">
+        <div class="tab-pane fade show active" id="revenueTab" role="tabpanel">
+            <h5 class="chart-title">Biểu đồ doanh thu 7 ngày gần nhất</h5>
+            <canvas id="revenueChart" height="100"></canvas>
+        </div>
+        <div class="tab-pane fade" id="ordersTab" role="tabpanel">
+            <h5 class="chart-title">Biểu đồ đơn hàng 7 ngày gần nhất</h5>
+            <canvas id="ordersChart" height="100"></canvas>
+        </div>
+        <div class="tab-pane fade" id="productsTab" role="tabpanel">
+            <h5 class="chart-title">Top 4 sản phẩm bán chạy hôm nay</h5>
+            <div class="chart-container">
+                <canvas id="topProductsChart"></canvas>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4"> 
+    <div class="col-lg-5 mb-4"> 
+        <div class="widget-card">
+            <h5 class="widget-title">Hiệu suất nhân viên (Tuần này)</h5>
+            <div class="widget-subtitle mb-3">Tổng hợp giờ làm và ca chờ duyệt</div>
+            
+            <div class="table-responsive">
+                @if (ViewBag.EmployeeSummary != null && ((List<WeeklySummary>)ViewBag.EmployeeSummary).Any())
+                {
+                    <table class="table table-sm table-borderless align-middle">
+                        <thead>
+                            <tr>
+                                <th class="text-start">Nhân viên</th>
+                                <th class="text-center">Giờ làm (h)</th>
+                                <th class="text-center">Chờ duyệt</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var emp in (List<WeeklySummary>)ViewBag.EmployeeSummary)
+                            {
+                                <tr>
+                                    <td class="text-start">
+                                        <div class="d-flex align-items-center">
+                                            <strong>@emp.FullName</strong>
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-primary">@emp.TotalHours</span>
+                                    </td>
+                                    <td class="text-center">
+                                        @if (emp.ShiftsPending > 0)
+                                        {
+                                            <span class="badge bg-warning text-dark">@emp.ShiftsPending</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted small">—</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <div class="text-muted text-center p-3">Chưa có dữ liệu hiệu suất nhân viên trong tuần này.</div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-7 mb-4">
+        <div class="widget-card dark">
+            <div class="widget-header">
+                <h5 class="widget-title">Thống kê tuần này</h5>
+                <button class="btn-edit-target" data-bs-toggle="modal" data-bs-target="#targetsModal" title="Chỉnh sửa mục tiêu">
+                    <i class="fas fa-pencil-alt"></i>
+                </button>
+            </div>
+            
+            <div class="mb-4">
+                <div class="progress-label">
+                    <span>Tổng đơn hàng</span>
+                    <span class="progress-meta">@Model.WeekOrdersCount / @Model.TargetOrders.ToString("N0") (mục tiêu)</span>
+                </div>
+                <div class="progress" style="height: 10px;">
+                    <div class="progress-bar bg-success" role="progressbar" 
+                        style="width: @(Model.TargetOrders == 0 ? 0 : (Model.WeekOrdersCount * 100 / Model.TargetOrders))%;" 
+                        aria-valuenow="@Model.WeekOrdersCount" aria-valuemin="0" aria-valuemax="@Model.TargetOrders"></div>
+                </div>
+            </div>
+            
+            <div class="mb-4">
+                <div class="progress-label">
+                    <span>Doanh thu</span>
+                    <span class="progress-meta">@Model.WeekRevenue.ToString("N0") / @Model.TargetRevenue.ToString("N0") (mục tiêu)</span>
+                </div>
+                <div class="progress" style="height: 10px;">
+                    <div class="progress-bar bg-warning" role="progressbar" 
+                        style="width: @(Model.TargetRevenue == 0 ? 0 : (int)(Model.WeekRevenue * 100 / Model.TargetRevenue))%;" 
+                        aria-valuenow="@Model.WeekRevenue" aria-valuemin="0" aria-valuemax="@Model.TargetRevenue"></div>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <div class="progress-label">
+                    <span>Hiệu suất</span>
+                    @{
+                        int performance = (Model.TargetRevenue == 0) ? 0 : (int)(Model.WeekRevenue * 100 / Model.TargetRevenue);
+                    }
+                    <span class="progress-meta">@performance%</span>
+                </div>
+                <div class="progress" style="height: 10px;">
+                    <div class="progress-bar" role="progressbar" style="width: @performance%;" 
+                        aria-valuenow="@performance" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+                <small class="mt-2 d-block">
+                    @(performance > 90 ? "Tuyệt vời! Tiếp tục phát huy." : "Cần cố gắng hơn.")
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="help-fab">
+    <i class="fas fa-question"></i>
+</div>
+
+<div class="modal fade" id="targetsModal" tabindex="-1" aria-labelledby="targetsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="targetsModalLabel">Cập nhật Mục tiêu Tuần</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="targetsForm">
+                @Html.AntiForgeryToken()
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="targetOrdersInput" class="form-label">Mục tiêu Tổng đơn hàng</label>
+                        <input type="number" class="form-control" id="targetOrdersInput" name="TargetOrders" value="@Model.TargetOrders">
+                    </div>
+                    <div class="mb-3">
+                        <label for="targetRevenueInput" class="form-label">Mục tiêu Doanh thu (VNĐ)</label>
+                        <input type="number" class="form-control" id="targetRevenueInput" name="TargetRevenue" value="@Model.TargetRevenue">
+                    </div>
+                    <div id="target-error" class="text-danger small"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                    <button type="submit" class="btn btn-primary" id="saveTargetsBtn">Lưu thay đổi</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+@section Scripts {
+<script>
+$(document).ready(function () {
+    // Biểu đồ Doanh thu
+    var ctxRevenue = document.getElementById('revenueChart').getContext('2d');
+    var revenueLabels = @Html.Raw(Json.Serialize(Model.RevenueChart.Select(r => r.Day)));
+    var revenueData = @Html.Raw(Json.Serialize(Model.RevenueChart.Select(r => r.Revenue)));
+
+    new Chart(ctxRevenue, {
+        type: 'line',
+        data: {
+            labels: revenueLabels,
+            datasets: [{
+                label: 'Doanh thu',
+                data: revenueData,
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                borderColor: 'rgba(59, 130, 246, 1)',
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: { responsive: true, scales: { y: { beginAtZero: true } } }
+    });
+
+    // Biểu đồ Đơn hàng
+    var ctxOrders = document.getElementById('ordersChart').getContext('2d');
+    var ordersData = @Html.Raw(Json.Serialize(Model.RevenueChart.Select(r => r.Orders)));
+
+    new Chart(ctxOrders, {
+        type: 'bar',
+        data: {
+            labels: revenueLabels,
+            datasets: [{
+                label: 'Đơn hàng',
+                data: ordersData,
+                backgroundColor: 'rgba(16, 185, 129, 0.7)',
+                borderColor: 'rgba(16, 185, 129, 1)',
+            }]
+        },
+        options: { responsive: true, scales: { y: { beginAtZero: true } } }
+    });
+
+    // Biểu đồ Top Sản phẩm
+    var ctxProducts = document.getElementById('topProductsChart').getContext('2d');
+    var productLabels = @Html.Raw(Json.Serialize(Model.TopProducts.Select(p => p.Name)));
+    var productSoldData = @Html.Raw(Json.Serialize(Model.TopProducts.Select(p => p.Sold)));
+    var productColors = @Html.Raw(Json.Serialize(Model.TopProducts.Select(p => p.Color)));
+
+    new Chart(ctxProducts, {
+        type: 'doughnut',
+        data: {
+            labels: productLabels,
+            datasets: [{
+                label: 'Đã bán',
+                data: productSoldData,
+                backgroundColor: productColors,
+                hoverOffset: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'right' } }
+        }
+    });
+
+    // Xử lý form cập nhật mục tiêu
+    $('#targetsForm').on('submit', function (e) {
+        e.preventDefault();
+        var $form = $(this);
+        var $errorDiv = $('#target-error');
+        var $submitBtn = $('#saveTargetsBtn');
+        $submitBtn.prop('disabled', true).text('Đang lưu...');
+        $errorDiv.text('');
+
+        $.ajax({
+            url: '@Url.Action("UpdateTargets")',
+            method: 'POST',
+            data: $form.serialize(),
+            headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
+            success: function (response) {
+                if (response.success) {
+                    var modalInstance = bootstrap.Modal.getInstance(document.getElementById('targetsModal'));
+                    modalInstance.hide();
+                    Swal.fire('Thành công', response.message, 'success')
+                        .then(() => location.reload());
+                }
+            },
+            error: function (xhr) {
+                $errorDiv.text(xhr.responseText || "Lỗi khi cập nhật.");
+                $submitBtn.prop('disabled', false).text('Lưu thay đổi');
+            }
+        });
+    });
+});
+</script>
+}

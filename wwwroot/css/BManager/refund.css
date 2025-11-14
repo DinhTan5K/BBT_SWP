@@ -1,0 +1,13 @@
+.badge.bg-warning {
+    font-size: 0.9rem;
+    padding: 6px 10px;
+}
+
+.table th, .table td {
+    vertical-align: middle !important;
+}
+
+.btn-success {
+    padding: 4px 10px;
+    font-weight: 500;
+}
