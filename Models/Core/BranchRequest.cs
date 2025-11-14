@@ -77,6 +77,8 @@ namespace start.Models
 
         [ForeignKey(nameof(RegionID))]
         public Region? Region { get; set; }
+        public bool IsActive { get; set; } = true;
+
     }
 }
 

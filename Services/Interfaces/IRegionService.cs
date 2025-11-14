@@ -11,6 +11,7 @@ namespace start.Services
     Task<BranchDetail?> GetBranchDetailsAsync(string managerEmployeeId, int branchId);
 
     Task<List<BranchStatus>> GetBranchesForStatusAsync(string managerEmpId, string filter = "all", string? q = null);
+    Task<List<Branch>> GetBranchesForRegionAsync(int regionId);
 
 
 

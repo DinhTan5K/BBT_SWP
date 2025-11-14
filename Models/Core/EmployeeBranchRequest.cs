@@ -82,10 +82,13 @@ namespace start.Models
 
         [ForeignKey(nameof(ReviewedBy))]
         public Employee? ReviewedByEmployee { get; set; }
-
-        // Không có Foreign Key constraint vì khi RequestType = Add, nhân viên có thể chưa tồn tại
-        // [ForeignKey(nameof(EmployeeId))]
         public Employee? Employee { get; set; }
+
+         [Column("RegionID")]
+        public int? RegionID { get; set; }
+         public bool IsActive { get; set; } = true;
+
+        public Region? Region { get; set; }
 
         [ForeignKey(nameof(BranchId))]
         public Branch? Branch { get; set; }

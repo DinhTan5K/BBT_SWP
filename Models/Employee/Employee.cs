@@ -53,6 +53,8 @@ namespace start.Models
         public string? Password { get; set; }
 
         public DateTime HireDate { get; set; }
+        
+        [Column("IsActive")]
         public bool IsActive { get; set; }
 
         [Column("Gender")]

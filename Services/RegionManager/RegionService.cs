@@ -204,7 +204,7 @@ namespace start.Services
                 RequestType = RequestType.Add,
                 BranchId = null,
                 RequestedBy = regionManagerEmployeeId,
-                RequestedAt = DateTime.UtcNow,
+                RequestedAt = DateTime.Now,
                 Status = RequestStatus.Pending,
                 Name = model.Name?.Trim() ?? "",
                 Address = model.Address?.Trim(),
@@ -244,10 +244,10 @@ namespace start.Services
 
             var req = new BranchRequest
             {
-                RequestType = RequestType.Delete, // suspend -> Delete request
+                RequestType = RequestType.Edit, // suspend -> Delete request
                 BranchId = branchId,
                 RequestedBy = regionManagerEmployeeId,
-                RequestedAt = DateTime.UtcNow,
+                RequestedAt = DateTime.Now,
                 Status = RequestStatus.Pending,
                 Name = branch.Name ?? "",
                 Address = branch.Address,
@@ -288,7 +288,7 @@ namespace start.Services
                 RequestType = RequestType.Edit,
                 BranchId = branchId,
                 RequestedBy = regionManagerEmployeeId,
-                RequestedAt = DateTime.UtcNow,
+                RequestedAt = DateTime.Now,
                 Status = RequestStatus.Pending,
                 Name = branch.Name ?? "",
                 Address = branch.Address,
@@ -458,7 +458,7 @@ namespace start.Services
                 BranchId = branchId,
                 RegionID = branch.RegionID,
                 RequestedBy = regionManagerEmployeeId,
-                RequestedAt = DateTime.UtcNow,
+                RequestedAt = DateTime.Now,
                 Status = RequestStatus.Pending,
                 FullName = newEmp.FullName?.Trim(),
                 DateOfBirth = newEmp.DateOfBirth,
@@ -509,12 +509,12 @@ namespace start.Services
 
             var req = new EmployeeBranchRequest
             {
-                RequestType = RequestType.Edit,
+                RequestType = RequestType.Delete,
                 EmployeeId = managerToDeactivateId,
                 BranchId = null,      // remove branch assignment
                 RegionID = null,      // remove region assignment
                 RequestedBy = regionManagerEmployeeId,
-                RequestedAt = DateTime.UtcNow,
+                RequestedAt = DateTime.Now,
                 Status = RequestStatus.Pending,
                 FullName = emp.FullName?.Trim(),
                 DateOfBirth = emp.DateOfBirth,
@@ -560,13 +560,13 @@ namespace start.Services
             // Tạo request Delete (Pending) vào EmployeeBranchRequest
             var req = new EmployeeBranchRequest
             {
-                RequestType = RequestType.Delete,
+                RequestType = RequestType.Edit,
                 EmployeeId = managerEmployeeId,
                 BranchId = null,
                 RegionID = null,
                 IsActive = false,
                 RequestedBy = requestedBy,
-                RequestedAt = DateTime.UtcNow,
+                RequestedAt = DateTime.Now,
                 Status = RequestStatus.Pending,
                 FullName = emp.FullName?.Trim(),
                 DateOfBirth = emp.DateOfBirth,
@@ -688,7 +688,7 @@ namespace start.Services
                 RoleID = model.RoleID ?? "BM",
                 IsActive = model.IsActive,
                 RequestedBy = regionManagerEmployeeId,
-                RequestedAt = DateTime.UtcNow,
+                RequestedAt = DateTime.Now,
                 Status = RequestStatus.Pending
             };
 
@@ -782,7 +782,7 @@ namespace start.Services
                 RequestType = RequestType.Add,
                 CategoryName = categoryName.Trim(),
                 RequestedBy = requestedBy,
-                RequestedAt = DateTime.UtcNow,
+                RequestedAt = DateTime.Now,
                 Status = RequestStatus.Pending
             };
 
@@ -812,7 +812,7 @@ namespace start.Services
                 CategoryId = categoryId,
                 CategoryName = cat.CategoryName,
                 RequestedBy = requestedBy,
-                RequestedAt = DateTime.UtcNow,
+                RequestedAt = DateTime.Now,
                 Status = RequestStatus.Pending
             };
 
@@ -842,10 +842,10 @@ namespace start.Services
 
             var req = new ProductRequest
             {
-                RequestType = RequestType.Delete,   // Hide -> mapped to Delete request
+                RequestType = RequestType.Edit,   // Hide -> mapped to Delete request
                 ProductId = product.ProductID,
                 RequestedBy = requestedBy,
-                RequestedAt = DateTime.UtcNow,
+                RequestedAt = DateTime.Now,
                 Status = RequestStatus.Pending,
                 ProductName = product.ProductName,
                 CategoryID = product.CategoryID,
@@ -876,7 +876,7 @@ namespace start.Services
                 RequestType = RequestType.Edit,   // Restore -> mapped to Edit request
                 ProductId = product.ProductID,
                 RequestedBy = requestedBy,
-                RequestedAt = DateTime.UtcNow,
+                RequestedAt = DateTime.Now,
                 Status = RequestStatus.Pending,
                 ProductName = product.ProductName,
                 CategoryID = product.CategoryID,
@@ -904,7 +904,7 @@ namespace start.Services
                 RequestType = RequestType.Add,
                 ProductId = null,
                 RequestedBy = requestedBy,
-                RequestedAt = DateTime.UtcNow,
+                RequestedAt = DateTime.Now,
                 Status = RequestStatus.Pending,
                 ProductName = product.ProductName,
                 CategoryID = product.CategoryID,
@@ -934,7 +934,7 @@ namespace start.Services
                 RequestType = RequestType.Edit,
                 ProductId = product.ProductID,
                 RequestedBy = requestedBy,
-                RequestedAt = DateTime.UtcNow,
+                RequestedAt = DateTime.Now,
                 Status = RequestStatus.Pending,
                 ProductName = product.ProductName,
                 CategoryID = product.CategoryID,
@@ -1601,6 +1601,17 @@ namespace start.Services
                 return (false, ex.Message);
             }
         }
+
+
+        public async Task<List<Branch>> GetBranchesForRegionAsync(int regionId)
+        {
+            return await _db.Branches
+                .AsNoTracking()
+                .Where(b => b.RegionID == regionId)
+                .OrderBy(b => b.Name)
+                .ToListAsync();
+        }
+
 
 
 

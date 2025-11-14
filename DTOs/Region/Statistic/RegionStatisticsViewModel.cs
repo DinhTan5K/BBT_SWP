@@ -8,4 +8,7 @@ public class RegionStatisticsViewModel
     public List<RevenueTrendDto> RevenueTrend { get; set; } = new();
 
      public HourlyHeatmapDto HourlyHeatmap { get; set; }
+
+     public List<Branch> Branches { get; set; } = new();
+
 }

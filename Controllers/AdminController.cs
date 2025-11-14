@@ -1946,14 +1946,14 @@ namespace start.Controllers
                     .Include(pr => pr.RequestedByEmployee)
                     .Include(pr => pr.ReviewedByEmployee)
                     .Include(pr => pr.Product)
-                    .Include(pr => pr.Category)
-                    .FirstOrDefault(pr => pr.Id == id);
-
+                    .ThenInclude(p => p.Category)
+                    .FirstOrDefault(pr => pr.Id == id);           
                 if (request == null)
                     return NotFound();
 
                 ViewBag.RequestType = "Product";
                 ViewBag.ActiveMenu = "Approvals";
+                 
                 return View("ViewProductApproval", request);
             }
             else if (type == "category")
@@ -1979,14 +1979,26 @@ namespace start.Controllers
                     .Include(br => br.RequestedByEmployee)
                     .Include(br => br.ReviewedByEmployee)
                     .Include(br => br.Branch)
+                        .ThenInclude(b => b.Region)
                     .Include(br => br.Region)
                     .FirstOrDefault(br => br.Id == id);
 
                 if (request == null)
                     return NotFound();
 
+                // Tính số nhân viên và đơn hàng liên quan (nếu là Edit hoặc Delete)
+                int employeeCount = 0;
+                int orderCount = 0;
+                if (request.BranchId.HasValue && request.Branch != null)
+                {
+                    employeeCount = _db.Employees.Count(e => e.BranchID == request.BranchId && e.IsActive);
+                    orderCount = _db.Orders.Count(o => o.BranchID == request.BranchId);
+                }
+
                 ViewBag.RequestType = "Branch";
                 ViewBag.ActiveMenu = "Approvals";
+                ViewBag.EmployeeCount = employeeCount;
+                ViewBag.OrderCount = orderCount;
                 return View("ViewBranchApproval", request);
             }
             else

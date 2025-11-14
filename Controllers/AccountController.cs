@@ -2,13 +2,13 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
+using start.Data;
 using start.Models;
 using start.Services;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.EntityFrameworkCore;
-using start.Data;
 namespace start.Controllers
 {
     public class AccountController : Controller
@@ -194,6 +194,30 @@ namespace start.Controllers
                 HttpContext.Session.Remove("BranchId");
             }
 
+            // Set RegionID and RegionName if employee has region
+            if (emp.RegionID.HasValue)
+            {
+                HttpContext.Session.SetInt32("RegionID", emp.RegionID.Value);
+                
+                // Get region name from database
+                var region = await _db.Regions
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(r => r.RegionID == emp.RegionID.Value);
+                if (region != null)
+                {
+                    HttpContext.Session.SetString("RegionName", region.RegionName ?? "Unknown");
+                }
+                else
+                {
+                    HttpContext.Session.SetString("RegionName", "Unknown");
+                }
+            }
+            else
+            {
+                HttpContext.Session.Remove("RegionID");
+                HttpContext.Session.Remove("RegionName");
+            }
+
             HttpContext.Session.Remove(PendingAdmin2FAKey);
             HttpContext.Session.Remove(PendingAdmin2FAEmailKey);
 
@@ -204,7 +228,7 @@ namespace start.Controllers
                 "AD" => RedirectToAction("Dashboard", "Admin"),
                 "BM" => RedirectToAction("Index", "BManager"),
                 "SL" => RedirectToAction("Profile", "Employee"),
-                "RM" => RedirectToAction("Profile", "Employee"),
+                "RM" => RedirectToAction("RegionHome", "Region"),
                 _ => RedirectToAction("Profile", "Employee")
             };
         }

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using start.Data;
+using start.Models.Configurations;
 using start.Services;
 using start.Services.Interfaces;
 using start.Services.Implementations.ECommerce;
@@ -35,6 +36,7 @@ builder.Services.AddScoped<IStoreService, StoreService>();
 builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
 builder.Services.AddScoped<IAdminSecurityService, AdminSecurityService>();
 builder.Services.AddScoped<IDiscountService, DiscountService>();
+builder.Services.AddScoped<IRegionService, RegionService>();
 
 builder.Logging.ClearProviders();
 builder.Logging.AddSimpleConsole(options =>

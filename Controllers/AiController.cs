@@ -783,7 +783,7 @@ namespace start.Controllers
                     .Take(5)
                     .ToListAsync();
 
-                // Lấy mã khuyến mãi
+                // // Lấy mã khuyến mãi
                 var now = DateTime.Now;
                 var discounts = await _db.Discounts
                     .Where(d => d.IsActive && (d.StartAt == null || d.StartAt <= now) && (d.EndAt == null || d.EndAt >= now))

@@ -24,6 +24,13 @@
             <h3 style="font-size: 18px; font-weight: 600; color: var(--ink); margin-bottom: 20px;">Thông tin yêu cầu</h3>
             
             <div style="margin-bottom: 16px;">
+                <label style="font-weight: 600; color: var(--muted); font-size: 13px;">Request ID</label>
+                <div style="margin-top: 4px; font-size: 16px; color: var(--ink); font-weight: 500;">
+                    #@Model.Id
+                </div>
+            </div>
+
+            <div style="margin-bottom: 16px;">
                 <label style="font-weight: 600; color: var(--muted); font-size: 13px;">Loại yêu cầu</label>
                 <div style="margin-top: 4px; font-size: 16px; color: var(--ink); font-weight: 500;">
                     @(Model.RequestType switch
@@ -118,81 +125,157 @@
             
             @if (Model.RequestType == RequestType.Edit && Model.Branch != null)
             {
-                <div style="margin-bottom: 20px; padding: 16px; background: var(--bg); border-radius: 8px;">
-                    <h4 style="font-size: 14px; font-weight: 600; color: var(--muted); margin-bottom: 12px;">Dữ liệu hiện tại</h4>
-                    <div style="font-size: 13px; color: var(--ink);">
-                        <div style="margin-bottom: 8px;"><strong>Tên:</strong> @Model.Branch.Name</div>
-                        <div style="margin-bottom: 8px;"><strong>Địa chỉ:</strong> @(Model.Branch.Address ?? "-")</div>
-                        <div style="margin-bottom: 8px;"><strong>Thành phố:</strong> @(Model.Branch.City ?? "-")</div>
-                        <div style="margin-bottom: 8px;"><strong>Số điện thoại:</strong> @(Model.Branch.Phone ?? "-")</div>
+                <!-- So sánh side-by-side cho Edit request -->
+                <div style="margin-bottom: 24px;">
+                    <h4 style="font-size: 16px; font-weight: 600; color: var(--ink); margin-bottom: 16px;">So sánh thay đổi</h4>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                        <!-- Cột trái: Dữ liệu hiện tại -->
+                        <div style="padding: 16px; background: #fef3c7; border-radius: 8px; border: 1px solid #fbbf24;">
+                            <h5 style="font-size: 14px; font-weight: 600; color: #92400e; margin-bottom: 12px;">Dữ liệu hiện tại</h5>
+                            <div style="font-size: 13px; color: var(--ink);">
+                                <div style="margin-bottom: 8px;"><strong>Tên:</strong> @(Model.Branch.Name ?? "-")</div>
+                                <div style="margin-bottom: 8px;"><strong>Địa chỉ:</strong> @(Model.Branch.Address ?? "-")</div>
+                                <div style="margin-bottom: 8px;"><strong>Thành phố:</strong> @(Model.Branch.City ?? "-")</div>
+                                <div style="margin-bottom: 8px;"><strong>Số điện thoại:</strong> @(Model.Branch.Phone ?? "-")</div>
+                                <div style="margin-bottom: 8px;"><strong>Region:</strong> @(Model.Branch.Region?.RegionName ?? $"ID: {Model.Branch.RegionID}")</div>
+                                <div style="margin-bottom: 8px;"><strong>Trạng thái:</strong> @(Model.Branch.IsActive ? "Hoạt động" : "Vô hiệu hóa")</div>
+                                @if (Model.Branch.Latitude != 0 && Model.Branch.Longitude != 0)
+                                {
+                                    <div style="margin-bottom: 8px;"><strong>GPS:</strong> @Model.Branch.Latitude.ToString("F6"), @Model.Branch.Longitude.ToString("F6")</div>
+                                }
+                            </div>
+                        </div>
+                        <!-- Cột phải: Dữ liệu mới -->
+                        <div style="padding: 16px; background: #d1fae5; border-radius: 8px; border: 1px solid #10b981;">
+                            <h5 style="font-size: 14px; font-weight: 600; color: #065f46; margin-bottom: 12px;">Dữ liệu mới</h5>
+                            <div style="font-size: 13px; color: var(--ink);">
+                                <div style="margin-bottom: 8px;">
+                                    <strong>Tên:</strong> 
+                                    <span style="@(Model.Branch.Name != Model.Name ? "background: #fef3c7; padding: 2px 4px; border-radius: 4px; font-weight: 600;" : "")">
+                                        @(Model.Name ?? "-")
+                                    </span>
+                                </div>
+                                <div style="margin-bottom: 8px;">
+                                    <strong>Địa chỉ:</strong> 
+                                    <span style="@(Model.Branch.Address != Model.Address ? "background: #fef3c7; padding: 2px 4px; border-radius: 4px; font-weight: 600;" : "")">
+                                        @(Model.Address ?? "-")
+                                    </span>
+                                </div>
+                                <div style="margin-bottom: 8px;">
+                                    <strong>Thành phố:</strong> 
+                                    <span style="@(Model.Branch.City != Model.City ? "background: #fef3c7; padding: 2px 4px; border-radius: 4px; font-weight: 600;" : "")">
+                                        @(Model.City ?? "-")
+                                    </span>
+                                </div>
+                                <div style="margin-bottom: 8px;">
+                                    <strong>Số điện thoại:</strong> 
+                                    <span style="@(Model.Branch.Phone != Model.Phone ? "background: #fef3c7; padding: 2px 4px; border-radius: 4px; font-weight: 600;" : "")">
+                                        @(Model.Phone ?? "-")
+                                    </span>
+                                </div>
+                                <div style="margin-bottom: 8px;">
+                                    <strong>Region:</strong> 
+                                    <span style="@(Model.Branch.RegionID != Model.RegionID ? "background: #fef3c7; padding: 2px 4px; border-radius: 4px; font-weight: 600;" : "")">
+                                        @(Model.Region?.RegionName ?? $"ID: {Model.RegionID}")
+                                    </span>
+                                </div>
+                                <div style="margin-bottom: 8px;">
+                                    <strong>Trạng thái:</strong> 
+                                    <span style="@(Model.Branch.IsActive != Model.IsActive ? "background: #fef3c7; padding: 2px 4px; border-radius: 4px; font-weight: 600;" : "")">
+                                        @(Model.IsActive ? "Hoạt động" : "Vô hiệu hóa")
+                                    </span>
+                                </div>
+                                @if (Model.Latitude.HasValue && Model.Longitude.HasValue)
+                                {
+                                    <div style="margin-bottom: 8px;">
+                                        <strong>GPS:</strong> 
+                                        <span style="@((Model.Branch.Latitude != (decimal)Model.Latitude.Value || Model.Branch.Longitude != (decimal)Model.Longitude.Value) ? "background: #fef3c7; padding: 2px 4px; border-radius: 4px; font-weight: 600;" : "")">
+                                            @Model.Latitude.Value.ToString("F6"), @Model.Longitude.Value.ToString("F6")
+                                        </span>
+                                    </div>
+                                }
+                            </div>
+                        </div>
                     </div>
                 </div>
             }
-
-            <div style="margin-bottom: 16px;">
-                <label style="font-weight: 600; color: var(--muted); font-size: 13px;">Tên chi nhánh</label>
-                <div style="margin-top: 4px; font-size: 16px; color: var(--ink); font-weight: 500;">
-                    @Model.Name
-                </div>
-            </div>
-
-            <div style="margin-bottom: 16px;">
-                <label style="font-weight: 600; color: var(--muted); font-size: 13px;">Region</label>
-                <div style="margin-top: 4px; font-size: 16px; color: var(--ink);">
-                    @(Model.Region?.RegionName ?? $"Region ID: {Model.RegionID}")
-                </div>
-            </div>
-
-            @if (!string.IsNullOrEmpty(Model.Address))
+            else
             {
+                <!-- Hiển thị thông tin cho Add hoặc Delete -->
                 <div style="margin-bottom: 16px;">
-                    <label style="font-weight: 600; color: var(--muted); font-size: 13px;">Địa chỉ</label>
-                    <div style="margin-top: 4px; font-size: 16px; color: var(--ink);">
-                        @Model.Address
+                    <label style="font-weight: 600; color: var(--muted); font-size: 13px;">Tên chi nhánh</label>
+                    <div style="margin-top: 4px; font-size: 16px; color: var(--ink); font-weight: 500;">
+                        @Model.Name
                     </div>
                 </div>
-            }
 
-            @if (!string.IsNullOrEmpty(Model.City))
-            {
                 <div style="margin-bottom: 16px;">
-                    <label style="font-weight: 600; color: var(--muted); font-size: 13px;">Thành phố</label>
+                    <label style="font-weight: 600; color: var(--muted); font-size: 13px;">Region</label>
                     <div style="margin-top: 4px; font-size: 16px; color: var(--ink);">
-                        @Model.City
+                        @(Model.Region?.RegionName ?? $"Region ID: {Model.RegionID}")
                     </div>
                 </div>
-            }
 
-            @if (!string.IsNullOrEmpty(Model.Phone))
-            {
-                <div style="margin-bottom: 16px;">
-                    <label style="font-weight: 600; color: var(--muted); font-size: 13px;">Số điện thoại</label>
-                    <div style="margin-top: 4px; font-size: 16px; color: var(--ink);">
-                        @Model.Phone
+                @if (!string.IsNullOrEmpty(Model.Address))
+                {
+                    <div style="margin-bottom: 16px;">
+                        <label style="font-weight: 600; color: var(--muted); font-size: 13px;">Địa chỉ</label>
+                        <div style="margin-top: 4px; font-size: 16px; color: var(--ink);">
+                            @Model.Address
+                        </div>
                     </div>
-                </div>
-            }
+                }
 
-            @if (Model.Latitude.HasValue && Model.Longitude.HasValue)
-            {
-                <div style="margin-bottom: 16px;">
-                    <label style="font-weight: 600; color: var(--muted); font-size: 13px;">Tọa độ GPS</label>
-                    <div style="margin-top: 4px; font-size: 16px; color: var(--ink);">
-                        @Model.Latitude.Value.ToString("F6", System.Globalization.CultureInfo.InvariantCulture), @Model.Longitude.Value.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)
+                @if (!string.IsNullOrEmpty(Model.City))
+                {
+                    <div style="margin-bottom: 16px;">
+                        <label style="font-weight: 600; color: var(--muted); font-size: 13px;">Thành phố</label>
+                        <div style="margin-top: 4px; font-size: 16px; color: var(--ink);">
+                            @Model.City
+                        </div>
                     </div>
-                    <div style="margin-top: 8px;">
-                        @{
-                            var lat = Model.Latitude.Value.ToString("F6", System.Globalization.CultureInfo.InvariantCulture);
-                            var lng = Model.Longitude.Value.ToString("F6", System.Globalization.CultureInfo.InvariantCulture);
-                            var mapsUrl = $"https://www.google.com/maps?q={lat},{lng}";
-                        }
-                        <a href="@mapsUrl" 
-                           target="_blank" 
-                           style="color: #2563eb; text-decoration: none; font-size: 14px;">
-                            <i class="fas fa-map-marker-alt"></i> Xem trên Google Maps
-                        </a>
+                }
+
+                @if (!string.IsNullOrEmpty(Model.Phone))
+                {
+                    <div style="margin-bottom: 16px;">
+                        <label style="font-weight: 600; color: var(--muted); font-size: 13px;">Số điện thoại</label>
+                        <div style="margin-top: 4px; font-size: 16px; color: var(--ink);">
+                            @Model.Phone
+                        </div>
+                    </div>
+                }
+
+                <div style="margin-bottom: 16px;">
+                    <label style="font-weight: 600; color: var(--muted); font-size: 13px;">Trạng thái</label>
+                    <div style="margin-top: 4px;">
+                        <span style="display: inline-block; padding: 4px 12px; background: @(Model.IsActive ? "#d1fae5" : "#fee2e2"); color: @(Model.IsActive ? "#065f46" : "#991b1b"); border-radius: 6px; font-size: 14px; font-weight: 600;">
+                            @(Model.IsActive ? "Hoạt động" : "Vô hiệu hóa")
+                        </span>
                     </div>
                 </div>
+
+                @if (Model.Latitude.HasValue && Model.Longitude.HasValue)
+                {
+                    <div style="margin-bottom: 16px;">
+                        <label style="font-weight: 600; color: var(--muted); font-size: 13px;">Tọa độ GPS</label>
+                        <div style="margin-top: 4px; font-size: 16px; color: var(--ink);">
+                            @Model.Latitude.Value.ToString("F6", System.Globalization.CultureInfo.InvariantCulture), @Model.Longitude.Value.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)
+                        </div>
+                        <div style="margin-top: 8px;">
+                            @{
+                                var lat = Model.Latitude.Value.ToString("F6", System.Globalization.CultureInfo.InvariantCulture);
+                                var lng = Model.Longitude.Value.ToString("F6", System.Globalization.CultureInfo.InvariantCulture);
+                                var mapsUrl = $"https://www.google.com/maps?q={lat},{lng}";
+                            }
+                            <a href="@mapsUrl" 
+                               target="_blank" 
+                               style="color: #2563eb; text-decoration: none; font-size: 14px;">
+                                <i class="fas fa-map-marker-alt"></i> Xem trên Google Maps
+                            </a>
+                        </div>
+                    </div>
+                }
             }
 
             @if (!string.IsNullOrEmpty(Model.Notes))
@@ -205,15 +288,46 @@
                 </div>
             }
 
+            <!-- Thông tin liên quan -->
+            @if ((Model.RequestType == RequestType.Edit || Model.RequestType == RequestType.Delete) && Model.BranchId.HasValue)
+            {
+                <div style="margin-top: 24px; padding: 16px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line);">
+                    <h4 style="font-size: 14px; font-weight: 600; color: var(--ink); margin-bottom: 12px;">
+                        <i class="fas fa-info-circle"></i> Thông tin liên quan
+                    </h4>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; font-size: 14px;">
+                        <div>
+                            <div style="color: var(--muted); margin-bottom: 4px;">Số nhân viên</div>
+                            <div style="font-size: 18px; font-weight: 600; color: var(--ink);">
+                                @(ViewBag.EmployeeCount ?? 0)
+                            </div>
+                        </div>
+                        <div>
+                            <div style="color: var(--muted); margin-bottom: 4px;">Số đơn hàng</div>
+                            <div style="font-size: 18px; font-weight: 600; color: var(--ink);">
+                                @(ViewBag.OrderCount ?? 0)
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+
             @if (Model.RequestType == RequestType.Delete && Model.Branch != null)
             {
-                <div style="margin-bottom: 16px; padding: 12px; background: #fee2e2; border-radius: 8px; border-left: 4px solid #dc2626;">
+                <div style="margin-top: 16px; padding: 12px; background: #fee2e2; border-radius: 8px; border-left: 4px solid #dc2626;">
                     <div style="font-size: 13px; color: #991b1b; font-weight: 600; margin-bottom: 4px;">
                         <i class="fas fa-exclamation-triangle"></i> Cảnh báo
                     </div>
                     <div style="font-size: 13px; color: #991b1b;">
-                        Chi nhánh này có thể có nhân viên và đơn hàng liên quan. 
-                        Vui lòng kiểm tra kỹ trước khi xóa.
+                        Chi nhánh này có <strong>@(ViewBag.EmployeeCount ?? 0) nhân viên</strong> và <strong>@(ViewBag.OrderCount ?? 0) đơn hàng</strong> liên quan. 
+                        @if ((ViewBag.EmployeeCount ?? 0) > 0 || (ViewBag.OrderCount ?? 0) > 0)
+                        {
+                            <text>Vui lòng kiểm tra kỹ trước khi xóa.</text>
+                        }
+                        else
+                        {
+                            <text>Có thể xóa an toàn.</text>
+                        }
                     </div>
                 </div>
             }
