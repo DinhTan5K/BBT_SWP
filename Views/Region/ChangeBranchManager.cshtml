@@ -1,0 +1,55 @@
+@using start.DTOs
+@model ChangeBranchManager
+@{
+    Layout = "~/Views/Shared/_RegionLayout.cshtml";
+    ViewData["Title"] = "Đổi quản lý chi nhánh";
+}
+
+<link rel="stylesheet" href="~/css/Region/region-dashboard.css" />
+
+<div class="region-dashboard-container" style="max-width:1000px;">
+    <h2 class="dashboard-title">Đổi quản lý cho chi nhánh</h2>
+
+    <div style="margin:16px 0;padding:16px;background:#fffdf8;border:1px solid #efe2d0;border-radius:10px;">
+        <h3 style="margin:0 0 8px;">Chi nhánh: @Model.BranchName</h3>
+        <p style="margin:0;"><strong>Quản lý hiện tại:</strong> @(String.IsNullOrEmpty(Model.CurrentManagerName) ? "Chưa được phân công" : Model.CurrentManagerName)</p>
+    
+    </div>
+
+    <form asp-action="ChangeBranchManager" method="post" data-confirm="Xác nhận thay đổi quản lý cho chi nhánh này?">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="branchId" value="@Model.BranchId" />
+
+        <div style="margin-top:12px;">
+            <p>Chọn quản lý để chỉ định:</p>
+
+            @if (!Model.Candidates.Any())
+            {
+                <div style="padding:12px;background:#fff;border:1px solid #eee;border-radius:8px;color:#666;">
+                    Không tìm thấy quản lý phù hợp trong khu vực.
+                </div>
+            }
+            else
+            {
+                <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;">
+                    @foreach (var c in Model.Candidates)
+                    {
+                        <label style="display:block;border:1px solid #efe2d0;padding:12px;border-radius:8px;cursor:pointer;background:#fffdf8;">
+                            <input type="radio" name="newManagerId" value="@c.EmployeeID" style="margin-right:8px;" />
+                            <strong>@c.FullName</strong> <br />
+                          <br />
+                            <small>SĐT: @c.PhoneNumber</small><br />
+                            <small>Ngày sinh: @(c.DateOfBirth?.ToString("dd/MM/yyyy") ?? "-")</small><br />
+                            <small>Email: @c.Email</small>
+                        </label>
+                    }
+                </div>
+            }
+        </div>
+
+        <div style="margin-top:16px;display:flex;gap:8px;">
+            <button type="submit" class="btn btn-warning" onclick="return confirm('Xác nhận thay đổi quản lý cho chi nhánh này?');">Xác nhận thay đổi</button>
+            <a asp-action="ManageBranchStatus" class="btn detail-btn" style="padding:8px 12px;display:inline-block;">Quay về</a>
+        </div>
+    </form>
+</div>

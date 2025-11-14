@@ -1,0 +1,336 @@
+@model BranchEditModel
+@{
+    ViewData["Title"] = "Chỉnh sửa chi nhánh";
+    Layout = "~/Views/Shared/_RegionLayout.cshtml";
+}
+
+<!-- existing main css -->
+<link rel="stylesheet" href="~/css/Region/branch-info-details.css" />
+
+<!-- small inline CSS for autocomplete (keeps it local and simple) -->
+<style>
+    .address-search-wrapper {
+        position: relative;
+    }
+
+    .autocomplete-suggestions {
+        display: none;
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: calc(100% + 6px);
+        margin: 0;
+        padding: 6px 0;
+        list-style: none;
+        background: #fff;
+        border: 1px solid rgba(200, 180, 150, 0.12);
+        border-radius: 8px;
+        box-shadow: 0 8px 20px rgba(120, 90, 50, 0.06);
+        max-height: 260px;
+        overflow-y: auto;
+        z-index: 1200;
+    }
+
+    .autocomplete-item {
+        padding: 8px 12px;
+        cursor: pointer;
+        border-bottom: 1px solid rgba(230, 220, 205, 0.6);
+        font-size: 14px;
+        color: #333;
+    }
+
+    .autocomplete-item:last-child {
+        border-bottom: none;
+    }
+
+    .autocomplete-item:hover {
+        background: #f7f2ea;
+    }
+
+    #edit-map {
+        width: 100%;
+        height: 320px;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 6px 14px rgba(120, 90, 50, 0.04);
+        margin-top: 12px;
+    }
+
+    .card {
+        overflow: visible;
+    }
+
+    /* allow dropdown to overflow card */
+</style>
+
+
+
+<div class="region-dashboard-container" style="max-width:900px;">
+    <div class="detail-header text-center">
+        <h2 class="page-title">
+            @(Model?.BranchID == null || Model.BranchID == 0 ? "Thêm chi nhánh" : "Chỉnh sửa chi nhánh")
+        </h2>
+    </div>
+
+
+    <div class="card" style="padding:18px;">
+        <form id="editBranchForm" asp-action="@(Model?.BranchID == 0 ? "AddBranch" : "EditBranch")" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="BranchID" />
+
+            <div class="mb-3">
+                <label class="form-label">Tên chi nhánh</label>
+                <input asp-for="Name" class="form-control" />
+                <span asp-validation-for="Name" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3 address-search-wrapper">
+                <label class="form-label">Địa chỉ</label>
+                <input asp-for="Address" class="form-control" id="addressInput" autocomplete="off"
+                    placeholder="Nhập địa chỉ để tìm..." />
+                <div id="addressSuggestions" class="autocomplete-suggestions" aria-hidden="true"></div>
+                <span asp-validation-for="Address" class="text-danger"></span>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Số điện thoại</label>
+                    <input asp-for="Phone" class="form-control" />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Thành phố</label>
+                    <input asp-for="City" class="form-control" />
+                </div>
+            </div>
+
+            <hr />
+
+            <h5>Vị trí (tọa độ)</h5>
+            <div class="row g-3 align-items-center">
+                <div class="col-md-6">
+                    <label class="form-label">Latitude</label>
+                    <input asp-for="Latitude" class="form-control" name="Latitude" />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Longitude</label>
+                    <input asp-for="Longitude" class="form-control" name="Longitude" />
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label for="note" class="form-label">Ghi chú (lý do / mô tả)</label>
+                <textarea name="note" id="note" class="form-control" rows="3"
+                    placeholder="Ghi chú cho admin..."></textarea>
+            </div>
+
+            <div>
+                <div id="edit-map"></div>
+                <small class="text-muted">Kéo hoặc click trên bản đồ để thay đổi vị trí, hoặc nhập thủ công toạ độ. Bạn
+                    cũng có thể tìm địa chỉ ở ô trên để chọn vị trí nhanh.</small>
+            </div>
+
+            <div style="margin-top:18px; display:flex; gap:12px;">
+                <a asp-action="@(Model?.BranchID == null || Model.BranchID == 0 ? "ManageBranchStatus" : "BranchDetail")"
+                    asp-route-id="@(Model?.BranchID)" asp-route-view="branches" class="detail-btn">
+                    ← Quay về
+                </a>
+
+                <button id="confirmBtn" type="submit" class="detail-btn">Xác nhận</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            // --- Utilities ---
+            function loadScriptOnce(src, cb) {
+                var exists = Array.from(document.getElementsByTagName('script')).some(s => s.src && s.src.indexOf(src) !== -1);
+                if (exists) { cb(); return; }
+                var s = document.createElement('script'); s.src = src; s.onload = cb; s.onerror = function () { console.error('Failed to load', src); cb(); };
+                document.head.appendChild(s);
+            }
+            function ensureLeafletCss() {
+                var href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+                var exists = Array.from(document.getElementsByTagName('link')).some(l => l.href && l.href.indexOf('leaflet') !== -1);
+                if (!exists) { var link = document.createElement('link'); link.rel = 'stylesheet'; link.href = href; document.head.appendChild(link); }
+            }
+
+            // --- Main initialiser (map + autocomplete + submit confirm) ---
+            function initAll() {
+                ensureLeafletCss();
+
+                // load leaflet if needed then init features
+                if (typeof L === 'undefined' || !L || !L.map) {
+                    loadScriptOnce('https://unpkg.com/leaflet@1.9.4/dist/leaflet.js', function () { setTimeout(initFeatures, 40); });
+                } else {
+                    setTimeout(initFeatures, 10);
+                }
+            }
+
+            function initFeatures() {
+                // Elements
+                var addrInput = document.getElementById('addressInput');
+                var sugBox = document.getElementById('addressSuggestions');
+                var mapEl = document.getElementById('edit-map');
+                var form = document.getElementById('editBranchForm');
+                var confirmBtn = document.getElementById('confirmBtn');
+
+                if (!mapEl) { console.warn('edit-map not found'); return; }
+
+                // parse server values
+                var latRaw = @System.Text.Json.JsonSerializer.Serialize(Model.Latitude);
+                var lngRaw = @System.Text.Json.JsonSerializer.Serialize(Model.Longitude);
+                var lat0 = (latRaw !== null && latRaw !== "null") ? Number(latRaw) : null;
+                var lng0 = (lngRaw !== null && lngRaw !== "null") ? Number(lngRaw) : null;
+
+                // create/cleanup map
+                try { if (window.editMap && typeof window.editMap.remove === 'function') window.editMap.remove(); } catch (e) { /*ignore*/ }
+                window.editMap = L.map('edit-map', { zoomControl: true }).setView([(lat0 !== null ? lat0 : 16.0555), (lng0 !== null ? lng0 : 108.2230)], (lat0 !== null && lng0 !== null) ? 16 : 7);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap contributors' }).addTo(window.editMap);
+
+                var marker = null;
+                function setLatLngInputs(a, b) {
+                    var latIn = document.querySelector('input[name="Latitude"]');
+                    var lngIn = document.querySelector('input[name="Longitude"]');
+                    if (latIn) latIn.value = Number(a).toFixed(9);
+                    if (lngIn) lngIn.value = Number(b).toFixed(9);
+                }
+                function placeMarker(a, b) {
+                    if (!marker) {
+                        marker = L.marker([a, b], { draggable: true }).addTo(window.editMap);
+                        marker.on('dragend', async function () {
+                            var p = marker.getLatLng();
+                            setLatLngInputs(p.lat, p.lng);
+                            // reverse geocode to update address
+                            if (addrInput) {
+                                var rev = await reverseGeocode(p.lat, p.lng);
+                                if (rev) addrInput.value = rev;
+                            }
+                        });
+                    } else {
+                        marker.setLatLng([a, b]);
+                    }
+                    try { window.editMap.setView([a, b], 16); } catch (e) { }
+                    setLatLngInputs(a, b);
+                }
+
+                if (lat0 !== null && lng0 !== null && !isNaN(lat0) && !isNaN(lng0)) placeMarker(lat0, lng0);
+
+                // clicking on map places marker
+                window.editMap.on('click', function (e) {
+                    placeMarker(e.latlng.lat, e.latlng.lng);
+                    if (addrInput) {
+                        // try reverse geocode and set address
+                        reverseGeocode(e.latlng.lat, e.latlng.lng).then(addr => {
+                            if (addr) addrInput.value = addr;
+                        });
+                    }
+                });
+
+                // inputs change update marker
+                var latInputField = document.querySelector('input[name="Latitude"]');
+                var lngInputField = document.querySelector('input[name="Longitude"]');
+                if (latInputField && lngInputField) {
+                    function onCoordChange() {
+                        var a = parseFloat(latInputField.value);
+                        var b = parseFloat(lngInputField.value);
+                        if (!isNaN(a) && !isNaN(b)) placeMarker(a, b);
+                    }
+                    latInputField.addEventListener('change', onCoordChange);
+                    lngInputField.addEventListener('change', onCoordChange);
+                }
+
+                // --- autocomplete using Nominatim ---
+                if (addrInput && sugBox) {
+                    var timer = null;
+                    addrInput.addEventListener('input', function () {
+                        var q = addrInput.value.trim();
+                        clearTimeout(timer);
+                        if (q.length < 2) { sugBox.style.display = 'none'; sugBox.innerHTML = ''; return; }
+                        timer = setTimeout(function () {
+                            var url = 'https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=6&q=' + encodeURIComponent(q);
+                            fetch(url, { headers: { 'Accept-Language': 'vi' } })
+                                .then(r => r.json())
+                                .then(items => {
+                                    sugBox.innerHTML = '';
+                                    if (!items || items.length === 0) { sugBox.style.display = 'none'; return; }
+                                    items.forEach(function (it) {
+                                        var d = document.createElement('div');
+                                        d.className = 'autocomplete-item';
+                                        d.textContent = it.display_name;
+                                        d.dataset.lat = it.lat;
+                                        d.dataset.lon = it.lon;
+                                        d.addEventListener('click', function (ev) {
+                                            ev.stopPropagation();
+                                            addrInput.value = it.display_name;
+                                            sugBox.style.display = 'none';
+                                            sugBox.innerHTML = '';
+                                            var latv = Number(it.lat), lonv = Number(it.lon);
+                                            if (!isNaN(latv) && !isNaN(lonv)) {
+                                                setLatLngInputs(latv, lonv);
+                                                placeMarker(latv, lonv);
+                                            }
+                                        });
+                                        sugBox.appendChild(d);
+                                    });
+                                    sugBox.style.display = 'block';
+                                })
+                                .catch(err => {
+                                    console.error('Nominatim error', err);
+                                    sugBox.style.display = 'none';
+                                });
+                        }, 260);
+                    });
+
+                    document.addEventListener('click', function (e) {
+                        if (!sugBox.contains(e.target) && e.target !== addrInput) {
+                            sugBox.style.display = 'none';
+                        }
+                    });
+                } // endif autocomplete
+
+                // reverse geocode helper
+                async function reverseGeocode(lat, lon) {
+                    try {
+                        var url = 'https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=' + encodeURIComponent(lat) + '&lon=' + encodeURIComponent(lon) + '&addressdetails=1';
+                        var res = await fetch(url);
+                        var json = await res.json();
+                        return json && json.display_name ? json.display_name : '';
+                    } catch (e) {
+                        console.error('reverseGeocode failed', e);
+                        return '';
+                    }
+                }
+
+                // ensure map renders nicely
+                setTimeout(function () { try { window.editMap.invalidateSize(); } catch (e) { } }, 200);
+                window.addEventListener('resize', function () { try { window.editMap.invalidateSize(); } catch (e) { } });
+
+                // --- submit confirmation (native confirm) ---
+                if (form) {
+                    form.addEventListener('submit', function (e) {
+                        e.preventDefault();
+                        var ok = window.confirm('Xác nhận chỉnh sửa thông tin chi nhánh?');
+                        if (ok) {
+                            // optionally disable button to avoid double submit
+                            if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.style.opacity = 0.8; }
+                            form.submit();
+                        } else {
+                            // cancelled
+                            return false;
+                        }
+                    });
+                }
+            } // end initFeatures
+
+            // kick off
+            if (typeof L === 'undefined') {
+                loadScriptOnce('https://unpkg.com/leaflet@1.9.4/dist/leaflet.js', function () { setTimeout(initAll, 20); });
+            } else {
+                setTimeout(initAll, 10);
+            }
+        })();
+    </script>
+}

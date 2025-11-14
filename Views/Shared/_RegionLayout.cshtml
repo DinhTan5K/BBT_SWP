@@ -1,0 +1,153 @@
+@using Microsoft.AspNetCore.Http
+@{
+    // Tên hiển thị
+    var empName = Context.Session.GetString("EmployeeName") ?? User?.Identity?.Name ?? "Tài khoản";
+    var regionName = Context.Session.GetString("RegionName") ?? "Chưa xác định";
+
+    // Avatar: ưu tiên lưu trong session, fallback sang claim "AvatarUrl" nếu có, rồi fallback sang ảnh mặc định
+    var avatarUrl = Context.Session.GetString("AvatarUrl");
+    if (string.IsNullOrEmpty(avatarUrl))
+    {
+        try
+        {
+            // nếu bạn lưu avatar url trong claim (khi đăng nhập), đọc từ User
+            var claimAvatar = User?.FindFirst("AvatarUrl")?.Value;
+            if (!string.IsNullOrEmpty(claimAvatar))
+            {
+                avatarUrl = claimAvatar;
+            }
+        }
+        catch
+        {
+            // ignore
+        }
+    }
+
+    // Nếu vẫn null => dùng ảnh mặc định trong wwwroot/images/default-avatar.png
+    if (string.IsNullOrEmpty(avatarUrl))
+    {
+        avatarUrl = Url.Content("~/images/default-avatar.png");
+    }
+
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] - Region Management</title>
+
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/Region/region-layout.css" />
+
+    @* Render optional per-view styles section (fix for the exception you saw) *@
+    @RenderSection("Styles", required: false)
+</head>
+
+<body>
+    <div class="app-shell">
+        <aside class="sidebar">
+            <div class="sidebar-top">
+                <div class="brand">
+                    <div class="brand-icon">🌍</div>
+                    <div class="brand-text">
+                        <div class="brand-title">Region Management Portal</div>
+                        <div class="brand-sub">Quản lý khu vực</div>
+                    </div>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <ul>
+                    <li>
+                        <a asp-controller="Region" asp-action="RegionHome" class="nav-link">
+                            <span class="nav-dot"></span> Tất cả chi nhánh
+                        </a>
+                    </li>
+                    <li>
+                        <a asp-controller="Region" asp-action="ManageBranchStatus" class="nav-link">
+                            <span class="nav-dot"></span> Quản lý tình trạng chi nhánh
+                        </a>
+                    </li>
+                    <li>
+                        <a asp-controller="Region" asp-action="ViewProduct" class="nav-link">
+                            <span class="nav-dot"></span> Quản lý sản phẩm
+                        </a>
+                    </li>
+                    <li>
+                        <a asp-controller="Region" asp-action="Statistics" class="nav-link">
+                            <span class="nav-dot"></span> Thống kê & Báo cáo doanh thu
+                        </a>
+                    </li>
+                    <li><a asp-controller="Region" asp-action="SentRequests" class="nav-link">Yêu cầu đã gửi</a></li>
+                </ul>
+            </nav>
+
+            <div class="sidebar-footer">
+            </div>
+        </aside>
+
+        <div class="main-area">
+            <header class="top-header">
+                <div class="header-left">
+                    <div class="region-info-box">
+                        <div class="region-label">Khu vực: <span class="region-name-highlight">Miền @regionName</span>
+                        </div>
+                        <div class="manager-name"><span class="manager-name-highlight">Người quản lý: @empName</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="header-right">
+                    <div class="user-block dropdown">
+                        <a class="user-toggle" href="#" id="userMenu" data-bs-toggle="dropdown" aria-expanded="false">
+                            @* Avatar dùng avatarUrl; onerror fallback về ảnh mặc định *@
+                            <img src="@avatarUrl" alt="avatar" class="user-avatar"
+                                 onerror="this.onerror=null;this.src='@Url.Content("~/images/default-avatar.png")';" />
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenu">
+                            <li><a class="dropdown-item" asp-controller="Employee" asp-action="Profile">Hồ sơ</a></li>
+                            <li>
+                                <hr class="dropdown-divider" />
+                            </li>
+                            <li><a class="dropdown-item text-danger" asp-controller="Account" asp-action="Logout">Đăng
+                                    Xuất</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </header>
+
+            <main class="page-body">
+                <div class="container-fluid">
+                    @RenderBody()
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Thêm hiệu ứng active dựa trên route hiện tại
+        $(document).ready(function () {
+            var currentUrl = window.location.pathname;
+
+            $('.sidebar-nav a.nav-link').each(function () {
+                // Lấy href đầy đủ (có thể là đường dẫn tương đối)
+                var linkUrl = $(this).attr('href');
+                if (linkUrl && currentUrl.indexOf(linkUrl) !== -1) {
+                    $(this).addClass('active');
+                }
+            });
+        });
+    </script>
+
+    <partial name="_ValidationScriptsPartial" />
+    @RenderSection("Scripts", required: false)
+</body>
+
+</html>

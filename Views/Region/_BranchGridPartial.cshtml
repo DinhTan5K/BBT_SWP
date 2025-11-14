@@ -1,0 +1,36 @@
+@model IEnumerable<Branch>
+
+@* Partial này chỉ render các card chi nhánh (dùng cho initial render và AJAX update) *@
+
+@foreach (var branch in Model)
+{
+    var activeAttr = branch.IsActive ? "1" : "0";
+    <div class="branch-card" data-active="@activeAttr" data-name="@((branch.Name ?? "").ToLowerInvariant())">
+        <div class="branch-info">
+            <h4 class="branch-name">@branch.Name</h4>
+            <p class="branch-address">@branch.Address</p>
+        </div>
+
+        <div class="branch-footer">
+            <div class="left-actions">
+                <a asp-controller="Region"
+                   asp-action="BranchDetail"
+                   asp-route-id="@branch.BranchID"
+                   class="detail-btn">
+                    Xem chi tiết
+                </a>
+            </div>
+
+            <div class="branch-status">
+                @if (branch.IsActive)
+                {
+                    <span class="status-badge status-active">● Đang hoạt động</span>
+                }
+                else
+                {
+                    <span class="status-badge status-inactive">● Ngừng hoạt động</span>
+                }
+            </div>
+        </div>
+    </div>
+}

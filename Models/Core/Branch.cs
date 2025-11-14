@@ -25,6 +25,8 @@ public class Branch
 
     [StringLength(100)]
     public string? City { get; set; }
+
+    public bool IsActive { get; set; } = true;
     
     [Precision(18, 15)]
     public decimal Latitude { get; set; }
@@ -37,6 +39,8 @@ public class Branch
     
     [ForeignKey(nameof(RegionID))]
     public Region? Region { get; set; }
+
+    public ICollection<Employee>? Employees { get; set; }
 }
 
  
