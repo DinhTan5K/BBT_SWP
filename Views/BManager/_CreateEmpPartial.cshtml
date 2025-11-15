@@ -1,0 +1,61 @@
+@model start.Models.EmployeeBranchRequest
+
+
+
+<form id="createEmployeeForm" asp-action="CreateEmp" method="post">
+    
+    @Html.AntiForgeryToken()
+    <div asp-validation-summary="All" class="text-danger mb-3"></div>
+
+
+    <div class="form-group mb-3">
+        <label asp-for="FullName" class="form-label">Full Name</label>
+        <input asp-for="FullName" class="form-control" />
+        <span asp-validation-for="FullName" class="text-danger"></span>
+    </div>
+
+    <div class="form-group mb-3">
+        <label asp-for="DateOfBirth" class="form-label">Date of Birth</label>
+        <input asp-for="DateOfBirth" type="date" class="form-control" />
+        <span asp-validation-for="DateOfBirth" class="text-danger"></span>
+    </div>
+
+    <div class="form-group mb-3">
+        <label asp-for="PhoneNumber" class="form-label">Phone</label>
+        <input asp-for="PhoneNumber" class="form-control" />
+        <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+    </div>
+
+    <div class="form-group mb-3">
+        <label asp-for="Email" class="form-label">Email</label>
+        <input asp-for="Email" class="form-control" />
+        <span asp-validation-for="Email" class="text-danger"></span>
+    </div>
+
+    <div class="form-group mb-3">
+        <label asp-for="City" class="form-label">City</label>
+        <input asp-for="City" class="form-control" />
+    </div>
+
+    <div class="form-group mb-3">
+    <label asp-for="Gender" class="form-label">Gender</label>
+    <select asp-for="Gender" class="form-select" required>
+        <option value="">-- Select Gender --</option>
+        <option value="Nam">Nam</option>
+        <option value="Nữ">Nữ</option>
+    </select>
+    <span asp-validation-for="Gender" class="text-danger"></span>
+</div>
+
+    <div class="form-group mb-3">
+        <label asp-for="RoleID" class="form-label">Role</label>
+        <select asp-for="RoleID" class="form-select" asp-items="@ViewBag.SelectableRoles">
+            <option value="">-- Select a Role --</option>
+        </select>
+        <span asp-validation-for="RoleID" class="text-danger"></span>
+    </div>
+
+
+
+ 
+</form>

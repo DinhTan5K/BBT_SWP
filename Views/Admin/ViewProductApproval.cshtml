@@ -35,6 +35,13 @@
             <h3 style="font-size: 18px; font-weight: 600; color: var(--ink); margin-bottom: 20px;">Thông tin yêu cầu</h3>
             
             <div style="margin-bottom: 16px;">
+                <label style="font-weight: 600; color: var(--muted); font-size: 13px;">Request ID</label>
+                <div style="margin-top: 4px; font-size: 16px; color: var(--ink); font-weight: 500;">
+                    #@Model.Id
+                </div>
+            </div>
+
+            <div style="margin-bottom: 16px;">
                 <label style="font-weight: 600; color: var(--muted); font-size: 13px;">Loại yêu cầu</label>
                 <div style="margin-top: 4px; font-size: 16px; color: var(--ink); font-weight: 500;">
                     @(Model.RequestType switch
@@ -155,7 +162,7 @@
             <div style="margin-bottom: 16px;">
                 <label style="font-weight: 600; color: var(--muted); font-size: 13px;">Danh mục</label>
                 <div style="margin-top: 4px; font-size: 16px; color: var(--ink);">
-                    @(Model.Category?.CategoryName ?? $"ID: {Model.CategoryID}")
+                    @(Model.Product.Category?.CategoryName ?? "N/A")
                 </div>
             </div>
 

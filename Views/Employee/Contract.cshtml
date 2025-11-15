@@ -1,10 +1,29 @@
 @model start.Models.Contract
 
 @using System.Globalization
+@using System.Security.Claims
 <link rel="stylesheet" href="~/css/employee/contract.css" />
 
 @{
-    Layout = "_EmployeeLayout";
+    // Kiểm tra role để dùng layout phù hợp
+    var roleFromViewBag = ViewBag.CurrentRole as string;
+    var roleFromClaims = User?.FindFirst("Role")?.Value ?? User?.FindFirst("RoleID")?.Value;
+    var emp = ViewBag.Employee as start.Models.Employee ?? ViewData["Employee"] as start.Models.Employee;
+    var roleFromEmployee = emp?.RoleID;
+    
+    var roleRaw = roleFromViewBag ?? roleFromClaims ?? roleFromEmployee;
+    var role = !string.IsNullOrWhiteSpace(roleRaw) ? roleRaw.Trim().ToUpperInvariant() : "";
+    
+    // Chọn layout dựa trên role
+    if (role == "MK")
+    {
+        Layout = "~/Views/Shared/_MarketingLayout.cshtml";
+    }
+    else
+    {
+        Layout = "~/Views/Shared/_EmployeeLayout.cshtml";
+    }
+    
     ViewBag.ActiveMenu = "Profile";
     ViewBag.ActiveTab  = "contract";
 

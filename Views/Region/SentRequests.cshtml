@@ -1,0 +1,523 @@
+@using start.DTOs
+@{
+    ViewData["Title"] = "Yêu cầu đã gửi";
+    Layout = "~/Views/Shared/_RegionLayout.cshtml";
+}
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+<link rel="stylesheet" href="~/css/Region/region-dashboard.css" />
+
+<div class="region-dashboard-container" style="margin-top:60px;">
+    <h2 class="dashboard-title">Yêu cầu đã gửi</h2>
+
+    <!-- ALERT PLACEHOLDER -->
+    <div id="requestsAlertPlaceholder" style="margin-bottom: 12px;"></div>
+
+    <!-- FILTER BAR NEW -->
+    <div class="filter-bar" style="margin-bottom:12px;">
+        <div class="filter-group" id="filterGroup">
+            <button class="pill-btn active" data-cat="all" aria-pressed="true">Tất cả</button>
+            <button class="pill-btn" data-cat="@((int)RequestCategory.Branch)">Chi nhánh</button>
+            <button class="pill-btn" data-cat="@((int)RequestCategory.EmployeeBranch)">Nhân sự</button>
+            <button class="pill-btn" data-cat="@((int)RequestCategory.Product)">Sản phẩm</button>
+            <button class="pill-btn" data-cat="@((int)RequestCategory.Category)">Danh mục</button>
+        </div>
+
+        <input type="text" id="reqSearch" class="form-control search-input" placeholder="Tìm theo nội dung, người tạo..." />
+    </div>
+
+    <!-- LIST CONTAINER -->
+    <div id="requestsListContainer" class="requests-list">
+        <div class="alert alert-info">Đang tải...</div>
+    </div>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="modal fade" id="requestDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Chi tiết yêu cầu</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="requestDetailBody">
+                <div class="text-center">
+                    <div class="spinner-border" role="status"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="deleteRequestBtn" class="btn btn-danger">Xóa yêu cầu</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@Html.AntiForgeryToken()
+
+@section Styles {
+    <style>
+        /* -------- filter & search -------- */
+        .filter-bar {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .pill-btn {
+            padding: 6px 14px;
+            border-radius: 20px;
+            border: 1px solid #e6e6e6;
+            background: #fff;
+            font-weight: 500;
+            cursor: pointer;
+            transition: .15s;
+            line-height: 1;
+        }
+
+        .pill-btn.active {
+            background: #f6e6d8;
+            border-color: #e0c6a3;
+            color: #5a3f2a;
+        }
+
+        .search-input {
+            min-width: 260px;
+            max-width: 360px;
+            border-radius: 20px;
+            padding: 6px 12px;
+            height: 40px;
+            margin-left: auto;
+        }
+
+        /* -------- list & cards -------- */
+        .requests-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .request-card {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 14px 18px;
+            border-radius: 12px;
+            border: 1px solid #e9e9e9;
+            background: #fff;
+            box-shadow: 0 2px 8px rgba(13, 13, 13, 0.03);
+            transition: .18s;
+        }
+
+        .request-card:hover {
+            box-shadow: 0 6px 16px rgba(0,0,0,0.06);
+            transform: translateY(-2px);
+        }
+
+        .request-card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .request-type-icon {
+            font-size: 20px;
+            width: 32px;
+            height: 32px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            background: #f5f7fb;
+            color: #3b3f45;
+            flex-shrink: 0;
+        }
+
+        .request-title {
+            font-weight: 600;
+            font-size: 1rem;
+            line-height: 1.2;
+            flex: 1;
+            word-break: break-word;
+        }
+
+        .request-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-left: 8px;
+            flex-shrink: 0;
+        }
+
+        .status-pending { background: #fff8e1; color: #e6a23c; }
+        .status-approved { background: #e6f7f0; color: #0d8a50; }
+        .status-rejected { background: #fdf0f0; color: #d9534f; }
+
+        .request-footer {
+            display: flex;
+            gap: 16px;
+            font-size: 0.85rem;
+            color: #666;
+            align-items: center;
+        }
+
+        .request-footer i { margin-right: 6px; color: #888; }
+
+        /* small screens */
+        @@media (max-width: 720px) {
+            .search-input { min-width: 140px; max-width: 180px; }
+            .request-card { padding: 12px; }
+            .request-title { font-size: 0.95rem; }
+        }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Razor-provided enums & URLs
+            const ENUM_BRANCH = @((int)RequestCategory.Branch);
+            const ENUM_EMPBR = @((int)RequestCategory.EmployeeBranch);
+            const ENUM_PRODUCT = @((int)RequestCategory.Product);
+            const ENUM_CATEGORY = @((int)RequestCategory.Category);
+
+            const STATUS_PENDING = 0;
+            const STATUS_APPROVED = 1;
+
+            const URL_GET_LIST = '@Url.Action("GetSentRequests", "Region")'; // expected to return full list (or accept optional category)
+            const URL_GET_DETAIL = '@Url.Action("GetSentRequestDetail", "Region")';
+            const URL_DELETE = '@Url.Action("DeleteSentRequest", "Region")';
+
+            // DOM refs
+            const listContainer = document.getElementById('requestsListContainer');
+            const searchInput = document.getElementById('reqSearch');
+            const filterGroup = document.getElementById('filterGroup');
+            const alertPlaceholder = document.getElementById('requestsAlertPlaceholder');
+            const detailModalEl = document.getElementById('requestDetailModal');
+            const detailModal = detailModalEl ? new bootstrap.Modal(detailModalEl) : null;
+            const deleteRequestBtn = document.getElementById('deleteRequestBtn');
+
+            // data
+            let originalList = []; // full list from server
+            let lastLoadedAt = null; // optional
+
+            // helpers
+            function escapeHtml(s) {
+                if (s === null || s === undefined) return '';
+                return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            }
+
+            function showAlert(type, text) {
+                alertPlaceholder.innerHTML = `<div class="alert ${type === 'danger' ? 'alert-danger' : 'alert-success'}" role="alert">${escapeHtml(text)}</div>`;
+                setTimeout(() => {
+                    if (alertPlaceholder.firstChild) alertPlaceholder.innerHTML = '';
+                }, 4500);
+            }
+
+            function getStatusClass(status) {
+                if (status === STATUS_PENDING) return 'status-pending';
+                if (status === STATUS_APPROVED) return 'status-approved';
+                return 'status-rejected';
+            }
+
+            function catToIcon(cat) {
+                // return font-awesome class for category
+                switch (Number(cat)) {
+                    case ENUM_BRANCH: return '<i class="fa-solid fa-building-columns"></i>';
+                    case ENUM_EMPBR: return '<i class="fa-solid fa-user-tie"></i>';
+                    case ENUM_PRODUCT: return '<i class="fa-solid fa-box-open"></i>';
+                    case ENUM_CATEGORY: return '<i class="fa-solid fa-tags"></i>';
+                    default: return '<i class="fa-regular fa-folder"></i>';
+                }
+            }
+
+            // render list
+            function renderList(list) {
+                const q = (searchInput.value || '').trim().toLowerCase();
+                const activeBtn = filterGroup.querySelector('.pill-btn.active');
+                const activeCat = activeBtn ? activeBtn.dataset.cat : 'all';
+
+                const filtered = (list || []).filter(i => {
+                    // text match (safe check)
+                    const content = (i.contentSummary || i.contentHtml || '').toString().toLowerCase();
+                    const by = (i.requestedBy || '').toString().toLowerCase();
+                    const typeLabel = (i.requestTypeLabel || '').toString().toLowerCase();
+
+                    const matchesText = !q || content.includes(q) || by.includes(q) || typeLabel.includes(q);
+                    const matchesCat = (activeCat === 'all') || (String(i.category) === String(activeCat));
+
+                    return matchesText && matchesCat;
+                });
+
+                if (!filtered.length) {
+                    listContainer.innerHTML = '<div class="alert alert-secondary">Không có yêu cầu phù hợp.</div>';
+                    return;
+                }
+
+                const cardsHtml = filtered.map(i => {
+                    const date = i.requestedAt ? new Date(i.requestedAt).toLocaleString() : '';
+                    const statusLabel = escapeHtml(i.statusLabel || (i.status == 0 ? 'Chờ duyệt' : i.status == 1 ? 'Đã duyệt' : 'Bị từ chối'));
+                    const statusClass = getStatusClass(i.status);
+                    const titleHtml = i.contentHtml ? i.contentHtml : escapeHtml(i.contentSummary || '');
+                    const requestedBy = escapeHtml(i.requestedBy || '—');
+
+                    return `
+                        <div class="request-card" data-id="${i.id}" data-cat="${i.category}">
+                            <div class="request-card-header">
+                                <div class="request-type-icon">${catToIcon(i.category)}</div>
+                                <div class="request-title">${titleHtml}</div>
+
+                                <div class="request-actions">
+                                    <span class="status-badge ${statusClass}">${statusLabel}</span>
+                                    <button type="button" class="btn btn-sm btn-info btn-view" data-id="${i.id}" data-cat="${i.category}">Xem</button>
+                                    <button type="button" class="btn btn-sm btn-outline-danger btn-delete" data-id="${i.id}" data-cat="${i.category}">Xóa</button>
+                                </div>
+                            </div>
+
+                            <div class="request-footer">
+                                <span><i class="fa-regular fa-user"></i> ${requestedBy}</span>
+                                <span><i class="fa-regular fa-clock"></i> ${escapeHtml(date)}</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                listContainer.innerHTML = cardsHtml;
+            }
+
+            // fetch full list once
+            async function loadListFromServer() {
+                listContainer.innerHTML = '<div class="alert alert-info">Đang tải...</div>';
+                try {
+                    const res = await fetch(URL_GET_LIST, { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' });
+                    if (!res.ok) {
+                        const txt = await res.text();
+                        throw new Error('Server trả lỗi ' + res.status + ' — ' + txt);
+                    }
+                    const arr = await res.json();
+                    originalList = Array.isArray(arr) ? arr : [];
+                    lastLoadedAt = new Date();
+                    renderList(originalList);
+                } catch (err) {
+                    console.error(err);
+                    listContainer.innerHTML = '<div class="alert alert-danger">Không lấy được dữ liệu.</div>';
+                    showAlert('danger', 'Không tải được danh sách yêu cầu từ server.');
+                }
+            }
+
+            // event: filter clicks (delegated from filterGroup)
+            filterGroup.addEventListener('click', function (ev) {
+                const btn = ev.target.closest('.pill-btn');
+                if (!btn) return;
+                filterGroup.querySelectorAll('.pill-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                renderList(originalList);
+            });
+
+            // event: search live
+            searchInput.addEventListener('input', function () {
+                renderList(originalList);
+            });
+
+            // delegation: view / delete buttons
+            document.addEventListener('click', async function (e) {
+                const viewBtn = e.target.closest('.btn-view');
+                if (viewBtn) {
+                    const id = viewBtn.dataset.id;
+                    const cat = viewBtn.dataset.cat;
+                    await loadDetail(cat, id);
+                    if (detailModal) detailModal.show();
+                    return;
+                }
+
+                const delBtn = e.target.closest('.btn-delete');
+                if (delBtn) {
+                    const id = delBtn.dataset.id;
+                    const cat = delBtn.dataset.cat;
+                    if (!confirm('Xác nhận xóa yêu cầu này?')) return;
+                    await performDelete(cat, id);
+                    return;
+                }
+            });
+
+            // delete from modal button
+            deleteRequestBtn && deleteRequestBtn.addEventListener('click', async function (ev) {
+                ev.stopPropagation();
+                const modal = detailModalEl;
+                const catRaw = modal?.dataset?.selectedCat;
+                const idRaw = modal?.dataset?.selectedId;
+
+                const cat = (catRaw === undefined || catRaw === null) ? null : Number(catRaw);
+                const id = (idRaw === undefined || idRaw === null) ? null : Number(idRaw);
+
+                if (cat == null || id == null) {
+                    showAlert('danger', 'Không xác định được yêu cầu để xóa.');
+                    return;
+                }
+                if (!confirm('Xác nhận xóa yêu cầu này?')) return;
+
+                deleteRequestBtn.disabled = true;
+                try {
+                    await performDelete(cat, id);
+                    if (detailModal) detailModal.hide();
+                } finally {
+                    deleteRequestBtn.disabled = false;
+                }
+            });
+
+            // load detail into modal
+            async function loadDetail(cat, id) {
+                if (detailModalEl) {
+                    detailModalEl.dataset.selectedCat = String(cat);
+                    detailModalEl.dataset.selectedId = String(id);
+                }
+
+                const body = document.getElementById('requestDetailBody');
+                body.innerHTML = '<div class="text-center"><div class="spinner-border" role="status"></div></div>';
+
+                try {
+                    const res = await fetch(`${URL_GET_DETAIL}?category=${encodeURIComponent(cat)}&id=${encodeURIComponent(id)}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' });
+                    if (res.status === 404) {
+                        body.innerHTML = '<div class="text-danger">Yêu cầu không tồn tại hoặc bạn không có quyền xem.</div>';
+                        return;
+                    }
+                    if (!res.ok) {
+                        const txt = await res.text();
+                        body.innerHTML = `<div class="text-danger">Không tải được chi tiết: ${escapeHtml(txt)}</div>`;
+                        return;
+                    }
+
+                    const d = await res.json();
+
+                    // keep selected meta
+                    if (detailModalEl) {
+                        detailModalEl.dataset.selectedCat = String(d.category ?? cat);
+                        detailModalEl.dataset.selectedId = String(d.id ?? id);
+                    }
+
+                    // build detail html
+                    let html = `<div class="mb-2"><strong>Yêu cầu bởi:</strong> ${escapeHtml(d.requestedBy || '')} <br/><strong>Ngày:</strong> ${d.requestedAt ? new Date(d.requestedAt).toLocaleString() : ''}</div>`;
+                    html += `<table class="table table-sm">`;
+
+                    if (Number(d.category) === ENUM_BRANCH) {
+                        html += `<tr><th>Tên chi nhánh</th><td>${escapeHtml(d.branchName || '')}</td></tr>`;
+                        html += `<tr><th>Số điện thoại</th><td>${escapeHtml(d.branchPhone || '')}</td></tr>`;
+                        html += `<tr><th>BranchId</th><td>${escapeHtml(d.branchId ?? '')}</td></tr>`;
+                    } else if (Number(d.category) === ENUM_EMPBR) {
+                        html += `<tr><th>EmployeeId</th><td>${escapeHtml(d.employeeId || '')}</td></tr>`;
+                        html += `<tr><th>Họ tên</th><td>${escapeHtml(d.fullName || '')}</td></tr>`;
+                        html += `<tr><th>SĐT</th><td>${escapeHtml(d.phoneNumber || '')}</td></tr>`;
+                        html += `<tr><th>BranchId</th><td>${escapeHtml(d.branchId ?? '')}</td></tr>`;
+                        html += `<tr><th>RegionId</th><td>${escapeHtml(d.regionId ?? '')}</td></tr>`;
+                        if (d.branchName) html += `<tr><th>Tên chi nhánh hiện tại (nếu có)</th><td>${escapeHtml(d.branchName)}</td></tr>`;
+                    } else if (Number(d.category) === ENUM_PRODUCT) {
+                        if (d.productImageUrl) {
+                            html += `<tr><th>Ảnh</th><td><img src="${escapeHtml(d.productImageUrl)}" style="max-width:160px;max-height:120px;object-fit:contain;" alt="product image" /></td></tr>`;
+                        }
+                        html += `<tr><th>Tên sản phẩm</th><td>${escapeHtml(d.productName || '')}</td></tr>`;
+                        html += `<tr><th>Mô tả</th><td style="white-space:pre-wrap;">${escapeHtml(d.productDescription || '')}</td></tr>`;
+                        html += `<tr><th>Danh mục</th><td>${escapeHtml(d.productCategoryName || (d.productCategoryId ?? ''))}</td></tr>`;
+
+                        if (Array.isArray(d.productSizes) && d.productSizes.length) {
+                            html += `<tr><th>Các size</th><td><table class="table table-sm mb-0"><thead><tr><th>Size</th><th>Giá</th></tr></thead><tbody>`;
+                            d.productSizes.forEach(s => {
+                                const sizeLabel = s.size || '';
+                                const priceLabel = (s.price == null) ? '' : Number(s.price).toLocaleString();
+                                html += `<tr><td>${escapeHtml(sizeLabel)}</td><td>${escapeHtml(priceLabel ? priceLabel + ' đ' : '')}</td></tr>`;
+                            });
+                            html += `</tbody></table></td></tr>`;
+                        }
+                    } else if (Number(d.category) === ENUM_CATEGORY) {
+                        html += `<tr><th>CategoryId</th><td>${escapeHtml(d.categoryId ?? '')}</td></tr>`;
+                        html += `<tr><th>Tên danh mục</th><td>${escapeHtml(d.categoryName || '')}</td></tr>`;
+                    }
+
+                    html += `<tr><th>Trạng thái</th><td>${escapeHtml(d.status == 0 ? 'Chờ duyệt' : d.status == 1 ? 'Đã duyệt' : 'Bị từ chối')}</td></tr>`;
+                    if (d.reviewedBy) html += `<tr><th>ReviewedBy</th><td>${escapeHtml(d.reviewedBy)}</td></tr>`;
+                    if (d.rejectionReason) html += `<tr><th>Lý do từ chối</th><td>${escapeHtml(d.rejectionReason)}</td></tr>`;
+                    html += `</table>`;
+
+                    body.innerHTML = html;
+
+                    // control delete button visibility from server flag (d.canDelete)
+                    if (deleteRequestBtn) {
+                        if (d.canDelete === false) deleteRequestBtn.style.display = 'none';
+                        else deleteRequestBtn.style.display = '';
+                    }
+                } catch (err) {
+                    console.error(err);
+                    const body = document.getElementById('requestDetailBody');
+                    body.innerHTML = '<div class="text-danger">Lỗi khi tải chi tiết.</div>';
+                }
+            }
+
+            // perform delete
+            async function performDelete(cat, id) {
+                try {
+                    const tokenEl = document.querySelector('input[name="__RequestVerificationToken"]');
+                    const token = tokenEl ? tokenEl.value : '';
+                    const form = new FormData();
+                    form.append('category', String(cat));
+                    form.append('id', String(id));
+                    if (token) form.append('__RequestVerificationToken', token);
+
+                    const res = await fetch(URL_DELETE, {
+                        method: 'POST',
+                        body: form,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'RequestVerificationToken': token || ''
+                        },
+                        credentials: 'same-origin'
+                    });
+
+                    let json = null;
+                    const ctype = res.headers.get('content-type') || '';
+                    if (ctype.indexOf('application/json') !== -1) {
+                        json = await res.json();
+                    } else {
+                        const txt = await res.text();
+                        try { json = JSON.parse(txt); } catch { json = { success: res.ok, message: txt }; }
+                    }
+
+                    if (!res.ok) {
+                        const msg = json && json.message ? json.message : ('Lỗi server: ' + res.status);
+                        showAlert('danger', msg);
+                        return;
+                    }
+
+                    if (json && json.success) {
+                        showAlert('success', json.message || 'Đã xóa yêu cầu.');
+                        // remove from originalList locally if present
+                        originalList = originalList.filter(x => String(x.id) !== String(id));
+                        renderList(originalList);
+                    } else {
+                        showAlert('danger', json && json.message ? json.message : 'Không xóa được yêu cầu.');
+                    }
+                } catch (err) {
+                    console.error(err);
+                    showAlert('danger', 'Lỗi server khi xóa.');
+                }
+            }
+
+            // initial load
+            loadListFromServer();
+        });
+    </script>
+}

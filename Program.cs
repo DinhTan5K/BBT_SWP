@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using start.Data;
+using start.Models.Configurations;
 using start.Services;
 using start.Services.Interfaces;
 using start.Services.Implementations.ECommerce;
@@ -20,6 +21,8 @@ builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IOrderReadService, OrderReadService>();
 builder.Services.AddScoped<ICheckoutService, CheckoutService>();
+builder.Services.AddScoped<IShipperService, ShipperService>();
+
 builder.Services.Configure<start.Models.Configurations.EmailSettings>(
     builder.Configuration.GetSection("EmailSettings")
 );
@@ -27,14 +30,27 @@ builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<AiService>();
 builder.Services.AddScoped<IEmployeeProfileService, EmployeeProfileService>();
 builder.Services.AddScoped<IScheduleService, ScheduleService>();
-builder.Services.AddScoped<IPayrollService, PayrollService >();
-builder.Services.AddScoped<IMarketingKPIService, MarketingKPIService>();
+builder.Services.AddScoped<IPayrollService, PayrollService>();
 builder.Services.AddScoped<IDayOffService, DayOffService>();
 builder.Services.AddScoped<INewsService, NewsService>();
 builder.Services.AddScoped<IStoreService, StoreService>();
+builder.Services.AddScoped<IRegisterScheduleService, RegisterScheduleService>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddScoped<IScheduleForManagerService, ScheduleForManagerService>();
+builder.Services.AddScoped<IReportService, ReportService>();
+builder.Services.AddScoped<IContractService, ContractService>();
+builder.Services.AddScoped<IEmployeeManagementService, EmployeeManagementService>();
+builder.Services.AddScoped<IAttendanceService, AttendanceService>();
+builder.Services.AddScoped<IMarketingKPIService, MarketingKPIService>();
 builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
 builder.Services.AddScoped<IAdminSecurityService, AdminSecurityService>();
 builder.Services.AddScoped<IDiscountService, DiscountService>();
+builder.Services.AddScoped<IRegionService, RegionService>();
+builder.Services.Configure<CloudinarySettings>(builder.Configuration.GetSection("CloudinarySettings"));
+builder.Services.AddControllersWithViews();
+builder.Services.AddScoped<RevenueService>();
+builder.Services.AddScoped<ShiftService>();
+builder.Services.AddScoped<SessionService>();
 
 builder.Logging.ClearProviders();
 builder.Logging.AddSimpleConsole(options =>
@@ -62,9 +78,9 @@ builder.Services.Configure<CookiePolicyOptions>(options =>
 {
     options.MinimumSameSitePolicy = SameSiteMode.Lax;
     // Chỉ bắt buộc Secure trong production (HTTPS), cho phép HTTP trong development
-    options.Secure = builder.Environment.IsDevelopment() 
-        ? CookieSecurePolicy.None 
-        : CookieSecurePolicy.Always; 
+    options.Secure = builder.Environment.IsDevelopment()
+        ? CookieSecurePolicy.None
+        : CookieSecurePolicy.Always;
 });
 
 
@@ -83,10 +99,45 @@ builder.Services.AddAuthentication(options =>
     options.Cookie.SameSite = SameSiteMode.Lax;
     options.ExpireTimeSpan = TimeSpan.FromHours(8);
 })
+.AddCookie("BranchManagerScheme", options =>
+{
+    options.LoginPath = "/Account/Login";
+    options.Cookie.Name = "BranchManagerAuth";
+    options.Cookie.SameSite = SameSiteMode.Lax;
+    options.ExpireTimeSpan = TimeSpan.FromHours(8);
+})
 .AddCookie("EmployeeScheme", options =>
 {
     options.LoginPath = "/Account/Login";
     options.Cookie.Name = "EmployeeAuth";
+    options.Cookie.SameSite = SameSiteMode.Lax;
+    options.ExpireTimeSpan = TimeSpan.FromHours(8);
+})
+.AddCookie("MarketingScheme", options =>
+{
+    options.LoginPath = "/Account/Login";
+    options.Cookie.Name = "MarketingAuth";
+    options.Cookie.SameSite = SameSiteMode.Lax;
+    options.ExpireTimeSpan = TimeSpan.FromHours(8);
+})
+.AddCookie("RegionManagerScheme", options =>
+{
+    options.LoginPath = "/Account/Login";
+    options.Cookie.Name = "RegionManagerAuth";
+    options.Cookie.SameSite = SameSiteMode.Lax;
+    options.ExpireTimeSpan = TimeSpan.FromHours(8);
+})
+.AddCookie("ShiftLeaderScheme", options =>
+{
+    options.LoginPath = "/Account/Login";
+    options.Cookie.Name = "ShiftLeaderAuth";
+    options.Cookie.SameSite = SameSiteMode.Lax;
+    options.ExpireTimeSpan = TimeSpan.FromHours(8);
+})
+.AddCookie("ShipperScheme", options =>
+{
+    options.LoginPath = "/Account/Login";
+    options.Cookie.Name = "ShipperAuth";
     options.Cookie.SameSite = SameSiteMode.Lax;
     options.ExpireTimeSpan = TimeSpan.FromHours(8);
 })
@@ -107,7 +158,7 @@ builder.Services.AddAuthentication(options =>
         // Log lỗi kết nối Google OAuth
         var logger = ctx.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
         logger.LogError(ctx.Failure, "Lỗi khi kết nối với Google OAuth: {Error}", ctx.Failure?.Message);
-        
+
         // Redirect về trang login với thông báo lỗi
         ctx.Response.Redirect("/Account/Login?error=google_connection_failed");
         ctx.HandleResponse();
@@ -159,7 +210,7 @@ if (!app.Environment.IsDevelopment())
 app.UseRouting();
 
 // THÊM VÀO: Sử dụng Cookie Policy (phải đặt trước UseAuthentication và UseSession)
-app.UseCookiePolicy(); 
+app.UseCookiePolicy();
 
 app.UseAuthentication();
 app.UseAuthorization();
@@ -184,6 +235,11 @@ app.MapControllerRoute(
     name: "productDetail",
     pattern: "Product/Detail/{id}",
     defaults: new { controller = "Product", action = "Detail" });
+
+app.MapControllerRoute(
+    name: "shipper",
+    pattern: "Shipper/{action=MyOrders}/{id?}",
+    defaults: new { controller = "Employee" }); // Ánh xạ các route Shipper tới EmployeeController
 
 app.MapControllerRoute(
     name: "default",

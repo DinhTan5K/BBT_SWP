@@ -1,0 +1,159 @@
+@model RegionDashboardViewModel
+
+@{
+    ViewData["Title"] = "Tổng quan";
+    Layout = "~/Views/Shared/_RegionLayout.cshtml";
+
+    var currentFilter = (ViewData["CurrentFilter"] as string) ?? "all";
+    var currentQuery = (ViewData["CurrentQuery"] as string) ?? "";
+    
+    // Tính toán số liệu (loại bỏ duplicate trước)
+    var uniqueBranches = Model.Branches != null 
+        ? Model.Branches.GroupBy(b => b.BranchID).Select(g => g.First()).ToList() 
+        : new List<Branch>();
+    var totalBranches = uniqueBranches.Count;
+    var activeBranches = uniqueBranches.Count(b => b.IsActive);
+    var inactiveBranches = uniqueBranches.Count(b => !b.IsActive);
+}
+
+<link rel="stylesheet" href="~/css/Region/region-dashboard.css" />
+<link rel="stylesheet" href="~/css/BManager/bmanager.css" />
+
+<div class="dashboard-header">
+    <div class="header-greeting">
+        <h1>Chào mừng, @Model.ManagerName!</h1>
+        <div class="header-meta">
+            <span><i class="fas fa-globe me-2"></i>Khu vực @Model.RegionName</span>
+            <span><i class="fas fa-calendar-alt me-2"></i>@DateTime.Now.ToString("dddd, dd MMMM, yyyy")</span>
+        </div>
+    </div>
+    <div class="header-status">
+        <span class="badge bg-success rounded-pill"><i class="fas fa-circle me-1"></i> Đang hoạt động</span>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-4 col-md-6 mb-4">
+        <div class="stat-card">
+            <div class="stat-card-icon primary">
+                <i class="fas fa-store"></i>
+            </div>
+            <div class="stat-card-title">Tổng số chi nhánh</div>
+            <div class="stat-card-value">@totalBranches</div>
+            <div class="stat-card-change text-success">
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4 col-md-6 mb-4">
+        <div class="stat-card">
+            <div class="stat-card-icon green">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="stat-card-title">Chi nhánh đang hoạt động</div>
+            <div class="stat-card-value">@activeBranches</div>
+            <div class="stat-card-change text-success">
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4 col-md-12 mb-4">
+        <div class="stat-card">
+            <div class="stat-card-icon orange">
+                <i class="fas fa-pause-circle"></i>
+            </div>
+            <div class="stat-card-title">Chi nhánh ngừng hoạt động</div>
+            <div class="stat-card-value">@inactiveBranches</div>
+            <div class="stat-card-change text-success">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- FILTER BAR (AJAX + LIVE SEARCH) -->
+<div class="filter-bar" id="filterBar">
+    <!--Filter tình trạng chi nhánh-->
+    <div class="filter-left">
+        <div class="filter-segment" role="tablist" aria-label="Filter branches">
+            <button type="button" class="filter-btn @(currentFilter=="all" ? "active" : "")" data-filter="all">Tất cả</button>
+            <button type="button" class="filter-btn @(currentFilter=="active" ? "active" : "")" data-filter="active">Đang hoạt động</button>
+            <button type="button" class="filter-btn @(currentFilter=="inactive" ? "active" : "")" data-filter="inactive">Ngừng hoạt động</button>
+        </div>
+    </div>
+
+    <div class="filter-left">
+        <!-- NO button: live search while typing -->
+        <input id="searchBranch" type="text" class="filter-search" placeholder="Tìm theo tên chi nhánh..." value="@currentQuery" autocomplete="off" />
+    </div>
+</div>
+
+<!-- BRANCH GRID (initial render using the partial) -->
+<div class="branch-grid" id="branchGrid">
+    @await Html.PartialAsync("_BranchGridPartial", uniqueBranches)
+</div>
+
+<!-- client-side: live search (debounced) + filter buttons (AJAX) -->
+<script>
+    (function () {
+        const debounce = (fn, delay) => {
+            let t;
+            return function (...args) {
+                clearTimeout(t);
+                t = setTimeout(() => fn.apply(this, args), delay);
+            };
+        };
+
+        const branchGrid = document.getElementById('branchGrid');
+        const searchInput = document.getElementById('searchBranch');
+        const filterButtons = Array.from(document.querySelectorAll('.filter-btn'));
+
+        let currentFilter = document.querySelector('.filter-btn.active')?.getAttribute('data-filter') || 'all';
+
+        async function fetchAndRender(filter, q) {
+            const params = new URLSearchParams();
+            if (filter) params.set('filter', filter);
+            if (q) params.set('q', q);
+
+            try {
+                const url = `@Url.Action("RegionGridPartial", "Region")?${params.toString()}`;
+                const res = await fetch(url, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+
+                if (!res.ok) {
+                    console.error('Server returned', res.status);
+                    return;
+                }
+
+                const html = await res.text();
+                branchGrid.innerHTML = html;
+            } catch (err) {
+                console.error('Fetch error', err);
+            }
+        }
+
+        const debouncedFetch = debounce(() => {
+            const q = searchInput.value.trim();
+            fetchAndRender(currentFilter, q);
+        }, 300);
+
+        // live search on input
+        searchInput.addEventListener('input', debouncedFetch);
+
+        // filter buttons: immediate fetch on click
+        filterButtons.forEach(btn => {
+            btn.addEventListener('click', function () {
+                filterButtons.forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                currentFilter = this.getAttribute('data-filter') || 'all';
+                fetchAndRender(currentFilter, searchInput.value.trim());
+            });
+        });
+
+        // ESC clears search
+        searchInput.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+                this.value = '';
+                fetchAndRender(currentFilter, '');
+            }
+        });
+    })();
+</script>

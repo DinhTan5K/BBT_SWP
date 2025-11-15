@@ -12,7 +12,7 @@
     var security = ViewBag.AdminSecurity as AdminSecurity;
     var isTwoFactorEnabled = security?.IsTwoFactorEnabled ?? false;
     var otpExpiresAt = security?.LastOtpExpiredAt;
-    var nowUtc = DateTime.UtcNow;
+    var now = DateTime.Now;
 }
 
 <link rel="stylesheet" href="/css/Admin/profile.css" />
@@ -91,12 +91,12 @@
                         <i class="fa fa-check-circle"></i> 2FA đang được bật (Email OTP)
                     </div>
                     
-                    @if (security?.LastOtpCode != null && otpExpiresAt.HasValue && otpExpiresAt.Value > nowUtc)
+                    @if (security?.LastOtpCode != null && otpExpiresAt.HasValue && otpExpiresAt.Value > now)
                     {
                         <div class="twofactor-otp-panel">
                             <div class="twofactor-otp-header">
                                 <h5>Nhập OTP để xác nhận tắt 2FA</h5>
-                                <span>Hết hạn lúc @otpExpiresAt.Value.ToLocalTime().ToString("HH:mm dd/MM")</span>
+                                <span>Hết hạn lúc @otpExpiresAt.Value.ToString("HH:mm dd/MM")</span>
                             </div>
                             <form asp-action="DisableTwoFactor" method="post" class="twofactor-otp-form">
                                 @Html.AntiForgeryToken()
@@ -115,7 +115,7 @@
                             </form>
                         </div>
                     }
-                    else if (security?.LastOtpCode != null && otpExpiresAt.HasValue && otpExpiresAt.Value <= nowUtc)
+                    else if (security?.LastOtpCode != null && otpExpiresAt.HasValue && otpExpiresAt.Value <= now)
                     {
                         <div class="twofactor-alert warning">
                             <i class="fa fa-hourglass-end"></i> Mã OTP đã hết hạn. Vui lòng gửi lại mã xác nhận.
@@ -149,12 +149,12 @@
                         </button>
                     </form>
 
-                    @if (security?.LastOtpCode != null && otpExpiresAt.HasValue && otpExpiresAt.Value > nowUtc)
+                    @if (security?.LastOtpCode != null && otpExpiresAt.HasValue && otpExpiresAt.Value > now)
                     {
                         <div class="twofactor-otp-panel">
                             <div class="twofactor-otp-header">
                                 <h5>Nhập OTP để bật 2FA</h5>
-                                <span>Hết hạn lúc @otpExpiresAt.Value.ToLocalTime().ToString("HH:mm dd/MM")</span>
+                                <span>Hết hạn lúc @otpExpiresAt.Value.ToString("HH:mm dd/MM")</span>
                             </div>
                             <form asp-action="VerifyTwoFactorSetup" method="post" class="twofactor-otp-form">
                                 @Html.AntiForgeryToken()
@@ -173,7 +173,7 @@
                             </form>
                         </div>
                     }
-                    else if (security?.LastOtpCode != null && otpExpiresAt.HasValue && otpExpiresAt.Value <= nowUtc)
+                    else if (security?.LastOtpCode != null && otpExpiresAt.HasValue && otpExpiresAt.Value <= now)
                     {
                         <div class="twofactor-alert warning">
                             <i class="fa fa-hourglass-end"></i> Mã OTP đã hết hạn. Vui lòng gửi lại mã kích hoạt.

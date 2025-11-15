@@ -1,0 +1,141 @@
+@model RegionStatisticsViewModel
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Báo cáo doanh thu</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <style>
+        @@page { size: A4; margin: 1.5cm; }
+        body { font-family: DejaVu Sans, sans-serif; font-size: 12px; }
+        .table { font-size: 11px; }
+        h5 { margin: 16px 0 8px; }
+        .chart-container { height: 200px; margin: 16px 0; }
+        .kpi-card { border: 1px solid #dee2e6; border-radius: 8px; padding: 12px; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <h3 class="text-center mb-1">BÁO CÁO DOANH THU & THỐNG KÊ</h3>
+        <p class="text-center text-muted mb-3">
+            Từ @(Model.From.ToString("dd/MM/yyyy")) đến @(Model.To.ToString("dd/MM/yyyy"))
+            @if (ViewBag.BranchName != null)
+            {
+              <br />@:Chi nhánh: <strong>@ViewBag.BranchName</strong> 
+            }
+        </p>
+
+        <!-- KPI -->
+        <div class="row text-center mb-4">
+            @{
+                var totalRevenue = Model.BranchStats.Sum(x => x.TotalRevenue);
+                var totalOrders = Model.BranchStats.Sum(x => x.OrderCount);
+                var totalUnits = Model.BranchStats.Sum(x => x.UnitsSold);
+                var aov = totalOrders == 0 ? 0m : totalRevenue / totalOrders;
+            }
+            <div class="col"><div class="kpi-card"><strong>Doanh thu</strong><br /><h5>@totalRevenue.ToString("N0") ₫</h5></div></div>
+            <div class="col"><div class="kpi-card"><strong>Đơn hàng</strong><br /><h5>@totalOrders</h5></div></div>
+            <div class="col"><div class="kpi-card"><strong>Sản phẩm</strong><br /><h5>@totalUnits</h5></div></div>
+            <div class="col"><div class="kpi-card"><strong>Trung bình đơn</strong><br /><h5>@aov.ToString("N0") ₫</h5></div></div>
+        </div>
+
+        <!-- Biểu đồ doanh thu theo chi nhánh -->
+        <h5>Doanh thu theo chi nhánh</h5>
+        <div class="chart-container">
+            <canvas id="branchChart"></canvas>
+        </div>
+
+        <!-- Biểu đồ top sản phẩm -->
+        <h5>Top sản phẩm (theo units)</h5>
+        <div class="chart-container">
+            <canvas id="topProductsChart"></canvas>
+        </div>
+
+        <!-- Biểu đồ xu hướng doanh thu -->
+        <h5>Doanh thu theo ngày</h5>
+        <div class="chart-container">
+            <canvas id="revenueTrendChart"></canvas>
+        </div>
+
+        <!-- Bảng chi tiết -->
+        <h5 class="mt-4">Doanh thu theo chi nhánh (chi tiết)</h5>
+        <table class="table table-bordered table-sm mb-4">
+            <thead class="table-light"><tr><th>Chi nhánh</th><th>Đơn</th><th>SP bán</th><th>Doanh thu</th></tr></thead>
+            <tbody>
+                @foreach (var b in Model.BranchStats)
+                {
+                    <tr><td>@b.BranchName</td><td>@b.OrderCount</td><td>@b.UnitsSold</td><td>@b.TotalRevenue.ToString("N0") ₫</td></tr>
+                }
+            </tbody>
+        </table>
+
+        <h5>Top sản phẩm bán chạy</h5>
+        <table class="table table-bordered table-sm mb-4">
+            <thead class="table-light"><tr><th>Sản phẩm</th><th>Số lượng</th><th>Doanh thu</th></tr></thead>
+            <tbody>
+                @foreach (var p in Model.TopProducts)
+                {
+                    <tr><td>@p.ProductName</td><td>@p.TotalSold</td><td>@p.TotalRevenue.ToString("N0") ₫</td></tr>
+                }
+            </tbody>
+        </table>
+
+        <h5>Khách hàng đặt nhiều nhất</h5>
+        <table class="table table-bordered table-sm">
+            <thead class="table-light"><tr><th>Khách hàng</th><th>Số đơn</th><th>Tổng chi</th></tr></thead>
+            <tbody>
+                @foreach (var c in Model.TopCustomers)
+                {
+                    <tr><td>@c.CustomerName</td><td>@c.OrderCount</td><td>@c.TotalSpent.ToString("N0") ₫</td></tr>
+                }
+            </tbody>
+        </table>
+
+        <div class="text-center text-muted mt-5" style="font-size:10px;">
+            Xuất lúc @(DateTime.Now.ToString("dd/MM/yyyy HH:mm"))
+        </div>
+    </div>
+
+    <script>
+        // Dữ liệu từ server
+        const data = {
+            branchStats: @Html.Raw(Json.Serialize(Model.BranchStats)),
+            topProducts: @Html.Raw(Json.Serialize(Model.TopProducts)),
+            revenueTrend: @Html.Raw(Json.Serialize(Model.RevenueTrend))
+        };
+
+        // Vẽ biểu đồ
+        new Chart(document.getElementById('branchChart'), {
+            type: 'bar',
+            data: {
+                labels: data.branchStats.map(b => b.branchName),
+                datasets: [{ label: 'Doanh thu', data: data.branchStats.map(b => b.totalRevenue), backgroundColor: '#0d6efd' }]
+            },
+            options: { responsive: true, plugins: { legend: { display: false } } }
+        });
+
+        new Chart(document.getElementById('topProductsChart'), {
+            type: 'bar',
+            data: {
+                labels: data.topProducts.map(p => p.productName),
+                datasets: [{ label: 'Số lượng', data: data.topProducts.map(p => p.totalSold), backgroundColor: '#198754' }]
+            },
+            options: { indexAxis: 'y', responsive: true, plugins: { legend: { display: false } } }
+        });
+
+        new Chart(document.getElementById('revenueTrendChart'), {
+            type: 'line',
+            data: {
+                labels: data.revenueTrend.map(d => d.dateLabel),
+                datasets: [{ label: 'Doanh thu', data: data.revenueTrend.map(d => d.revenue), borderColor: '#0d6efd', fill: false }]
+            },
+            options: { responsive: true }
+        });
+    </script>
+</body>
+</html>

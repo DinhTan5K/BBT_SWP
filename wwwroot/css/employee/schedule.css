@@ -194,3 +194,539 @@
     .calendar-filter .form-control,
     .calendar-filter .select-sm{ min-width:105px; }
   }
+
+  /* ===== Attendance Card Styles ===== */
+  .attendance-card {
+    border-radius: 16px;
+    border: none;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+    transition: box-shadow 0.3s ease;
+  }
+
+  .attendance-card:hover {
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
+  }
+
+  .attendance-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-bottom: none;
+    padding: 16px 20px;
+  }
+
+  .attendance-header h5 {
+    color: white;
+    font-weight: 600;
+    font-size: 20px;
+    margin: 0;
+  }
+
+  .attendance-header i {
+    margin-right: 10px;
+  }
+
+  .attendance-body {
+    padding: 24px;
+    background: #fff;
+  }
+
+  /* Shift Info */
+  .shift-info {
+    padding: 16px;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    border-radius: 12px;
+    border-left: 4px solid #667eea;
+  }
+
+  .shift-label {
+    color: #2d3748;
+    font-size: 1rem;
+    display: block;
+    margin-bottom: 12px;
+  }
+
+  .shift-label i {
+    color: #667eea;
+    margin-right: 8px;
+  }
+
+  .shift-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .shift-badge {
+    padding: 10px 16px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .shift-badge:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  }
+
+  .shift-badge i {
+    margin-right: 6px;
+  }
+
+  /* Attendance Status */
+  .attendance-status {
+    padding: 18px 20px;
+    border-radius: 12px;
+    border: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  }
+
+  .time-badge {
+    display: inline-block;
+    padding: 6px 12px;
+    background: rgba(0, 0, 0, 0.08);
+    border-radius: 6px;
+    font-weight: 600;
+    font-family: 'Courier New', monospace;
+    margin: 0 4px;
+  }
+
+  .time-info {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.95rem;
+  }
+
+  .time-info i {
+    font-size: 0.85rem;
+  }
+
+  /* Check-in Section */
+  .checkin-section {
+    padding: 20px 0;
+  }
+  .checkin-section .btn {
+    width: 250px;
+    background: var(--primary, #007bff); /* dùng biến nếu có, fallback màu xanh */
+    color: #fff;
+    border-color: var(--primary, #007bff);
+    font-size: 1.05rem;
+    font-weight: 600;
+    padding: 12px 0;
+    border-radius: 10px;
+    transition: all 0.25s ease;
+  }
+
+  .checkin-btn {
+    padding: 16px 24px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .checkin-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+  }
+
+  .checkin-btn:active {
+    transform: translateY(0);
+  }
+
+  .checkin-btn i {
+    margin-right: 10px;
+    font-size: 1.2rem;
+  }
+
+  .checkin-hint {
+    font-size: 0.9rem;
+    color: #6c757d;
+    margin-top: 12px;
+    padding: 8px;
+    background: #f8f9fa;
+    border-radius: 8px;
+  }
+
+  .checkin-hint i {
+    margin-right: 6px;
+    color: #667eea;
+  }
+
+  /* No Shift Alert */
+  .no-shift-alert {
+    padding: 24px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #fff5e6 0%, #ffe6cc 100%);
+    border: 2px solid #ffb84d;
+    box-shadow: 0 4px 15px rgba(255, 184, 77, 0.2);
+  }
+
+  .no-shift-alert i {
+    color: #ff8c00;
+    flex-shrink: 0;
+  }
+
+  .no-shift-alert strong {
+    color: #cc6600;
+    font-size: 1.1rem;
+  }
+
+  .no-shift-alert small {
+    color: #996633;
+    line-height: 1.6;
+  }
+
+  /* Alert Styles Enhancement */
+  .alert-info {
+    background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+    border: 2px solid #0ea5e9;
+    color: #0c4a6e;
+  }
+
+  .alert-success {
+    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+    border: 2px solid #10b981;
+    color: #065f46;
+  }
+
+  .alert-warning {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border: 2px solid #f59e0b;
+    color: #92400e;
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .attendance-body {
+      padding: 16px;
+    }
+
+    .shift-info {
+      padding: 12px;
+    }
+
+    .checkin-btn {
+      padding: 14px 20px;
+      font-size: 1rem;
+    }
+
+    .attendance-status {
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .attendance-status .btn {
+      width: 100%;
+    }
+  }
+  /* ===== Fix camera modal freeze ===== */
+body.modal-open {
+  overflow-y: auto !important; /* vẫn cho phép cuộn trang */
+}
+
+.modal-backdrop.show {
+  opacity: 0.4 !important; /* nền mờ nhẹ, không chặn sự kiện */
+}
+
+.modal.show {
+  pointer-events: auto !important;
+  z-index: 1060; /* đảm bảo modal nổi trên backdrop */
+}
+
+.modal-content {
+  pointer-events: auto !important;
+}
+/* ==== CHECK-IN / CHECK-OUT SECTION ==== */
+.attendance-card {
+  width: 100%;                         /* full chiều ngang cột */
+  margin: 32px 0;                      /* chỉnh khoảng cách lên/xuống */
+  border: none;
+  border-radius: 18px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+  transition: all 0.25s ease;
+}
+
+/* Hover nhẹ cho cảm giác nổi khối */
+.attendance-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.12);
+}
+
+/* Header gradient tím-xanh (full chiều ngang) */
+.attendance-header {
+  background: linear-gradient(135deg, #d97706, #f2b035);
+  color: #fff;
+  padding: 16px 24px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  font-size: 1.05rem;
+  display: flex
+;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Icon trong header */
+.attendance-header i {
+  font-size: 1.2rem;
+}
+
+/* Body trắng, bo tròn nhẹ ở đáy */
+.attendance-body {
+  background-color: #fff;
+  padding: 33px;
+  width: 100%;
+  border-radius: 0 0 18px 18px;
+}
+
+/* Alert bên trong: hiện đại, mềm mại */
+.attendance-body .alert {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: none;
+  border-left: 6px solid #ff9800;
+  background: #fff8e1;
+  color: #333;
+  box-shadow: 0 2px 6px rgba(255, 193, 7, 0.25);
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 0;
+}
+
+/* Icon trong alert to, rõ màu */
+.attendance-body .alert i {
+  color: #ff9800;
+  font-size: 26px;
+}
+
+/* Khi không có ca làm việc */
+.attendance-body strong {
+  color: #e65100;
+  font-weight: 600;
+  font-size: 1.05rem;
+}
+
+/* Chữ phụ nhẹ */
+.attendance-body small {
+  color: #666 !important;
+  font-size: 0.9rem;
+}
+
+/* Responsive: tự co lại khi màn nhỏ */
+@media (max-width: 768px) {
+  .attendance-card {
+    margin: 16px 0;
+  }
+  .attendance-body {
+    padding: 16px;
+  }
+}
+/* ==== CAMERA MODAL ==== */
+#checkInModal .modal-content {
+  border-radius: 14px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+}
+
+/* Header - màu chủ đạo, chữ nổi bật */
+#checkInModal .modal-header {
+  background: linear-gradient(135deg, #ff9800, #d97706);
+  color: #fff;
+  border-bottom: none;
+  padding: 14px 20px;
+}
+
+#checkInModal .modal-title {
+  font-weight: 600;
+  font-size: 1.15rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Phần thân modal */
+#checkInModal .modal-body {
+  text-align: center;
+  padding: 24px 16px;
+  background: #fafbfc;
+}
+
+/* Hướng dẫn */
+#checkInModal p.text-muted {
+  font-size: 1.05rem;
+  color: #555;
+  margin-bottom: 18px;
+}
+
+/* Căn giữa camera */
+.camera-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.camera-container video {
+  border-radius: 10px;
+  border: 3px solid #ff9800;
+  box-shadow: 0 0 15px #ff9800(0, 123, 255, 0.3);
+  width: 100%;
+  max-width: 480px;
+  height: auto;
+}
+
+/* Ảnh preview sau khi chụp */
+#previewImage {
+  display: none;
+  margin-top: 10px;
+  border-radius: 10px;
+  border: 2px dashed #ccc;
+  max-width: 240px;
+}
+
+/* Nút hành động */
+#checkInModal .btn {
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 10px 20px;
+  transition: all 0.25s ease;
+}
+
+/* Nút chụp ảnh */
+#captureBtn {
+  background: #ff9800;
+  border-color: #ff9800;
+  color: #fff;
+}
+#captureBtn:hover {
+  background: #ff9800;
+  border-color: #ff9800;
+}
+
+/* Nút xác nhận */
+#submitBtn {
+  background: #5f4826;
+  border-color: #5f4826;
+  color: #fff;
+}
+#submitBtn:hover {
+  background: #5f4826;
+  border-color: #5f4826;
+}
+
+/* Alert đẹp hơn */
+#alertBox {
+  margin-top: 16px;
+  font-size: 0.95rem;
+  border-radius: 8px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  #checkInModal .modal-body {
+    padding: 16px 8px;
+  }
+  .camera-container video {
+    max-width: 100%;
+  }
+}
+/* ==== ALERT BOX (trong modal check-in) ==== */
+#alertBox {
+  font-size: 1.15rem;
+  font-weight: 600;
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin-top: 18px;
+  transition: all 0.3s ease;
+}
+
+/* Thành công */
+#alertBox.alert-success {
+  background-color: #d4edda;
+  color: #155724;
+  border: 2px solid #28a745;
+  box-shadow: 0 0 10px rgba(40, 167, 69, 0.3);
+}
+
+/* Thất bại */
+#alertBox.alert-danger {
+  background-color: #f8d7da;
+  color: #a71d2a;
+  border: 2px solid #dc3545;
+  box-shadow: 0 0 10px rgba(220, 53, 69, 0.3);
+}
+
+/* Hiệu ứng hiện mượt */
+#alertBox.show {
+  animation: fadeInAlert 0.4s ease;
+}
+
+@keyframes fadeInAlert {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+/* ==== NÚT CHECK-OUT ==== */
+.btn-checkout {
+  background-color: #ff9800;         /* màu cam tươi */
+  border-color: #ff9800;
+  color: #fff;
+  font-weight: 600;
+  padding: 8px 18px;
+  border-radius: 8px;
+  transition: all 0.25s ease;
+}
+
+/* Hover hiệu ứng sáng nhẹ */
+.btn-checkout:hover {
+  background-color: #e68900;
+  border-color: #e68900;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(255, 152, 0, 0.3);
+}
+
+/* Khi nhấn */
+.btn-checkout:active {
+  background-color: #cc7a00;
+  border-color: #cc7a00;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+.alert {
+  font-size: 1.15rem;
+  font-weight: 600;
+  border-radius: 10px;
+  padding: 14px 20px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.alert-success {
+  background-color: #d4edda;
+  border: 2px solid #28a745;
+  color: #155724;
+  box-shadow: 0 4px 10px rgba(40, 167, 69, 0.25);
+}
+
+.alert-danger {
+  background-color: #f8d7da;
+  border: 2px solid #dc3545;
+  color: #721c24;
+  box-shadow: 0 4px 10px rgba(220, 53, 69, 0.25);
+}
+
+
+

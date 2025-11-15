@@ -23,7 +23,7 @@ namespace start.Models
         [Column(TypeName = "varchar(10)")]
         public string RequestedBy { get; set; } = string.Empty;
 
-        public DateTime RequestedAt { get; set; } = DateTime.UtcNow;
+        public DateTime RequestedAt { get; set; } = DateTime.Now;
 
         // Thông tin duyệt
         [Required]

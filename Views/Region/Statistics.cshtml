@@ -1,0 +1,339 @@
+@model RegionStatisticsViewModel
+@{
+    Layout = "~/Views/Shared/_RegionLayout.cshtml";
+    ViewData["Title"] = "Thống kê & Báo cáo doanh thu";
+}
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div class="container py-4">
+    <h2>@ViewData["Title"]</h2>
+    <hr />
+
+    <!-- FILTER -->
+    <div class="card mb-4 p-3">
+        <form id="filterForm" class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label">Từ ngày</label>
+                <input id="fromDate" name="from" type="date" class="form-control"
+                    value="@Model.From.ToString("yyyy-MM-dd")" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Đến ngày</label>
+                <input id="toDate" name="to" type="date" class="form-control"
+                    value="@Model.To.ToString("yyyy-MM-dd")" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Chi nhánh</label>
+                <select id="branchSelect" name="branchId" class="form-select">
+                    <option value="">Tất cả</option>
+                    @foreach (var b in Model.Branches)
+                    {
+                        <option value="@b.BranchID">@b.Name</option>
+                    }
+                </select>
+
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Tìm sản phẩm</label>
+                <input id="q" name="q" class="form-control" placeholder="Tên sản phẩm..." />
+            </div>
+
+            <div class="col-md-1 d-grid">
+                <button type="submit" class="btn btn-primary">Áp dụng</button>
+            </div>
+
+            <div class="col-12 mt-2">
+                <button id="exportCsv" type="button" class="btn btn-outline-secondary btn-sm me-2">
+                    Export CSV
+                </button>
+                <button id="exportPdf" type="button" class="btn btn-outline-secondary btn-sm">
+                    Export PDF
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="row text-center mb-4" id="kpiCards">
+        @{
+            var totalRevenue = Model.BranchStats.Sum(x => x.TotalRevenue);
+            var totalOrders = Model.BranchStats.Sum(x => x.OrderCount);
+            var totalUnits = Model.BranchStats.Sum(x => x.UnitsSold);
+            var aov = totalOrders == 0 ? 0m : (totalRevenue / totalOrders);
+        }
+        <div class="col-md-3">
+            <div class="card p-3 shadow-sm">
+                <h6>Doanh thu</h6>
+                <h4 id="kpiRevenue">@totalRevenue.ToString("N0") ₫</h4>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card p-3 shadow-sm">
+                <h6>Đơn hàng</h6>
+                <h4 id="kpiOrders">@totalOrders</h4>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card p-3 shadow-sm">
+                <h6>Sản phẩm bán</h6>
+                <h4 id="kpiUnits">@totalUnits</h4>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card p-3 shadow-sm">
+                <h6>AOV (trung bình đơn)</h6>
+                <h4 id="kpiAov">@aov.ToString("N0") ₫</h4>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="row">
+        <!-- Doanh thu theo chi nhánh -->
+        <div class="col-lg-6 mb-4">
+            <div class="card p-3">
+                <h6>Doanh thu theo chi nhánh</h6>
+                <canvas id="branchRevenueChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Top sản phẩm (theo số lượng) -->
+        <div class="col-lg-6 mb-4">
+            <div class="card p-3">
+                <h6>Top sản phẩm (theo units)</h6>
+                <canvas id="topProductsChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Xu hướng doanh thu theo ngày -->
+        <div class="col-12 mb-4">
+            <div class="card p-3">
+                <h6>Doanh thu theo ngày</h6>
+                <canvas id="revenueTrendChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Product breakdown + table -->
+    <div class="row">
+        <!-- Pie chart: tỷ lệ sản phẩm -->
+        <div class="col-lg-6 mb-4">
+            <div class="card p-3">
+                <h6>Tỷ lệ sản phẩm đã bán</h6>
+                <canvas id="productPieChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Bảng chi tiết sản phẩm -->
+        <div class="col-lg-6 mb-4">
+            <div class="card p-3">
+                <h6>Chi tiết sản phẩm bán</h6>
+                <div id="productTableContainer" style="max-height:360px; overflow:auto;">
+                    <table class="table table-sm" id="productTable">
+                        <thead>
+                            <tr>
+                                <th>Sản phẩm</th>
+                                <th>Units</th>
+                                <th>Doanh thu</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var p in Model.TopProducts)
+                            {
+                                <tr>
+                                    <td>@p.ProductName</td>
+                                    <td>@p.TotalSold</td>
+                                    <td>@p.TotalRevenue.ToString("N0") ₫</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top customers -->
+    <div class="mt-4">
+        <h4>Khách hàng đặt nhiều nhất</h4>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Tên khách hàng</th>
+                    <th>Số đơn</th>
+                    <th>Tổng chi tiêu</th>
+                </tr>
+            </thead>
+            <tbody id="topCustomersTbody">
+                @foreach (var c in Model.TopCustomers)
+                {
+                    <tr>
+                        <td>@c.CustomerName</td>
+                        <td>@c.OrderCount</td>
+                        <td>@c.TotalSpent.ToString("N0") ₫</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    // Dữ liệu ban đầu từ server
+    const initial = {
+        branchStats: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.BranchStats)),
+        topProducts: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.TopProducts)),
+        revenueTrend: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.RevenueTrend)),
+        topCustomers: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.TopCustomers))
+    };
+
+    // Biến lưu chart
+    let branchChart, topProductsChart, trendChart, pieChart;
+
+    // Khởi tạo tất cả biểu đồ
+    function initCharts(data) {
+        // 1. Doanh thu theo chi nhánh
+        const branchLabels = data.branchStats.map(b => b.branchName);
+        const branchRevenue = data.branchStats.map(b => b.totalRevenue);
+        const ctxBranch = document.getElementById('branchRevenueChart').getContext('2d');
+        if (branchChart) branchChart.destroy();
+        branchChart = new Chart(ctxBranch, {
+            type: 'bar',
+            data: { labels: branchLabels, datasets: [{ label: 'Doanh thu (₫)', data: branchRevenue, backgroundColor: '#0d6efd' }] },
+            options: { responsive: true, plugins: { legend: { display: false } } }
+        });
+
+        // 2. Top sản phẩm (ngang)
+        const topLabels = data.topProducts.map(p => p.productName);
+        const topVals = data.topProducts.map(p => p.totalSold);
+        const ctxTop = document.getElementById('topProductsChart').getContext('2d');
+        if (topProductsChart) topProductsChart.destroy();
+        topProductsChart = new Chart(ctxTop, {
+            type: 'bar',
+            data: { labels: topLabels, datasets: [{ label: 'Số lượng', data: topVals, backgroundColor: '#198754' }] },
+            options: { indexAxis: 'y', responsive: true, plugins: { legend: { display: false } } }
+        });
+
+        // 3. Xu hướng doanh thu theo ngày
+        const trendLabels = data.revenueTrend.map(d => d.dateLabel);
+        const trendVals = data.revenueTrend.map(d => d.revenue);
+        const ctxTrend = document.getElementById('revenueTrendChart').getContext('2d');
+        if (trendChart) trendChart.destroy();
+        trendChart = new Chart(ctxTrend, {
+            type: 'line',
+            data: {
+                labels: trendLabels,
+                datasets: [{
+                    label: 'Doanh thu',
+                    data: trendVals,
+                    fill: false,
+                    borderColor: '#0d6efd',
+                    tension: 0.1
+                }]
+            },
+            options: { responsive: true }
+        });
+
+        // 4. Pie chart: tỷ lệ doanh thu sản phẩm
+        const pieLabels = data.topProducts.map(p => p.productName);
+        const pieVals = data.topProducts.map(p => p.totalRevenue);
+        const ctxPie = document.getElementById('productPieChart').getContext('2d');
+        if (pieChart) pieChart.destroy();
+        pieChart = new Chart(ctxPie, {
+            type: 'pie',
+            data: { labels: pieLabels, datasets: [{ data: pieVals, backgroundColor: ['#ff6384', '#36a2eb', '#ffce56', '#4bc0c0', '#9966ff', '#ff9f40'] }] },
+            options: { responsive: true }
+        });
+    }
+
+    // Render bảng top khách hàng
+    function renderTopCustomers(customers) {
+        const tbody = document.getElementById('topCustomersTbody');
+        tbody.innerHTML = '';
+        customers.forEach(c => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${c.customerName || 'Khách lẻ'}</td>
+                <td>${c.orderCount}</td>
+                <td>${(c.totalSpent || 0).toLocaleString()} ₫</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    // Vẽ lần đầu
+    initCharts(initial);
+    renderTopCustomers(initial.topCustomers);
+
+    // Lấy dữ liệu lọc qua AJAX
+    async function fetchStats(filters) {
+        const params = new URLSearchParams(filters);
+        const url = '@Url.Action("GetStatisticsData", "Region")?' + params.toString();
+        const res = await fetch(url);
+        if (!res.ok) {
+            console.error('Lỗi tải dữ liệu');
+            return null;
+        }
+        return await res.json();
+    }
+
+    // Xử lý form lọc
+    document.getElementById('filterForm').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const from = document.getElementById('fromDate').value;
+        const to = document.getElementById('toDate').value;
+        const branchId = document.getElementById('branchSelect').value;
+        const q = document.getElementById('q').value.trim();
+
+        const data = await fetchStats({ from, to, branchId, q });
+        if (!data) return;
+
+        // Cập nhật KPI
+        document.getElementById('kpiRevenue').innerText = (data.totals.totalRevenue || 0).toLocaleString() + ' ₫';
+        document.getElementById('kpiOrders').innerText = data.totals.totalOrders || 0;
+        document.getElementById('kpiUnits').innerText = data.totals.totalUnits || 0;
+        document.getElementById('kpiAov').innerText = (data.totals.aov || 0).toLocaleString() + ' ₫';
+
+        // Cập nhật biểu đồ
+        initCharts({
+            branchStats: data.branchStats,
+            topProducts: data.topProducts,
+            revenueTrend: data.revenueTrend,
+            topCustomers: data.topCustomers
+        });
+
+        // Cập nhật bảng sản phẩm
+        const ptBody = document.querySelector('#productTable tbody');
+        ptBody.innerHTML = '';
+        data.topProducts.forEach(p => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td>${p.productName}</td><td>${p.totalSold}</td><td>${(p.totalRevenue || 0).toLocaleString()} ₫</td>`;
+            ptBody.appendChild(tr);
+        });
+
+        // Cập nhật top khách hàng
+        renderTopCustomers(data.topCustomers);
+    });
+
+    // Export CSV
+    document.getElementById('exportCsv').addEventListener('click', () => {
+        const from = document.getElementById('fromDate').value;
+        const to = document.getElementById('toDate').value;
+        const branchId = document.getElementById('branchSelect').value;
+        const q = encodeURIComponent(document.getElementById('q').value.trim());
+        const url = `@Url.Action("ExportStatisticsCsv", "Region")?from=${from}&to=${to}&branchId=${branchId}&q=${q}`;
+        window.location = url;
+    });
+
+    // Export PDF (mở tab mới)
+    document.getElementById('exportPdf').addEventListener('click', () => {
+        const from = document.getElementById('fromDate').value;
+        const to = document.getElementById('toDate').value;
+        const branchId = document.getElementById('branchSelect').value;
+        const q = encodeURIComponent(document.getElementById('q').value.trim());
+        const url = `@Url.Action("ExportStatisticsPdf", "Region")?from=${from}&to=${to}&branchId=${branchId}&q=${q}`;
+        window.open(url, '_blank');
+    });
+</script>

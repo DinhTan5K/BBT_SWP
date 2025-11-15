@@ -124,9 +124,9 @@
                                         string.IsNullOrWhiteSpace(Model.PaymentMethod)
                                         ? "Không xác định"
                                         : (Model.PaymentMethod.Trim().ToUpper() == "COD"
-                                        ? "Thanh toán khi nhận hàng (COD)"
+                                        ? "COD"
                                         : (Model.PaymentMethod.Trim().ToUpper() == "MOMO"
-                                        ? "Thanh toán qua Momo"
+                                        ? "Momo"
                                         : Model.PaymentMethod))
                                         )
                 </p>

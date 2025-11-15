@@ -1,0 +1,465 @@
+@model IEnumerable<Product>
+@{
+    ViewData["Title"] = "Danh Sách Sản Phẩm";
+    Layout = "~/Views/Shared/_RegionLayout.cshtml";
+
+    var categories = ViewBag.Categories as IEnumerable<ProductCategory> ?? new List<ProductCategory>();
+    var currentCategory = (ViewData["CurrentCategory"] as string) ?? "all";
+    var currentQuery = (ViewData["CurrentQuery"] as string) ?? "";
+}
+
+<link rel="stylesheet" href="~/css/Region/view-product.css" />
+
+<div class="view-product-container">
+    <div class="product-header">
+        <h2>Danh Sách Sản Phẩm</h2>
+    </div>
+
+    <div id="ajaxAlert"></div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success" role="alert">
+            <i class="fas fa-check-circle me-2"></i>@TempData["SuccessMessage"]
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i>@TempData["ErrorMessage"]
+        </div>
+    }
+
+    <div class="filter-toolbar">
+        <div class="filter-toolbar-top">
+            <button id="createCategoryBtn" type="button" class="create-category-btn" title="Tạo danh mục mới">
+                <i class="fas fa-plus"></i> Tạo danh mục
+            </button>
+        </div>
+
+        <div class="filter-toolbar-main">
+            <div class="filter-segment" role="tablist" aria-label="Filter products">
+                <button type="button" class="filter-btn @(currentCategory == "all" ? "active" : "")"
+                        data-cat="all">
+                    <i class="fas fa-th-large me-1"></i>Tất cả
+                </button>
+
+                @foreach (var c in categories)
+                {
+                    <div class="category-pill" data-cat-id="@c.CategoryID">
+                        <button type="button"
+                            class="filter-btn @(currentCategory == c.CategoryID.ToString() ? "active" : "")"
+                            data-cat="@c.CategoryID">@c.CategoryName</button>
+                        <button type="button" class="category-remove" title="Xóa danh mục" data-cat-id="@c.CategoryID" aria-label="Xóa danh mục">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                }
+            </div>
+
+            <div style="flex: 1;"></div>
+
+            <div style="display: flex; gap: 0.75rem; align-items: center;">
+                <button id="toggleHiddenBtn" type="button" class="filter-btn" data-hidden="0"
+                        title="Bật để hiển thị sản phẩm đang ẩn">
+                    <i class="fas fa-eye-slash me-1"></i>Đang ẩn
+                </button>
+
+                <input id="productSearch" type="text" class="form-control" placeholder="🔍 Tìm theo tên hoặc mô tả..."
+                        value="@currentQuery" style="min-width: 280px; max-width: 350px;" />
+            </div>
+        </div>
+    </div>
+
+    @Html.AntiForgeryToken()
+
+    <div class="product-table-wrapper">
+        <table class="table table-hover align-middle">
+            <thead>
+                <tr>
+                    <th><i class="fas fa-box me-2"></i>Tên sản phẩm</th>
+                    <th><i class="fas fa-align-left me-2"></i>Mô tả</th>
+                    <th><i class="fas fa-image me-2"></i>Hình ảnh</th>
+                    <th><i class="fas fa-ruler me-2"></i>Kích thước & Giá</th>
+                    <th><i class="fas fa-toggle-on me-2"></i>Trạng thái</th>
+                    <th><i class="fas fa-cogs me-2"></i>Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr data-id="@item.ProductID" class="@(item.IsActive ? "" : "product-inactive")">
+                        <td data-label="Tên sản phẩm" style="font-weight: 600; color: var(--text-color);">@item.ProductName</td>
+                        <td data-label="Mô tả" style="max-width: 300px; white-space: normal; color: var(--text-muted-color);">@(item.Description ?? "Không có mô tả")</td>
+                        <td data-label="Hình ảnh">
+                            @if (!string.IsNullOrEmpty(item.Image_Url))
+                            {
+                                <img src="@item.Image_Url" alt="@item.ProductName" style="width: 80px; height: 80px; object-fit: cover; border-radius: var(--radius-md);" />
+                            }
+                            else
+                            {
+                                <div style="width: 80px; height: 80px; background: var(--bg-color); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; color: var(--text-muted-color);">
+                                    <i class="fas fa-image" style="font-size: 2rem;"></i>
+                                </div>
+                            }
+                        </td>
+                        <td data-label="Kích thước & Giá">
+                            <ul>
+                                @foreach (var size in item.ProductSizes)
+                                {
+                                    <li>
+                                        <span style="font-weight: 600;">@size.Size</span>
+                                        <span style="color: var(--primary-green-dark); font-weight: 700; margin-left: 0.5rem;">@size.Price.ToString("N0") đ</span>
+                                    </li>
+                                }
+                            </ul>
+                        </td>
+                        <td data-label="Trạng thái">
+                            @if (item.IsActive)
+                            {
+                                <span class="status-badge active">
+                                    <i class="fas fa-check-circle me-1"></i>Hoạt động
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="status-badge inactive">
+                                    <i class="fas fa-times-circle me-1"></i>Ẩn
+                                </span>
+                            }
+                        </td>
+                        <td data-label="Thao tác">
+                            <div class="action-buttons">
+                                <a asp-action="EditProduct" asp-route-id="@item.ProductID" class="btn btn-warning">
+                                    <i class="fas fa-edit"></i>Sửa
+                                </a>
+                                @if (item.IsActive)
+                                {
+                                    <button type="button" class="btn btn-danger btn-sm hide-btn">
+                                        <i class="fas fa-eye-slash"></i>Ẩn
+                                    </button>
+                                }
+                                else
+                                {
+                                    <button type="button" class="btn btn-success btn-sm restore-btn">
+                                        <i class="fas fa-eye"></i>Hiện
+                                    </button>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal fade" id="createCategoryModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <form id="createCategoryForm" class="modal-content" method="post" novalidate>
+      @Html.AntiForgeryToken()
+      <div class="modal-header">
+        <h5 class="modal-title">Tạo danh mục mới</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+            <label for="categoryName" class="form-label">Tên danh mục</label>
+            <input id="categoryName" name="categoryName" class="form-control" />
+        </div>
+        <div id="categoryError" class="text-danger" style="display:none;"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+        <button type="submit" id="submitCreateCategory" class="btn btn-primary">Gửi yêu cầu</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal fade" id="productModal" tabindex="-1" aria-labelledby="productModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="productModalLabel">Tạo sản phẩm mới</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center">
+                    <div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-primary" id="saveProductBtn">Tạo sản phẩm</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<button id="addProductBtn" class="fab" title="Tạo sản phẩm mới">
+    <i class="fas fa-plus"></i>
+</button>
+
+@section Styles {
+    <style>
+        /* Additional inline styles if needed */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--text-muted-color);
+        }
+        
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            color: var(--text-muted-color);
+            opacity: 0.5;
+        }
+        
+        .empty-state h3 {
+            font-family: var(--font-main);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        
+        .empty-state p {
+            font-family: var(--font-main);
+            color: var(--text-muted-color);
+        }
+    </style>
+}
+
+@section Scripts {
+<script>
+$(function () {
+    var productModal = new bootstrap.Modal(document.getElementById('productModal'));
+    var createCategoryModal = new bootstrap.Modal(document.getElementById('createCategoryModal'));
+
+    // helper: show alert in page (type = 'success' | 'danger')
+    function showAlert(type, message, timeoutMs = 5000) {
+        var html = '<div class="alert alert-' + type + '" role="alert" style="margin-bottom:0;">' + message + '</div>';
+        $('#ajaxAlert').stop(true,true).html(html);
+        if (timeoutMs > 0) {
+            setTimeout(function(){ $('#ajaxAlert').fadeOut(300, function(){ $(this).html('').show(); }); }, timeoutMs);
+        }
+    }
+
+    // product create (unchanged)
+    $('#addProductBtn').click(function () {
+        $.get('@Url.Action("CreateProductPartial")', function (data) {
+            $('#productModal .modal-body').html(data);
+            var form = $('#createProductForm');
+            if ($.validator && $.validator.unobtrusive) $.validator.unobtrusive.parse(form);
+            productModal.show();
+        });
+    });
+
+    $('#saveProductBtn').click(function () {
+        var form = $('#createProductForm');
+        if (form && form.valid && form.valid()) {
+            $.ajax({
+                url: form.attr('action'),
+                method: form.attr('method'),
+                data: form.serialize(),
+                dataType: 'json'
+            }).done(function (response) {
+                if (response.success) {
+                    productModal.hide();
+                    showAlert('success', response.message || 'Yêu cầu đã được gửi.', 4000);
+                    loadProducts();
+                } else {
+                    $('#productModal .modal-body').html(response);
+                    if ($.validator && $.validator.unobtrusive) $.validator.unobtrusive.parse(form);
+                }
+            }).fail(function () { showAlert('danger', 'Lỗi khi gửi yêu cầu sản phẩm.'); });
+        }
+    });
+
+    // ---------- CREATE CATEGORY ----------
+    $('#createCategoryBtn').on('click', function () {
+        $('#categoryName').val('');
+        $('#categoryError').hide().text('');
+        createCategoryModal.show();
+    });
+
+    $('#createCategoryForm').on('submit', function (e) {
+        e.preventDefault();
+        var form = $(this);
+        var name = $.trim($('#categoryName').val() || '');
+        if (!name) { $('#categoryError').text('Vui lòng nhập tên danh mục.').show(); return; }
+
+        // get token from this form; fallback to page token
+        var token = form.find('input[name="__RequestVerificationToken"]').val() || $('input[name="__RequestVerificationToken"]').first().val();
+
+        $.ajax({
+            url: '@Url.Action("CreateCategoryRequest","Region")',
+            method: 'POST',
+            data: { categoryName: name, __RequestVerificationToken: token },
+            headers: { 'RequestVerificationToken': token },
+            dataType: 'json'
+        }).done(function (resp) {
+            if (resp && resp.success) {
+                createCategoryModal.hide();
+                showAlert('success', resp.message || 'Yêu cầu tạo danh mục đã gửi.', 4000);
+                refreshCategoriesAndProducts();
+            } else {
+                $('#categoryError').text(resp && resp.message ? resp.message : 'Lỗi khi tạo yêu cầu.').show();
+            }
+        }).fail(function (xhr) {
+            var message = 'Lỗi server.';
+            try { if (xhr.responseJSON && xhr.responseJSON.message) message = xhr.responseJSON.message; else if (xhr.responseText) message = xhr.responseText; } catch(e){}
+            $('#categoryError').text(message).show();
+        });
+    });
+
+    // ---------- DELETE CATEGORY ----------
+    $(document).on('click', '.category-remove', function (e) {
+        e.stopPropagation(); // prevent triggering filter
+        var btn = $(this);
+        var id = btn.data('cat-id') || btn.closest('.category-pill').data('cat-id');
+        if (!id) { showAlert('danger', 'Không xác định được danh mục.'); return; }
+        if (!confirm('Xác nhận gửi yêu cầu xóa danh mục này?')) return;
+
+        var token = $('input[name="__RequestVerificationToken"]').first().val();
+
+        $.ajax({
+            url: '@Url.Action("DeleteCategoryRequest","Region")',
+            method: 'POST',
+            data: { categoryId: id, __RequestVerificationToken: token },
+            headers: { 'RequestVerificationToken': token },
+            dataType: 'json'
+        }).done(function (resp) {
+            if (resp && resp.success) {
+                showAlert('success', resp.message || 'Yêu cầu xóa danh mục đã gửi.', 4000);
+                refreshCategoriesAndProducts();
+            } else {
+                showAlert('danger', resp && resp.message ? resp.message : 'Không thể tạo yêu cầu xóa.');
+            }
+        }).fail(function (xhr) {
+            var message = 'Lỗi server.';
+            try { if (xhr.responseJSON && xhr.responseJSON.message) message = xhr.responseJSON.message; else if (xhr.responseText) message = xhr.responseText; } catch(e){}
+            showAlert('danger', message);
+        });
+    });
+
+    // ---------- filter / search / hidden / hide/restore ----------
+    $(document).on('click', '.filter-segment .filter-btn', function () {
+        if ($(this).closest('.filter-segment').length) {
+            $('.filter-segment .filter-btn').removeClass('active');
+            $(this).addClass('active');
+        }
+        loadProducts();
+    });
+
+    $('#toggleHiddenBtn').on('click', function () {
+        var btn = $(this);
+        var isHidden = btn.attr('data-hidden') === '1';
+        if (isHidden) btn.attr('data-hidden', '0').removeClass('active');
+        else btn.attr('data-hidden', '1').addClass('active');
+        loadProducts();
+    });
+
+    $('#productSearch').on('input', function () { loadProducts(); });
+
+    $(document).on("click", ".hide-btn", function () {
+        var row = $(this).closest("tr");
+        var id = row.data("id");
+        var token = $('input[name="__RequestVerificationToken"]').first().val();
+        $.ajax({
+            url: '@Url.Action("HideProduct")',
+            method: 'POST',
+            data: { id: id, __RequestVerificationToken: token },
+            headers: { 'RequestVerificationToken': token },
+            dataType: 'json'
+        }).done(function (resp) {
+            if (resp && resp.success) {
+                showAlert('success', resp.message || 'Đã tạo yêu cầu ẩn sản phẩm, chờ duyệt.', 4000);
+                loadProducts();
+            } else {
+                showAlert('danger', resp && resp.message ? resp.message : 'Không thể tạo yêu cầu ẩn sản phẩm.');
+            }
+        }).fail(function (xhr) {
+            var message = 'Lỗi server.';
+            try { message = xhr.responseJSON && xhr.responseJSON.error ? xhr.responseJSON.error : xhr.responseText; } catch (e) {}
+            showAlert('danger', message);
+        });
+    });
+
+    $(document).on("click", ".restore-btn", function () {
+        var row = $(this).closest("tr");
+        var id = row.data("id");
+        var token = $('input[name="__RequestVerificationToken"]').first().val();
+        $.ajax({
+            url: '@Url.Action("RestoreProduct")',
+            method: 'POST',
+            data: { id: id, __RequestVerificationToken: token },
+            headers: { 'RequestVerificationToken': token },
+            dataType: 'json'
+        }).done(function (resp) {
+            if (resp && resp.success) {
+                showAlert('success', resp.message || 'Đã tạo yêu cầu phục hồi sản phẩm, chờ duyệt.', 4000);
+                loadProducts();
+            } else {
+                showAlert('danger', resp && resp.message ? resp.message : 'Không thể tạo yêu cầu phục hồi sản phẩm.');
+            }
+        }).fail(function (xhr) {
+            var message = 'Lỗi server.';
+            try { message = xhr.responseJSON && xhr.responseJSON.error ? xhr.responseJSON.error : xhr.responseText; } catch (e) {}
+            showAlert('danger', message);
+        });
+    });
+
+    // reload categories + products after requests succeed
+    function refreshCategoriesAndProducts() {
+        $.get('@Url.Action("GetCategoriesJson","Region")').done(function (cats) {
+            var seg = $('.filter-segment').first();
+            if (!seg || !seg.length) return;
+            // keep the "Tất cả" button
+            var allBtn = seg.find('button[data-cat="all"]').first().clone(true);
+            seg.empty();
+            seg.append(allBtn);
+            $(cats).each(function (i, c) {
+                var id = c.CategoryID || c.categoryID || c.categoryId;
+                var name = c.CategoryName || c.categoryName || c.category;
+                var pill = $('<div>').addClass('category-pill').attr('data-cat-id', id);
+                var btn = $('<button>').attr('type', 'button').addClass('filter-btn').attr('data-cat', id).text(name);
+                var remove = $('<button>').attr('type', 'button').addClass('category-remove').attr('title', 'Xóa danh mục').attr('data-cat-id', id).attr('aria-label', 'Xóa danh mục').html('<i class="fas fa-times"></i>');
+                pill.append(btn).append(remove);
+                seg.append(pill);
+            });
+
+            // keep selection if possible
+            var cur = '@currentCategory';
+            if (cur && cur !== 'all') {
+                var match = seg.find('.filter-btn[data-cat="' + cur + '"]');
+                if (match && match.length) {
+                    seg.find('.filter-btn').removeClass('active');
+                    match.addClass('active');
+                }
+            } else {
+                seg.find('.filter-btn[data-cat="all"]').addClass('active');
+            }
+
+            loadProducts();
+        }).fail(function (xhr) {
+            console.error('Không tải được danh mục:', xhr.responseText || xhr.statusText);
+            showAlert('danger', 'Không tải được danh mục từ server.');
+        });
+    }
+
+    function loadProducts() {
+        var q = $('#productSearch').val() || '';
+        var cat = $('.filter-segment .filter-btn.active').data('cat') || 'all';
+        var showHidden = $('#toggleHiddenBtn').attr('data-hidden') === '1';
+        var url = '@Url.Action("FilterProductsPartial","Region")';
+        $.get(url, { categoryId: cat === 'all' ? null : cat, q: q, showHidden: showHidden }, function (html) {
+            $('table.table tbody').replaceWith(html);
+        }).fail(function (xhr) {
+            console.error('Lỗi load products:', xhr.responseText || xhr.statusText);
+            showAlert('danger', 'Không thể tải danh sách sản phẩm. Vui lòng thử lại.');
+        });
+    }
+});
+</script>
+}

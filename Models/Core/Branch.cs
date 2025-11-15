@@ -25,18 +25,22 @@ public class Branch
 
     [StringLength(100)]
     public string? City { get; set; }
+
+    public bool IsActive { get; set; } = true;
     
     [Precision(18, 15)]
     public decimal Latitude { get; set; }
 
     [Precision(18, 15)]
     public decimal Longitude { get; set; }
-    
-    // Navigation properties
+    public int TargetOrders { get; set; }
+    public decimal TargetRevenue { get; set; }
     public ICollection<Order>? Orders { get; set; }
     
     [ForeignKey(nameof(RegionID))]
     public Region? Region { get; set; }
+
+    public ICollection<Employee>? Employees { get; set; }
 }
 
  

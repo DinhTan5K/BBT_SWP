@@ -1,0 +1,61 @@
+@model List<start.Models.Employee>
+<div class="card show">
+    @if (!Model.Any())
+    {
+        <div class="alert-yellow">Không có nhân viên nào trong ca hiện tại.</div>
+    }
+    else
+    {
+        <table class="employee-table">
+            <thead>
+                <tr>
+                    <th>Mã NV</th>
+                    <th>Tên</th>
+                    <th>SĐT</th>
+                    <th>Email</th>
+                    <th>NOTE</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var emp in Model)
+                {
+                    <tr>
+                        <td>@emp.EmployeeID</td>
+                        <td>@emp.FullName</td>
+                        <td>@emp.PhoneNumber</td>
+                        <td>@emp.Email</td>
+                        <td>
+                            <button class="note-btn confirm-btn" data-id="@emp.EmployeeID" data-name="@emp.FullName">
+                                Note</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+<!-- Popup Note -->
+<div id="noteModal" class="note-overlay" style="display:none;">
+    <div class="note-content">
+        <h3 id="modalTitle" class="modal-header"> Ghi chú nhân viên</h3>
+        <form id="noteForm" class="note-form"> <input type="hidden" id="EmployeeID" name="EmployeeID" />
+            <div class="form-group"> <label for="AdjustmentType">Loại điều chỉnh</label> <select id="AdjustmentType"
+                    name="AdjustmentType" required>
+                    <option value="Bonus"> Thưởng</option>
+                    <option value="Penalty"> Phạt</option>
+                </select> </div>
+            <div class="form-group"> <label for="Reason">Lý do</label> <select id="Reason" name="Reason" required>
+                    <option value=""> Chọn lý do </option>
+                </select> </div>
+            <div class="form-group"> <label for="Amount">Số tiền</label> <input type="text" id="Amount" name="Amount"
+                    readonly /> </div>
+            <div class="modal-actions"> <button type="submit" class="btn-save"> Ghi nhận</button> <button type="button"
+                    id="closeModal" class="btn-cancel">❌ Đóng</button> </div>
+        </form>
+    </div>
+</div>
+<script src="https://unpkg.com/lucide@latest"></script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => lucide.createIcons());
+</script>

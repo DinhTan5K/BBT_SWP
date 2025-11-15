@@ -1,0 +1,514 @@
+@model IEnumerable<start.DTOs.BranchStatus>
+
+@{
+    ViewData["Title"] = "Quản lý tình trạng chi nhánh";
+    Layout = "~/Views/Shared/_RegionLayout.cshtml";
+
+    var currentFilter = (ViewData["CurrentFilter"] as string) ?? "active";
+    var currentQuery = (ViewData["CurrentQuery"] as string) ?? "";
+    var activeTab = (ViewData["ActiveTab"] as string) ?? "branches";
+    var managersInitial = ViewBag.ManagersInitial as IEnumerable<start.DTOs.BranchManagerStatus>;
+}
+
+<link rel="stylesheet" href="~/css/Region/region-dashboard.css" />
+
+<div class="region-dashboard-container" style="max-width:1200px;margin:20px auto;padding:0 16px;box-sizing:border-box;">
+    @* Chỉ hiển thị một lần - ưu tiên SuccessMessage/ErrorMessage trước, nếu không có thì dùng Success/Error *@
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert" style="margin-bottom: 16px;">
+            <strong>Thành công!</strong> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    else if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert" style="margin-bottom: 16px;">
+            <strong>Thành công!</strong> @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert" style="margin-bottom: 16px;">
+            <strong>Lỗi!</strong> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    else if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert" style="margin-bottom: 16px;">
+            <strong>Lỗi!</strong> @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    
+    <h2 class="dashboard-title">Quản lý tình trạng chi nhánh</h2>
+
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+        <div style="display:flex;gap:8px;">
+            <div id="tabBranches" class="filter-tab @(activeTab == "branches" ? "active" : "")" data-view="branches">Tình trạng chi nhánh</div>
+            <div id="tabManagers" class="filter-tab @(activeTab == "managers" ? "active" : "")" data-view="managers">Tình trạng quản lý chi nhánh</div>
+        </div>
+
+        <div style="flex:1"></div>
+
+        <input id="searchGlobal" type="text" class="filter-search" placeholder="Tìm theo tên chi nhánh hoặc quản lý..."
+               value="@currentQuery" autocomplete="off" style="max-width:360px; width:100%;" />
+    </div>
+
+    <div id="branchesControls" class="filter-bar"
+         style="margin-bottom:18px; display:@(activeTab == "branches" ? "" : "none");">
+        <div style="display:flex;align-items:center;width:100%;gap:8px;flex-wrap:wrap;">
+            <div class="filter-segment" role="tablist" aria-label="Filter branches" style="display:inline-flex;gap:8px;">
+                <button type="button" class="filter-btn @(currentFilter == "active" ? "active" : "")" data-filter="active">Đang hoạt động</button>
+                <button type="button" class="filter-btn @(currentFilter == "inactive" ? "active" : "")" data-filter="inactive">Ngừng hoạt động</button>
+                <button type="button" class="filter-btn @(currentFilter == "nomanager" ? "active" : "")" data-filter="nomanager">Chưa có quản lý</button>
+            </div>
+
+            <div style="margin-left:auto;">
+                <a asp-controller="Region" asp-action="AddBranch" class="detail-btn" style="display:inline-block;padding:8px 12px;">Thêm chi nhánh</a>
+            </div>
+        </div>
+    </div>
+
+    <div id="managersControls" class="filter-bar"
+         style="margin-bottom:18px; display:@(activeTab == "managers" ? "" : "none");">
+        @{
+            var mgrCurrentFilter = (ViewData["CurrentFilter"] as string) ?? "active";
+        }
+        <div class="filter-segment" role="tablist" aria-label="Filter managers" style="display:inline-flex;gap:8px;">
+            <button type="button" class="filter-btn @(mgrCurrentFilter == "active" ? "active" : "")" data-filter="active">Đang làm</button>
+            <button type="button" class="filter-btn @(mgrCurrentFilter == "nobranch" ? "active" : "")" data-filter="nobranch">Chưa có chi nhánh</button>
+        </div>
+
+        <div style="margin-left:auto;">
+            <a asp-controller="Region" asp-action="AddBranchManager" class="detail-btn" style="display:inline-block;padding:8px 12px;">Thêm quản lý</a>
+        </div>
+    </div>
+
+    <div id="manageContainer">
+        <!-- hidden token form (fallback) -->
+        <form id="__managerTokenForm" style="display:none;">@Html.AntiForgeryToken()</form>
+
+        @if (activeTab == "branches")
+        {
+            <div id="branchGrid">
+                @await Html.PartialAsync("_BranchStatusPartial", Model)
+            </div>
+        }
+        else
+        {
+            <div id="managersGrid"></div>
+        }
+    </div>
+</div>
+
+<!-- Suspend modal -->
+<div class="modal fade" id="suspendModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <form id="suspendForm" class="modal-content" data-confirm-ignore="true">
+      @Html.AntiForgeryToken()
+      <input type="hidden" id="suspendBranchId" name="branchId" />
+      <div class="modal-header">
+        <h5 class="modal-title">Lý do tạm ngưng chi nhánh</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-2">
+            <label for="suspendNote" class="form-label">Ghi chú</label>
+            <textarea id="suspendNote" name="note" class="form-control" rows="3" placeholder="Ghi chú cho admin..."></textarea>
+        </div>
+        <div id="suspendError" class="text-danger" style="display:none;"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+        <button type="submit" class="btn btn-warning">Gửi yêu cầu</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Change phone modal -->
+<div class="modal fade" id="changePhoneModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <form id="changePhoneForm" class="modal-content" data-confirm-ignore="true">
+      @Html.AntiForgeryToken()
+      <input type="hidden" id="changePhoneBranchId" name="branchId" />
+      <div class="modal-header">
+        <h5 class="modal-title">Đổi số điện thoại chi nhánh</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-2">
+            <label for="newPhone" class="form-label">Số điện thoại mới</label>
+            <input id="newPhone" name="newPhone" class="form-control" />
+        </div>
+        <div class="mb-2">
+            <label for="phoneNote" class="form-label">Ghi chú</label>
+            <textarea id="phoneNote" name="note" class="form-control" rows="3" placeholder="Lý do thay đổi..."></textarea>
+        </div>
+        <div id="changePhoneError" class="text-danger" style="display:none;"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+        <button type="submit" class="btn btn-primary">Gửi yêu cầu</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+@section Scripts {
+<script>
+(function () {
+    const debounce = (fn, delay) => { let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn.apply(this, args), delay); }; };
+
+    const tabBranches = document.getElementById('tabBranches');
+    const tabManagers = document.getElementById('tabManagers');
+    const searchGlobal = document.getElementById('searchGlobal');
+    const branchesControls = document.getElementById('branchesControls');
+    const managersControls = document.getElementById('managersControls');
+    const manageContainer = document.getElementById('manageContainer');
+    const dashboardContainer = document.querySelector('.region-dashboard-container');
+
+    let activeView = '@activeTab';
+    let currentFilter = document.querySelector('#branchesControls .filter-btn.active')?.dataset.filter || 'active';
+    let currentMgrFilter = document.querySelector('#managersControls .filter-btn.active')?.dataset.filter || 'active';
+
+    function getAntiForgeryTokenValueFrom(formSelector) {
+        const form = document.querySelector(formSelector);
+        const t = form ? form.querySelector('input[name="__RequestVerificationToken"]') : null;
+        if (t) return t.value;
+        const fallback = document.querySelector('#__managerTokenForm input[name="__RequestVerificationToken"]');
+        return fallback ? fallback.value: '';
+    }
+
+    function showAlert(type, message, autoHide = 5000) {
+        if (!dashboardContainer) { alert(message); return; }
+        const existing = dashboardContainer.querySelector('.inpage-alert');
+        if (existing) existing.remove();
+        const div = document.createElement('div');
+        div.className = 'alert inpage-alert ' + (type === 'danger' ? 'alert-danger' : 'alert-success');
+        div.setAttribute('role', 'alert');
+        div.style.margin = '12px 0';
+        div.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+            <div style="flex:1;padding-right:8px;">${String(message)}</div>
+            <button type="button" class="btn-close" aria-label="Close"></button>
+        </div>`;
+        dashboardContainer.prepend(div);
+        div.querySelector('.btn-close').addEventListener('click', () => div.remove());
+        if (autoHide && autoHide > 0) setTimeout(() => { try { div.remove(); } catch {} }, autoHide);
+    }
+
+    async function fetchHtml(url) {
+        const res = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' });
+        if (!res.ok) throw new Error('Server returned ' + res.status);
+        return await res.text();
+    }
+
+    async function fetchBranchesPartial(filter, q) {
+        const params = new URLSearchParams();
+        if (filter) params.set('filter', filter);
+        if (q) params.set('q', q);
+        const url = `@Url.Action("BranchStatusPartial", "Region")?${params.toString()}`;
+        try {
+            const html = await fetchHtml(url);
+            const wrapper = document.createElement('div');
+            wrapper.id = 'branchGrid';
+            wrapper.innerHTML = html;
+            const existing = document.getElementById('branchGrid');
+            if (existing) existing.replaceWith(wrapper); else manageContainer.appendChild(wrapper);
+        } catch (err) {
+            console.error(err);
+            showAlert('danger', 'Không tải được danh sách chi nhánh.');
+        }
+    }
+
+    async function fetchManagersPartial(filter, q) {
+        const params = new URLSearchParams();
+        if (filter) params.set('filter', filter);
+        if (q) params.set('q', q);
+        const url = `@Url.Action("BranchManagersPartial", "Region")?${params.toString()}`;
+        try {
+            const html = await fetchHtml(url);
+            const wrapper = document.createElement('div');
+            wrapper.id = 'managersGrid';
+            wrapper.innerHTML = html;
+            const existing = document.getElementById('managersGrid');
+            if (existing) existing.replaceWith(wrapper); else manageContainer.appendChild(wrapper);
+            bindManagerButtons();
+        } catch (err) {
+            console.error('Không tải được managers partial', err);
+            const el = document.getElementById('managersGrid');
+            if (el) el.innerHTML = '<p style="padding:12px;color:#c00">Không tải được danh sách.</p>';
+        }
+    }
+
+    async function showBranches() {
+        if (activeView === 'branches') return;
+        activeView = 'branches';
+        tabBranches.classList.add('active');
+        tabManagers.classList.remove('active');
+        branchesControls.style.display = '';
+        managersControls.style.display = 'none';
+        const mg = document.getElementById('managersGrid'); if (mg) mg.remove();
+        await fetchBranchesPartial(currentFilter, (searchGlobal.value || '').trim());
+    }
+
+    async function showManagers() {
+        if (activeView === 'managers') return;
+        activeView = 'managers';
+        tabManagers.classList.add('active');
+        tabBranches.classList.remove('active');
+        branchesControls.style.display = 'none';
+        managersControls.style.display = '';
+        const bg = document.getElementById('branchGrid'); if (bg) bg.remove();
+        await fetchManagersPartial(currentMgrFilter, (searchGlobal.value || '').trim());
+        document.querySelectorAll('#managersControls .filter-btn').forEach(b => b.classList.remove('active'));
+        const ab = document.querySelector(`#managersControls .filter-btn[data-filter="${currentMgrFilter}"]`);
+        if (ab) ab.classList.add('active');
+    }
+
+    tabBranches?.addEventListener('click', showBranches);
+    tabManagers?.addEventListener('click', showManagers);
+
+    document.addEventListener('click', e => {
+        const btnBranch = e.target.closest('#branchesControls .filter-btn');
+        if (btnBranch) {
+            document.querySelectorAll('#branchesControls .filter-btn').forEach(b => b.classList.remove('active'));
+            btnBranch.classList.add('active');
+            currentFilter = btnBranch.dataset.filter;
+            fetchBranchesPartial(currentFilter, searchGlobal.value.trim());
+            return;
+        }
+        const btnMgr = e.target.closest('#managersControls .filter-btn');
+        if (btnMgr) {
+            document.querySelectorAll('#managersControls .filter-btn').forEach(b => b.classList.remove('active'));
+            btnMgr.classList.add('active');
+            currentMgrFilter = btnMgr.dataset.filter || 'active';
+            fetchManagersPartial(currentMgrFilter, searchGlobal.value.trim());
+            return;
+        }
+    });
+
+    const doSearchDebounced = debounce(() => {
+        const q = (searchGlobal.value || '').trim();
+        if (activeView === 'branches') fetchBranchesPartial(currentFilter, q);
+        else fetchManagersPartial(currentMgrFilter, q);
+    }, 300);
+
+    searchGlobal?.addEventListener('input', doSearchDebounced);
+    searchGlobal?.addEventListener('keydown', e => { if (e.key === 'Escape') { searchGlobal.value = ''; doSearchDebounced(); } });
+
+    function bindManagerButtons() {
+        document.querySelectorAll('#managersGrid .btn-deactivate-manager').forEach(btn => {
+            if (btn._boundDeactivate) return;
+            btn._boundDeactivate = true;
+            btn.addEventListener('click', async function (ev) {
+                if (!confirm('Xác nhận bỏ chi nhánh cho quản lý này?')) return;
+                ev.preventDefault();
+                const id = this.dataset.id;
+                const token = getAntiForgeryTokenValueFrom('#__managerTokenForm');
+                const bodyParams = new URLSearchParams();
+                bodyParams.append('__RequestVerificationToken', token);
+                bodyParams.append('managerId', id);
+                try {
+                    const res = await fetch('@Url.Action("DeactivateManager", "Region")', {
+                        method: 'POST',
+                        headers: { 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                        body: bodyParams.toString(),
+                        credentials: 'same-origin'
+                    });
+                    if (!res.ok) { const txt = await res.text(); showAlert('danger', 'Lỗi server: ' + txt); return; }
+                    const json = await res.json();
+                    if (json && json.success) {
+                        showAlert('success', json.message || 'Đã gửi yêu cầu bỏ chi nhánh cho quản lý.');
+                        currentMgrFilter = 'nobranch';
+                        document.querySelectorAll('#managersControls .filter-btn').forEach(b => b.classList.remove('active'));
+                        const ab = document.querySelector('#managersControls .filter-btn[data-filter="nobranch"]');
+                        if (ab) ab.classList.add('active');
+                        await fetchManagersPartial(currentMgrFilter, searchGlobal.value.trim());
+                    } else {
+                        showAlert('danger', json && json.error ? json.error : 'Không thể thực hiện thao tác.');
+                    }
+                } catch (err) {
+                    console.error(err);
+                    showAlert('danger', 'Lỗi khi gọi server.');
+                }
+            });
+        });
+
+        document.querySelectorAll('#managersGrid .btn-delete-manager').forEach(btn => {
+            if (btn._boundDelete) return;
+            btn._boundDelete = true;
+            btn.addEventListener('click', async function (ev) {
+                if (!confirm('Xác nhận xóa vĩnh viễn quản lý này?')) return;
+                ev.preventDefault();
+                const id = this.dataset.id;
+                const token = getAntiForgeryTokenValueFrom('#__managerTokenForm');
+                const bodyParams = new URLSearchParams();
+                bodyParams.append('__RequestVerificationToken', token);
+                bodyParams.append('managerId', id);
+                try {
+                    const res = await fetch('@Url.Action("DeleteManager", "Region")', {
+                        method: 'POST',
+                        headers: { 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                        body: bodyParams.toString(),
+                        credentials: 'same-origin'
+                    });
+                    if (!res.ok) { const txt = await res.text(); showAlert('danger', 'Lỗi server: ' + txt); return; }
+                    const json = await res.json();
+                    if (json && json.success) {
+                        showAlert('success', json.message || 'Đã gửi yêu cầu xóa quản lý.');
+                        await fetchManagersPartial(currentMgrFilter, searchGlobal.value.trim());
+                    } else {
+                        showAlert('danger', json && json.error ? json.error : 'Không thể xóa quản lý.');
+                    }
+                } catch (err) {
+                    console.error(err);
+                    showAlert('danger', 'Lỗi khi gọi server.');
+                }
+            });
+        });
+    }
+
+    const suspendModalEl = document.getElementById('suspendModal');
+    const suspendModal = suspendModalEl ? new bootstrap.Modal(suspendModalEl) : null;
+    const changePhoneModalEl = document.getElementById('changePhoneModal');
+    const changePhoneModal = changePhoneModalEl ? new bootstrap.Modal(changePhoneModalEl) : null;
+
+    document.addEventListener('click', function (e) {
+        const sbtn = e.target.closest('.suspend-btn');
+        if (sbtn) {
+            let id = sbtn.dataset.id || sbtn.getAttribute('data-id');
+            if (!id) { const card = sbtn.closest('.branch-card'); id = card ? card.dataset.branchId : null; }
+            if (!id) { showAlert('danger','Không xác định được BranchId.'); return; }
+            document.getElementById('suspendBranchId').value = id;
+            document.getElementById('suspendNote').value = '';
+            document.getElementById('suspendError').style.display = 'none';
+            if (suspendModal) suspendModal.show();
+            return;
+        }
+
+        const cpbtn = e.target.closest('.change-phone-btn');
+        if (cpbtn) {
+            let id = cpbtn.dataset.id || cpbtn.getAttribute('data-id');
+            if (!id) { const card = cpbtn.closest('.branch-card'); id = card ? card.dataset.branchId : null; }
+            if (!id) { showAlert('danger','Không xác định được BranchId.'); return; }
+            document.getElementById('changePhoneBranchId').value = id;
+            document.getElementById('newPhone').value = '';
+            document.getElementById('phoneNote').value = '';
+            document.getElementById('changePhoneError').style.display = 'none';
+            if (changePhoneModal) changePhoneModal.show();
+            return;
+        }
+    });
+
+    function showModalError(id, msg) {
+        const el = document.getElementById(id);
+        if (el) { el.textContent = msg; el.style.display = 'block'; }
+    }
+
+    document.getElementById('suspendForm')?.addEventListener('submit', async function (ev) {
+        ev.preventDefault();
+        ev.stopImmediatePropagation();
+
+        const branchId = document.getElementById('suspendBranchId').value;
+        const note = document.getElementById('suspendNote').value || '';
+        const token = getAntiForgeryTokenValueFrom('#suspendForm') || getAntiForgeryTokenValueFrom('#__managerTokenForm');
+
+        if (!branchId) { showModalError('suspendError', 'BranchId không hợp lệ.'); return; }
+
+        const params = new URLSearchParams();
+        params.append('__RequestVerificationToken', token);
+        params.append('branchId', branchId);
+        params.append('note', note);
+
+        try {
+            const res = await fetch('@Url.Action("CreateSuspendBranchRequest","Region")', {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                body: params.toString(),
+                credentials: 'same-origin'
+            });
+
+            let json;
+            try { json = await res.json(); } 
+            catch { const txt = await res.text(); json = { success: false, message: txt || 'Lỗi phản hồi server.' }; }
+
+            if (!res.ok || !json.success) {
+                showModalError('suspendError', json.message || 'Lỗi server.');
+                return;
+            }
+
+            if (suspendModal) suspendModal.hide();
+            showAlert('success', json.message || 'Yêu cầu tạm ngừng đã được gửi.');
+            fetchBranchesPartial(currentFilter, searchGlobal.value.trim());
+
+        } catch (err) {
+            console.error(err);
+            showModalError('suspendError', 'Lỗi kết nối server.');
+        }
+    });
+
+    document.getElementById('changePhoneForm')?.addEventListener('submit', async function (ev) {
+        ev.preventDefault();
+        ev.stopImmediatePropagation();
+
+        const branchId = document.getElementById('changePhoneBranchId').value;
+        const newPhone = document.getElementById('newPhone').value?.trim() || '';
+        const note = document.getElementById('phoneNote').value || '';
+        const token = getAntiForgeryTokenValueFrom('#changePhoneForm') || getAntiForgeryTokenValueFrom('#__managerTokenForm');
+
+        if (!branchId) { showModalError('changePhoneError', 'BranchId không hợp lệ.'); return; }
+        if (!newPhone || newPhone.length < 6) { showModalError('changePhoneError', 'Số điện thoại không hợp lệ.'); return; }
+
+        const params = new URLSearchParams();
+        params.append('__RequestVerificationToken', token);
+        params.append('branchId', branchId);
+        params.append('newPhone', newPhone);
+        params.append('note', note);
+
+        try {
+            const res = await fetch('@Url.Action("CreateChangeBranchPhoneRequest","Region")', {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                body: params.toString(),
+                credentials: 'same-origin'
+            });
+
+            let json;
+            try { json = await res.json(); } 
+            catch { const txt = await res.text(); json = { success: false, message: txt || 'Lỗi phản hồi server.' }; }
+
+            if (!res.ok || !json.success) {
+                showModalError('changePhoneError', json.message || 'Lỗi server.');
+                return;
+            }
+
+            if (changePhoneModal) changePhoneModal.hide();
+            showAlert('success', json.message || 'Yêu cầu đổi SĐT đã được gửi.');
+            fetchBranchesPartial(currentFilter, searchGlobal.value.trim());
+
+        } catch (err) {
+            console.error(err);
+            showModalError('changePhoneError', 'Lỗi kết nối server.');
+        }
+    });
+
+    if (activeView === 'managers') {
+        fetchManagersPartial(currentMgrFilter, searchGlobal.value.trim());
+        branchesControls.style.display = 'none';
+        managersControls.style.display = '';
+    } else {
+        branchesControls.style.display = '';
+        managersControls.style.display = 'none';
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        if (document.getElementById('managersGrid')) bindManagerButtons();
+    });
+})();
+</script>
+}

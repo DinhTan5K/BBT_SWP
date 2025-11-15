@@ -1,0 +1,167 @@
+@using Microsoft.AspNetCore.Http
+@using System.Security.Claims
+@{
+    // Tên hiển thị
+    var currentAction = ViewContext.RouteData.Values["Action"]?.ToString();
+    var empName = Context.Session.GetString("EmployeeName") ?? User?.Identity?.Name ?? "Tài khoản";
+    var regionName = Context.Session.GetString("RegionName") ?? "Chưa xác định";
+    var userEmailRaw = Context.Session.GetString("Email");
+    var userEmail = string.IsNullOrWhiteSpace(userEmailRaw) ? "Email không xác định" : userEmailRaw;
+    
+    // Tạo initials từ tên
+    var userInitials = "RM";
+    if (!string.IsNullOrEmpty(empName) && empName != "Tài khoản")
+    {
+        var names = empName.Split(' ').Where(s => !string.IsNullOrEmpty(s)).Select(s => s[0]);
+        userInitials = string.Concat(names.Take(2)).ToUpper();
+    }
+
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] - Region Management</title>
+
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
+    <link rel="stylesheet" href="~/css/BManager/bmanager.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/Region/region-layout.css" />
+
+    <script>
+        // IIFE to prevent FOUC (Flash of Unstyled Content) on dark mode
+        (function() {
+            try {
+                var theme = localStorage.getItem('theme');
+                if (theme === 'dark') {
+                    document.documentElement.classList.add('dark-mode');
+                }
+            } catch (e) { }
+        })();
+    </script>
+    @* Render optional per-view styles section (fix for the exception you saw) *@
+    @RenderSection("Styles", required: false)
+</head>
+
+<body>
+    <nav class="sidebar">
+        <div>
+            <h4 class="mb-1">Buble Tea</h4>
+            <h5 class="text-muted">Quản lý Khu vực</h5>
+            <hr /> 
+            
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link @(currentAction == "RegionHome" ? "active" : "")" asp-controller="Region" asp-action="RegionHome">
+                        <i class="fas fa-tachometer-alt fa-fw"></i> Tổng quan
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link @(currentAction == "ManageBranchStatus" ? "active" : "")" asp-controller="Region" asp-action="ManageBranchStatus">
+                        <i class="fas fa-store fa-fw"></i> Quản lý tình trạng chi nhánh
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link @(currentAction == "ViewProduct" ? "active" : "")" asp-controller="Region" asp-action="ViewProduct">
+                        <i class="fas fa-box fa-fw"></i> Quản lý sản phẩm
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link @(currentAction == "Statistics" ? "active" : "")" asp-controller="Region" asp-action="Statistics">
+                        <i class="fas fa-chart-line fa-fw"></i> Thống kê & Báo cáo doanh thu
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link @(currentAction == "SentRequests" ? "active" : "")" asp-controller="Region" asp-action="SentRequests">
+                        <i class="fas fa-paper-plane fa-fw"></i> Yêu cầu đã gửi
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="logout-section">
+            <div class="form-check form-switch mb-3" id="theme-switch-wrapper">
+                <input class="form-check-input" type="checkbox" id="theme-toggle">
+                <label class="form-check-label" for="theme-toggle" id="theme-label">
+                    <i class="fas fa-moon"></i> Chế độ tối
+                </label>
+            </div>
+            
+            <hr />
+
+            <a class="user-profile-widget" asp-controller="Employee" asp-action="Profile" asp-area="">
+                <div class="user-avatar">
+                    @userInitials
+                </div>
+                <div class="user-info">
+                    <span class="user-name">@empName</span>
+                    <span class="user-email">@userEmail</span>
+                </div>
+            </a>
+
+            <a class="logout-link" asp-controller="Account" asp-action="Logout" asp-area="">
+                <i class="fas fa-sign-out-alt"></i> Đăng xuất
+            </a>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        @if (TempData["Success"] != null)
+        {
+            <div class="alert alert-success">@TempData["Success"]</div>
+        }
+        @if (TempData["Error"] != null)
+        {
+            <div class="alert alert-danger">@TempData["Error"]</div>
+        }
+        @RenderBody()
+    </main>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+    <script src="~/lib/jquery-validation-unobtrusive/dist/jquery.validate.unobtrusive.min.js"></script>
+    <script>
+        $(function() {
+            // --- LOGIC BẬT/TẮT THEME ---
+            const themeToggle = $('#theme-toggle');
+            const themeLabel = $('#theme-label');
+            const sunIcon = '<i class="fas fa-sun"></i> Chế độ sáng';
+            const moonIcon = '<i class="fas fa-moon"></i> Chế độ tối';
+
+            function setTheme(theme) {
+                if (theme === 'dark') {
+                    document.documentElement.classList.add('dark-mode');
+                    themeLabel.html(sunIcon);
+                    themeToggle.prop('checked', true);
+                    localStorage.setItem('theme', 'dark');
+                } else {
+                    document.documentElement.classList.remove('dark-mode');
+                    themeLabel.html(moonIcon);
+                    themeToggle.prop('checked', false);
+                    localStorage.setItem('theme', 'light');
+                }
+            }
+            themeToggle.on('change', function() {
+                setTheme($(this).is(':checked') ? 'dark' : 'light');
+            });
+            let savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                setTheme(savedTheme);
+            } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                setTheme('dark');
+            } else {
+                setTheme('light');
+            }
+        }); 
+    </script>
+
+    <partial name="_ValidationScriptsPartial" />
+    @RenderSection("Scripts", required: false)
+</body>
+
+</html>

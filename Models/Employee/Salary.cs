@@ -38,15 +38,23 @@ namespace start.Models
 
         [Column(TypeName = "decimal(18,2)")]
         [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
-        public decimal TotalSalary { get; private set; }
+        public decimal TotalSalary { get; set; }
 
         [StringLength(255)]
-        public string? Notes { get; set; }                // <-- cho phép null
+        public string? Notes { get; set; }
 
         [StringLength(50)]
         public string Status { get; set; } = "Chưa thanh toán";
 
+        public DateTime? CalculatedAt { get; set; }
+
+
+        public DateTime? UpdatedAt { get; set; }
+
+        [Column(TypeName = "int")]
+        public int FinalizationCount { get; set; } = 0;
+
         [ForeignKey(nameof(EmployeeID))]
-        public Employee? Employee { get; set; }           // <-- cho phép null
+        public Employee? Employee { get; set; }           
     }
 }

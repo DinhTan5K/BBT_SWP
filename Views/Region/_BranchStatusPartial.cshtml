@@ -1,0 +1,137 @@
+@model IEnumerable<start.DTOs.BranchStatus>
+@{
+    Layout = null; // RẤT QUAN TRỌNG
+}
+
+<style>
+    .branch-card {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        border: 1px solid #e0e0e0;
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 12px;
+        background-color: #fff;
+        box-sizing: border-box;
+    }
+
+    .branch-info { flex: 1 1 auto; min-width: 0; }
+
+    .branch-name { font-size: 1.1rem; font-weight: 600; margin-bottom: 6px; }
+
+    .branch-address { margin-bottom: 4px; }
+
+    .branch-status { margin-top: 6px; }
+
+    .status-badge { display:inline-block; font-weight:500; padding:4px 10px; border-radius:12px; font-size:0.9rem; }
+
+    .status-active { background-color:#d1fae5; color:#065f46; }
+    .status-inactive { background-color:#fee2e2; color:#991b1b; }
+
+    .branch-actions {
+        display:flex;
+        align-items:center;
+        gap:12px;
+        width:360px;
+        box-sizing:border-box;
+    }
+
+    .branch-actions .slot { flex: 1 1 0; display:flex; align-items:center; justify-content:center; min-width:0; }
+    .branch-actions .slot.left { justify-content:flex-start; }
+    .branch-actions .slot.center { justify-content:center; }
+    .branch-actions .slot.right { justify-content:flex-end; }
+
+    .branch-actions .btn {
+        min-width: 110px;
+        padding: 8px 10px;
+        border-radius: 8px;
+        font-weight:600;
+        white-space:nowrap;
+        border: none;
+        cursor: pointer;
+    }
+
+    .btn-suspend { background:#f59e0b;color:#fff; }
+    .btn-suspend:hover { background:#d97706; }
+
+    .btn-change-manager { background:#3b82f6;color:#fff; }
+    .btn-change-manager:hover { background:#2563eb; }
+
+    .btn-change-phone { background:#6b7280;color:#fff; }
+    .btn-change-phone:hover { background:#4b5563; }
+
+    .empty-slot { width:110px; height:1px; visibility:hidden; }
+</style>
+
+@if (!Model?.Any() ?? true)
+{
+    <p>Không có chi nhánh nào phù hợp.</p>
+}
+else
+{
+    foreach (var b in Model)
+    {
+        <div class="branch-card" data-branch-id="@b.BranchId">
+            <div class="branch-info">
+                <div class="branch-name">@b.Name</div>
+                <div class="branch-address"><strong>Địa chỉ:</strong> @b.Address</div>
+                <div><strong>SĐT:</strong> @b.PhoneNumber</div>
+                <div><strong>Quản lý:</strong> @(string.IsNullOrEmpty(b.ManagerName) ? "Chưa được phân công" : b.ManagerName)</div>
+                <div class="branch-status">
+                    @if (b.IsActive)
+                    {
+                        <span class="status-badge status-active">Đang hoạt động</span>
+                    }
+                    else
+                    {
+                        <span class="status-badge status-inactive">Ngừng hoạt động</span>
+                    }
+                </div>
+            </div>
+
+            @if (b.IsActive)
+            {
+                <div class="branch-actions" aria-label="Hành động chi nhánh">
+                    
+
+@if (string.IsNullOrEmpty(b.ManagerName))
+                        {
+                             <div class="slot left">
+                        <button type="button" class="btn btn-suspend suspend-btn" data-id="@b.BranchId" title="Tạm ngưng">
+                            Tạm ngừng
+                        </button>
+                    </div>
+                        }
+                        else
+                        {
+                            <div class="empty-slot"></div>
+                        }
+                    <div class="slot center">
+                        @if (string.IsNullOrEmpty(b.ManagerName))
+                        {
+                            <a asp-controller="Region" asp-action="ChangeBranchManager" asp-route-id="@b.BranchId"
+                               class="btn btn-change-manager" title="Đổi quản lý">Đổi quản lý</a>
+                        }
+                        else
+                        {
+                            <div class="empty-slot"></div>
+                        }
+                    </div>
+
+                    <div class="slot right">
+                        <button type="button" class="btn btn-change-phone change-phone-btn" data-id="@b.BranchId" title="Đổi SĐT">
+                            Đổi SĐT
+                        </button>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div style="display:flex;align-items:center;justify-content:flex-end;width:360px;">
+                    <span class="text-muted">Chi nhánh đã ngừng hoạt động</span>
+                </div>
+            }
+        </div>
+    }
+}

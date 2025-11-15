@@ -24,7 +24,7 @@ namespace start.Models
         [Column(TypeName = "varchar(10)")]
         public string RequestedBy { get; set; } = string.Empty;
 
-        public DateTime RequestedAt { get; set; } = DateTime.UtcNow;
+        public DateTime RequestedAt { get; set; } = DateTime.Now;
 
         // Thông tin duyệt
         [Required]
@@ -64,6 +64,8 @@ namespace start.Models
 
         [StringLength(1000)]
         public string? Notes { get; set; } // Ghi chú/Lý do
+        public bool IsActive { get; set; } = true;
+
 
         // Navigation properties
         [ForeignKey(nameof(RequestedBy))]
@@ -77,6 +79,7 @@ namespace start.Models
 
         [ForeignKey(nameof(RegionID))]
         public Region? Region { get; set; }
+
     }
 }
 

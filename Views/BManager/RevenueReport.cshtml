@@ -1,0 +1,302 @@
+@model List<start.Models.RevenueReport>
+@{
+    Layout = "_BManagerLayout";
+    ViewData["Title"] = "Báo Cáo Doanh Thu";
+
+    // Lấy dữ liệu từ ViewBag cho 4 thẻ KPI
+    var selectedMonth = ViewBag.SelectedMonth as string ?? DateTime.Now.ToString("yyyy-MM");
+    var totalRevenue = ViewBag.TotalRevenue as decimal? ?? 0;
+    var totalOrders = ViewBag.TotalOrders as int? ?? 0;
+    var averageOrderValue = ViewBag.AverageOrderValue as decimal? ?? 0;
+    var growthPercentage = ViewBag.GrowthPercentage as double? ?? 0;
+
+    // Chuẩn bị dữ liệu cho biểu đồ (từ Model)
+    var chartLabels = Model?.Select(r => r.Date.ToString("dd/MM")).ToList() ?? new List<string>();
+    var chartRevenueData = Model?.Select(r => r.TotalRevenue).ToList() ?? new List<decimal>();
+    var chartOrdersData = Model?.Select(r => r.TotalOrders).ToList() ?? new List<int>();
+}
+
+<div style="margin-top: 80px">
+    <h1 class="mb-4">Báo cáo doanh thu</h1>
+
+    <div class="card shadow-sm report-filter-card mb-4">
+        <div class="card-body">
+            <form asp-action="RevenueReport" method="get" class="d-flex align-items-center flex-wrap">
+                <div class="me-3 mb-2 mb-md-0">
+                    <label for="month" class="form-label me-2"><i class="fas fa-calendar-alt me-1"></i> Chọn
+                        Tháng</label>
+                    <input type="month" id="month" name="month" class="form-control d-inline-block" style="width: auto;"
+                        value="@selectedMonth" />
+                </div>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-eye me-1"></i> Xem Báo Cáo</button>
+            </form>
+        </div>
+    </div>
+
+    @if (Model != null && Model.Any())
+    {
+        <div class="row g-4 mb-4">
+            <div class="col-xl-3 col-md-6">
+                <div class="summary-card green">
+                    <div class="summary-card-icon">
+                        <i class="fas fa-dollar-sign"></i>
+                    </div>
+                    <div class="summary-card-content">
+                        <div class="summary-card-label">Tổng Doanh Thu</div>
+                        <div class="summary-card-value">@totalRevenue.ToString("N0") VNĐ</div>
+                        <div class="summary-card-sub">Tháng @(DateTime.Parse(selectedMonth + "-01").ToString("MM"))</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6">
+                <div class="summary-card blue">
+                    <div class="summary-card-icon">
+                        <i class="fas fa-shopping-cart"></i>
+                    </div>
+                    <div class="summary-card-content">
+                        <div class="summary-card-label">Tổng Số Đơn</div>
+                        <div class="summary-card-value">@totalOrders đơn</div>
+                        <div class="summary-card-sub">Tháng @(DateTime.Parse(selectedMonth + "-01").ToString("MM"))</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6">
+                <div class="summary-card purple">
+                    <div class="summary-card-icon">
+                        <i class="fas fa-file-invoice-dollar"></i>
+                    </div>
+                    <div class="summary-card-content">
+                        <div class="summary-card-label">Trung Bình/Đơn</div>
+                        <div class="summary-card-value">@averageOrderValue.ToString("N0") VNĐ</div>
+                        <div class="summary-card-sub">Giá trị trung bình</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6">
+                <div class="summary-card orange">
+                    <div class="summary-card-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="summary-card-content">
+                        <div class="summary-card-label">Tăng Trưởng</div>
+                        <div class="summary-card-value">@growthPercentage.ToString("+0.0%;-0.0%;0")</div>
+                        <div class="summary-card-sub">So với tháng trước</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Biểu đồ Doanh thu theo Ngày</h5>
+            </div>
+            <div class="card-body">
+                <div style="position: relative; height:350px">
+                    <canvas id="revenueChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <h5 class="mb-0">Chi tiết Doanh thu theo Ngày</h5>
+            </div>
+
+            <div class="card-body p-0">
+                <div class="daily-detail-header">
+                    <span class="date">Ngày</span>
+                    <span class="orders">Tổng Số Đơn</span>
+                    <span class="revenue">Doanh Thu (VND)</span>
+                    <span class="chevron"></span>
+                </div>
+
+                <div id="daily-detail-list">
+                    @foreach (var item in Model)
+                    {
+                        <div class="daily-detail-item">
+                            <div class="daily-detail-row-toggle" data-date="@item.Date.ToString("yyyy-MM-dd")">
+                                <span class="date"><strong>@item.Date.ToShortDateString()</strong></span>
+                                <span class="orders">@item.TotalOrders đơn</span>
+                                <span class="revenue">@item.TotalRevenue.ToString("N0") VNĐ</span>
+                                <span class="chevron"><i class="fas fa-chevron-right"></i></span>
+                            </div>
+
+                            <div class="daily-detail-content" style="display: none;">
+                                <div class="text-center p-3">
+                                    <div class="spinner-border spinner-border-sm" role="status"></div>
+                                    Đang tải chi tiết...
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-warning">Không có dữ liệu doanh thu trong khoảng thời gian này.</div>
+    }
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/BManager/RevenueReport.css" asp-append-version="true" />
+}
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+
+    @if (Model != null && Model.Any())
+    {
+        <script>
+
+            const chartLabels = @Html.Raw(Json.Serialize(chartLabels));
+            const chartRevenueData = @Html.Raw(Json.Serialize(chartRevenueData));
+            const chartOrdersData = @Html.Raw(Json.Serialize(chartOrdersData));
+
+            $(function () {
+
+                @*  === KHỞI TẠO BIỂU ĐỒ === *@
+                        const ctx = document.getElementById('revenueChart').getContext('2d');
+
+                const revenueFormatter = new Intl.NumberFormat('vi-VN', {
+                    style: 'currency',
+                    currency: 'VND',
+                    notation: 'compact',
+                    maximumFractionDigits: 1
+                });
+
+                const revenueTooltipFormatter = new Intl.NumberFormat('vi-VN', {
+                    style: 'currency',
+                    currency: 'VND'
+                });
+
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: chartLabels,
+                        datasets: [
+                            {
+                                label: 'Doanh thu (VND)',
+                                data: chartRevenueData,
+                                backgroundColor: '#10b981',
+                                borderColor: '#059669',
+                                borderWidth: 1,
+                                yAxisID: 'yRevenue'
+                            },
+                            {
+                                label: 'Số đơn',
+                                data: chartOrdersData,
+                                backgroundColor: '#3b82f6',
+                                borderColor: '#2563eb',
+                                borderWidth: 1,
+                                yAxisID: 'yOrders'
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            mode: 'index',
+                            intersect: false,
+                        },
+                        scales: {
+                            yRevenue: {
+                                type: 'linear',
+                                position: 'left',
+                                grid: {
+                                    drawOnChartArea: true
+                                },
+                                ticks: {
+                                    callback: function (value, index, ticks) {
+                                        return revenueFormatter.format(value).replace(/\s/g, '');
+                                    }
+                                }
+                            },
+                            yOrders: {
+                                type: 'linear',
+                                position: 'right',
+                                grid: {
+                                    drawOnChartArea: false,
+                                },
+                                ticks: {
+                                    stepSize: 1,
+                                    callback: function (value) {
+                                        if (Number.isInteger(value)) {
+                                            return value;
+                                        }
+                                    }
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false
+                                }
+                            }
+                        },
+                        plugins: {
+                            tooltip: {
+                                callbacks: {
+                                    label: function (context) {
+                                        let label = context.dataset.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        if (context.parsed.y !== null) {
+                                            if (context.dataset.yAxisID === 'yRevenue') {
+                                                label += revenueTooltipFormatter.format(context.parsed.y);
+                                            } else {
+                                                label += context.parsed.y;
+                                            }
+                                        }
+                                        return label;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+
+
+                @* === LOGIC CLICK CHO DANH SÁCH CHI TIẾT === *@
+                    $('#daily-detail-list').on('click', '.daily-detail-row-toggle', function () {
+                        var $thisToggle = $(this);
+                        var $detailContent = $thisToggle.closest('.daily-detail-item').find('.daily-detail-content');
+                        var $icon = $thisToggle.find('i.fa-chevron-right, i.fa-chevron-down');
+
+                        var reportDate = $thisToggle.data('date');
+                        var isLoaded = $detailContent.data('loaded') === true;
+
+                        if ($detailContent.is(':visible')) {
+
+                            $detailContent.slideUp();
+                            $thisToggle.removeClass('expanded');
+                            $icon.removeClass('fa-chevron-down').addClass('fa-chevron-right');
+                        } else {
+
+                            $detailContent.slideDown();
+                            $thisToggle.addClass('expanded');
+                            $icon.removeClass('fa-chevron-right').addClass('fa-chevron-down');
+
+
+                            if (!isLoaded) {
+                                $.get('@Url.Action("GetDailyOrderDetails")', { date: reportDate })
+                                    .done(function (data) {
+                                        $detailContent.html(data);
+                                        $detailContent.data('loaded', true);
+                                    })
+                                    .fail(function () {
+                                        $detailContent.html('<div class="alert alert-danger m-0">Không thể tải chi tiết.</div>');
+                                    });
+                            }
+                        }
+                    });
+
+            });
+        </script>
+    }
+}

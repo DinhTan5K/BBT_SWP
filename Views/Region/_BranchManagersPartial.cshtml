@@ -1,0 +1,62 @@
+@model IEnumerable<start.DTOs.BranchManagerStatus>
+
+@if (Model == null || !Model.Any())
+{
+    <p style="padding:16px;color:#666;">Không có quản lý chi nhánh nào.</p>
+}
+else
+{
+    <div class="branch-grid">
+        @foreach (var m in Model)
+        {
+            <div class="branch-card" data-emp="@m.EmployeeID">
+                <div class="branch-info">
+                    <h4 class="branch-name">@m.FullName</h4>
+                    <p class="branch-address">@(!string.IsNullOrEmpty(m.BranchName) ? m.BranchName : "Chưa có chi nhánh")</p>
+
+                    <p><strong>Ngày sinh:</strong> @(m.DateOfBirth?.ToString("yyyy-MM-dd") ?? "-")</p>
+                    @if (!string.IsNullOrEmpty(m.Gender))
+                    {
+                        <p><strong>Giới tính:</strong> @m.Gender</p>
+                    }
+                    <p><strong>SĐT:</strong> @(m.PhoneNumber ?? "-")</p>
+                    <p><strong>Email:</strong> @(m.Email ?? "-")</p>
+                    <p><strong>Ngày tuyển dụng:</strong> @(m.HireDate.ToString("yyyy-MM-dd"))</p>
+
+                    <p>
+                        <strong>Trạng thái:</strong>
+                        @* Nếu chưa có chi nhánh, hiển thị "Chưa có chi nhánh" (theo yêu cầu)
+                           Ngược lại hiển thị trạng thái active/inactive như trước *@
+                        @if (string.IsNullOrEmpty(m.BranchName))
+                        {
+                            <span class="status-badge status-nobranch">Chưa có chi nhánh</span>
+                        }
+                        else
+                        {
+                            <span class="@(m.IsActive ? "status-badge status-active" : "status-badge status-inactive")">
+                                @(m.IsActive ? "Đang làm" : "Đang nghỉ")
+                            </span>
+                        }
+                    </p>
+                </div>
+
+                <div class="branch-footer">
+                    @* Nếu manager có Branch -> hiển thị nút Deactivate (bỏ chi nhánh) *@
+                    @if (!string.IsNullOrEmpty(m.BranchName))
+                    {
+                        <button type="button" class="btn btn-warning btn-sm btn-deactivate-manager" data-id="@m.EmployeeID">
+                            Xóa khỏi chi nhánh hiện tại
+                        </button>
+                    }
+                    else
+                    {
+                        @* Nếu chưa có chi nhánh -> chỉ hiển thị nút Delete (vĩnh viễn) *@
+                        <button type="button" class="btn btn-danger btn-sm btn-delete-manager" data-id="@m.EmployeeID">
+                            Xóa
+                        </button>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+}

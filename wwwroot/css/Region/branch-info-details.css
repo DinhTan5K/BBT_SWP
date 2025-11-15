@@ -1,0 +1,118 @@
+
+.region-dashboard-container{max-width:1200px;margin:8px auto;padding:12px}
+
+/* top row: two cards side by side */
+.top-row{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-bottom:22px}
+.card{background:#fffdf8;border:1px solid #efe2d0;border-radius:14px;padding:18px;box-shadow:0 8px 20px rgba(120,90,50,0.06)}
+.card-title{font-size:16px;color:var(--brown-700);font-weight:700;margin-bottom:10px}
+
+/* left / right card sizing already via grid */
+.card-left .card-title{font-size:18px;margin-bottom:12px}
+.card-right .branch-map{height:300px;border-radius:10px;overflow:hidden}
+
+/* employees row - full width below top row */
+.employees-row{margin-top:12px}
+.employees-card{padding:14px}
+
+/* table */
+.table thead th{background:#f7efe6;color:var(--brown-700);font-weight:700}
+
+/* detail button (reuse) */
+.detail-btn{background:var(--accent);color:var(--brown-700);padding:8px 14px;border-radius:8px;text-decoration:none;font-weight:600}
+.detail-btn:hover{background:#d9b88a;color:#fff}
+
+/* map button */
+.map-btn{display:inline-block;margin-top:8px;background:var(--accent);color:var(--brown-700);padding:8px 12px;border-radius:8px;text-decoration:none}
+
+/* responsive */
+@media (max-width: 900px){
+    .top-row{grid-template-columns:1fr; }
+    .card-right .branch-map{height:240px}
+}
+
+/* Edit branch form tweaks */
+.region-dashboard-container .card form .form-label { font-weight:600; color: #4a3728; }
+.region-dashboard-container .card .form-control {
+    border-radius: 8px;
+    border: 1px solid rgba(200,180,150,0.12);
+    padding: 10px;
+}
+.region-dashboard-container .card .form-check-label { margin-left:6px; }
+.region-dashboard-container .detail-btn { display:inline-block; background:#e8c9a1; padding:8px 14px; border-radius:8px; color:#4a3728; text-decoration:none; }
+.region-dashboard-container .detail-btn:hover { background:#d9b88a; color:#fff; }
+
+/* ========== added styles for edit map & address search ========== */
+
+
+
+/* wrapper for address search, position relative for absolute dropdown */
+.address-search-wrapper {
+    position: relative;
+}
+
+/* results dropdown */
+.address-results {
+    display: none;
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(100% + 6px);
+    margin: 0;
+    padding: 6px 0;
+    list-style: none;
+    background: #fff;
+    border: 1px solid rgba(200,180,150,0.12);
+    border-radius: 8px;
+    box-shadow: 0 8px 20px rgba(120,90,50,0.06);
+    max-height: 240px;
+    overflow-y: auto;
+    z-index: 1200;
+}
+
+.address-result-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid rgba(230,220,205,0.6);
+    font-size: 13px;
+}
+.address-result-item:last-child { border-bottom: none; }
+
+.address-result-item:hover {
+    background: linear-gradient(90deg, rgba(232,201,161,0.12), rgba(209,184,144,0.08));
+}
+
+/* small helper */
+.address-result-item .muted { color: #7a6654; font-size: 12px; }
+
+/* make sure card overflow visible so dropdown isn't cut */
+.card { overflow: visible; }
+
+/* responsive adjustments */
+@media (max-width: 768px) {
+    .edit-map { height: 260px; }
+    .address-results { top: calc(100% + 4px); max-height: 200px; }
+}
+
+/* Map container styling (important: use ID matching the view) */
+#edit-map {
+    width: 100%;
+    height: 320px;
+    border-radius: 10px;
+    overflow: hidden; /* hide overflow of map tiles */
+    box-shadow: 0 6px 14px rgba(120,90,50,0.04);
+    position: relative;
+    z-index: 1;
+}
+
+/* ensure the card doesn't clip positioned dropdowns / marker popups */
+.card {
+    overflow: visible;
+}
+
+/* fallback smaller screens */
+@media (max-width: 900px) {
+    #edit-map { height: 260px; }
+}
+
+
+

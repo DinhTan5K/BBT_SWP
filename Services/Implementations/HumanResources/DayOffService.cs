@@ -91,4 +91,58 @@ public class DayOffService : IDayOffService
         foreach (var t in to) msg.To.Add(t);
         await client.SendMailAsync(msg);
     }
+
+// Trong DayOffService.cs
+
+public async Task<List<DayOffManagerVm>> GetPendingByBranchAsync(int branchId)
+{
+    // Lấy tất cả đơn "Pending" của chi nhánh này, bao gồm tên nhân viên
+    return await _db.DayOffRequests
+        .Include(r => r.Employee)
+        .Where(r => r.BranchID == branchId && r.Status == "Pending")
+        .OrderBy(r => r.OffDate) // Xem đơn gần nhất trước
+        .Select(r => new DayOffManagerVm
+        {
+            Id = r.Id,
+            EmployeeID = r.EmployeeID,
+            FullName = r.Employee!.FullName,
+            OffDate = r.OffDate,
+            Reason = r.Reason,
+            Status = r.Status,
+            CreatedAt = r.CreatedAt
+        })
+        .ToListAsync();
+}
+
+public async Task<(bool success, string message)> UpdateStatusAsync(int requestId, int branchId, string newStatus)
+{
+    var request = await _db.DayOffRequests
+        .FirstOrDefaultAsync(r => r.Id == requestId && r.BranchID == branchId);
+
+    if (request == null)
+    {
+        return (false, "Không tìm thấy đơn hoặc không thuộc chi nhánh của bạn.");
+    }
+
+    if (request.Status != "Pending")
+    {
+        return (false, $"Đơn đã được xử lý (Trạng thái: {request.Status}).");
+    }
+
+    string statusToSet = newStatus switch
+    {
+        "Approved" => "Approved",
+        "Rejected" => "Rejected",
+        _ => throw new ArgumentException("Trạng thái không hợp lệ.")
+    };
+
+    request.Status = statusToSet;
+    await _db.SaveChangesAsync();
+    
+  
+    
+    return (true, $"Đã {statusToSet.ToLower()} đơn nghỉ cho ngày {request.OffDate:dd/MM/yyyy}.");
+}
+    
+
 }

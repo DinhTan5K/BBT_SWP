@@ -54,7 +54,7 @@ namespace start.Models
         [Column(TypeName = "decimal(18,2)")]
         public decimal KPIBonus { get; set; } // Thưởng KPI
 
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime CreatedAt { get; set; } = DateTime.Now;
         public DateTime? UpdatedAt { get; set; }
 
         [ForeignKey(nameof(EmployeeID))]

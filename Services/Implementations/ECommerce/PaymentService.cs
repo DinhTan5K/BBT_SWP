@@ -86,14 +86,62 @@ public class PaymentService : IPaymentService
 
     public async Task<string> RefundAsync(string transId, decimal amount, string description)
     {
+        // Khai báo các biến dùng chung
+        string requestId = Guid.NewGuid().ToString();
+        string orderId = $"REFUND_{requestId}";
+        long amountLong = (long)amount; // ✅ Ép sang long (MoMo yêu cầu)
+
+        // Kiểm tra Test Mode - Nếu bật test mode thì return mock response
+        var testMode = _config.GetValue<bool>("Momo:TestMode", false);
+        var mockRefundSuccess = _config.GetValue<bool>("Momo:MockRefundSuccess", true);
+
+        if (testMode)
+        {
+            // MOCK RESPONSE - Không gọi MoMo API thật
+            Console.WriteLine("🔧 [TEST MODE] Mock Refund Request:");
+            Console.WriteLine($"   TransId: {transId}");
+            Console.WriteLine($"   Amount: {amount:N0} VNĐ");
+            Console.WriteLine($"   Description: {description}");
+
+            // Tạo mock response giống như MoMo API
+            if (mockRefundSuccess)
+            {
+                // Mock success response
+                var mockSuccessResponse = new
+                {
+                    resultCode = 0,
+                    message = "Success",
+                    orderId = orderId,
+                    requestId = requestId,
+                    transId = transId,
+                    amount = amountLong,
+                    description = description
+                };
+
+                Console.WriteLine("✅ [TEST MODE] Mock Refund Success Response");
+                return JsonSerializer.Serialize(mockSuccessResponse);
+            }
+            else
+            {
+                // Mock failure response (để test error handling)
+                var mockFailureResponse = new
+                {
+                    resultCode = 1001,
+                    message = "Transaction not found or already refunded",
+                    orderId = orderId,
+                    requestId = requestId
+                };
+
+                Console.WriteLine("❌ [TEST MODE] Mock Refund Failure Response");
+                return JsonSerializer.Serialize(mockFailureResponse);
+            }
+        }
+
+        // PRODUCTION MODE - Gọi MoMo API thật
         string endpoint = _config["Momo:RefundEndpoint"]!;
         string partnerCode = _config["Momo:PartnerCode"]!;
         string accessKey = _config["Momo:AccessKey"]!;
         string secretKey = _config["Momo:SecretKey"]!;
-
-        string requestId = Guid.NewGuid().ToString();
-        string orderId = $"REFUND_{requestId}";
-        long amountLong = (long)amount; // ✅ Ép sang long (MoMo yêu cầu)
 
         // ✅ Tạo rawHash chuẩn MoMo
         string rawHash = $"accessKey={accessKey}&amount={amountLong}&description={description}&orderId={orderId}&partnerCode={partnerCode}&requestId={requestId}&transId={transId}";
@@ -114,13 +162,13 @@ public class PaymentService : IPaymentService
         };
 
         // Log ra cho dễ debug
-        Console.WriteLine("Refund Request JSON: " + JsonSerializer.Serialize(body));
+        Console.WriteLine("🌐 [PRODUCTION MODE] Refund Request JSON: " + JsonSerializer.Serialize(body));
 
         var content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
         var response = await _httpClient.PostAsync(endpoint, content);
         var result = await response.Content.ReadAsStringAsync();
 
-        Console.WriteLine("Refund Response: " + result);
+        Console.WriteLine("🌐 [PRODUCTION MODE] Refund Response: " + result);
         return result;
     }
 

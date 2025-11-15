@@ -32,7 +32,7 @@ namespace start.Models
         [StringLength(50)]
         public string? EntityType { get; set; } = "RM"; // Loại entity (RM, Employee, etc.)
 
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime CreatedAt { get; set; } = DateTime.Now;
 
         [StringLength(50)]
         public string? IpAddress { get; set; }

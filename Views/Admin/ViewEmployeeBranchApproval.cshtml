@@ -23,6 +23,13 @@
             <h3 style="font-size: 18px; font-weight: 600; color: var(--ink); margin-bottom: 20px;">Thông tin yêu cầu</h3>
             
             <div style="margin-bottom: 16px;">
+                <label style="font-weight: 600; color: var(--muted); font-size: 13px;">Request ID</label>
+                <div style="margin-top: 4px; font-size: 16px; color: var(--ink); font-weight: 500;">
+                    #@Model.Id
+                </div>
+            </div>
+
+            <div style="margin-bottom: 16px;">
                 <label style="font-weight: 600; color: var(--muted); font-size: 13px;">Loại yêu cầu</label>
                 <div style="margin-top: 4px; font-size: 16px; color: var(--ink); font-weight: 500;">
                     @(Model.RequestType switch
@@ -114,7 +121,6 @@
         <!-- Thông tin nhân viên và chi nhánh -->
         <div style="background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 24px;">
             <h3 style="font-size: 18px; font-weight: 600; color: var(--ink); margin-bottom: 20px;">Thông tin nhân viên và chi nhánh</h3>
-            
             @if (Model.RequestType == RequestType.Edit)
             {
                 <div style="margin-bottom: 20px; padding: 16px; background: var(--bg); border-radius: 8px;">
@@ -143,7 +149,7 @@
             <div style="margin-bottom: 16px;">
                 <label style="font-weight: 600; color: var(--muted); font-size: 13px;">Nhân viên</label>
                 <div style="margin-top: 4px; font-size: 16px; color: var(--ink); font-weight: 500;">
-                    @(Model.Employee?.FullName ?? Model.EmployeeId ?? "N/A")
+                    @(Model.Employee?.FullName ?? Model.FullName ?? "N/A")
                 </div>
                 @if (!string.IsNullOrEmpty(Model.EmployeeId))
                 {

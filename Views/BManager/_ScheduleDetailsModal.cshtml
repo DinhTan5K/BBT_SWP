@@ -1,0 +1,75 @@
+@model List<start.Models.WorkSchedule>
+
+@if (!Model.Any()) {
+<div class="text-center p-4">
+  <p class="text-muted mb-0">Không có ca làm việc nào trong ngày này.</p>
+</div>
+} else {
+<ul class="list-group list-group-flush">
+  @foreach (var schedule in Model.OrderBy(s => s.Shift)) {
+  <li class="list-group-item d-flex justify-content-between align-items-center" data-id="@schedule.WorkScheduleID">
+    <div class="flex-grow-1">
+      <div class="d-flex w-100 justify-content-between">
+        <h6 class="mb-1">@schedule.Employee?.FullName</h6>
+        <div class="action-buttons">
+          @if (schedule.Status == "Chưa duyệt") {
+          <button class="btn btn-sm btn-outline-success btn-modal-approve" title="Duyệt ca">
+            <i class="fas fa-check"></i>
+          </button>
+          <button class="btn btn-sm btn-outline-danger btn-modal-reject" title="Từ chối ca">
+            <i class="fas fa-times"></i>
+          </button>
+          }
+          <button class="btn btn-sm btn-outline-primary btn-modal-edit" title="Chỉnh sửa ca">
+            <i class="fas fa-pencil-alt"></i>
+          </button>
+        </div>
+      </div>
+      <p class="mb-1">
+        <span class="badge bg-secondary">Ca @schedule.Shift</span>
+        @{
+            if (schedule.CheckInTime.HasValue && schedule.CheckOutTime.HasValue)
+            {
+                <span class="badge bg-success">Đã làm</span>
+            }
+            else if (schedule.CheckInTime.HasValue)
+            {
+                <span class="badge bg-info">Đang làm</span>
+            }
+            else if (schedule.Status == "Đã duyệt")
+            {
+                <span class="badge bg-primary">Đã duyệt</span>
+            }
+            else
+            {
+                <span class="badge bg-warning">Chưa duyệt</span>
+            }
+        }
+      </p>
+      <small class="text-muted">
+        @if (schedule.CheckInTime.HasValue)
+        {
+            <span>
+                <i class="fas fa-sign-in-alt text-success"></i>
+                @schedule.CheckInTime.Value.ToString("HH:mm")
+            </span>
+        }
+        @if (schedule.CheckOutTime.HasValue)
+        {
+            <span class="ms-2">
+                <i class="fas fa-sign-out-alt text-danger"></i>
+                @schedule.CheckOutTime.Value.ToString("HH:mm")
+            </span>
+            
+            var workDuration = schedule.CheckOutTime.Value - schedule.CheckInTime.Value;
+            <span class="ms-2 fst-italic">
+                (Tổng: @workDuration.Hours giờ @workDuration.Minutes phút)
+            </span>
+        }
+      </small>
+    </div>
+
+  </li>
+  }
+</ul>
+}

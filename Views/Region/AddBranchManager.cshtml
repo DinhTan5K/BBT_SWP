@@ -1,0 +1,127 @@
+@model start.DTOs.BranchManagerCreateModel
+@{
+    ViewData["Title"] = "Thêm quản lý chi nhánh";
+    Layout = "~/Views/Shared/_RegionLayout.cshtml";
+}
+
+<link rel="stylesheet" href="~/css/Region/region-dashboard.css" />
+
+<div class="region-dashboard-container" style="max-width:900px;">
+    <div class="detail-header text-center">
+        <h2 class="page-title">Thêm quản lý chi nhánh</h2>
+    </div>
+
+    <div class="card" style="padding:18px;">
+       
+        @if (TempData["ErrorMessage"] != null) {
+            <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+        }
+
+        <form asp-action="AddBranchManager" method="post" id="addManagerForm" novalidate>
+            @Html.AntiForgeryToken()
+
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <div class="mb-3">
+                <label class="form-label">Tên đầy đủ</label>
+                <input asp-for="FullName" class="form-control" />
+                <span asp-validation-for="FullName" class="text-danger"></span>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Ngày sinh</label>
+                    <input asp-for="DateOfBirth" type="date" class="form-control" />
+                    <span asp-validation-for="DateOfBirth" class="text-danger"></span>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Giới tính</label>
+                    <select asp-for="Gender" class="form-control">
+                        <option value="">--</option>
+                        <option>Nam</option>
+                        <option>Nữ</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Thành phố</label>
+                    <input asp-for="City" class="form-control" />
+                </div>
+            </div>
+
+            <div style="height:12px;"></div>
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Số điện thoại</label>
+                    <input asp-for="PhoneNumber" class="form-control" />
+                    <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Email</label>
+                    <input asp-for="Email" class="form-control" />
+                    <span asp-validation-for="Email" class="text-danger"></span>
+                </div>
+            </div>
+
+            <div style="height:12px;"></div>
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Ngày tuyển dụng</label>
+                    <input asp-for="HireDate" type="date" class="form-control" />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Mật khẩu</label>
+                    <input asp-for="Password" type="password" class="form-control" />
+                    <span asp-validation-for="Password" class="text-danger"></span>
+                </div>
+            </div>
+
+            <div style="height:12px;"></div>
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Quốc tịch</label>
+                    <input asp-for="Nationality" class="form-control" />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Dân tộc</label>
+                    <input asp-for="Ethnicity" class="form-control" />
+                </div>
+            </div>
+
+            <div style="margin-top:18px; display:flex; gap:12px;">
+                <a asp-action="ManageBranchStatus" asp-route-view="managers" class="detail-btn">← Quay về</a>
+                <button id="confirmBtn" type="button" class="detail-btn">Xác nhận</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const form = document.getElementById("addManagerForm");
+            const confirmBtn = document.getElementById("confirmBtn");
+
+            if (!form || !confirmBtn) {
+                console.warn("Không tìm thấy form hoặc nút confirmBtn.");
+                return;
+            }
+
+            confirmBtn.addEventListener("click", function (e) {
+                e.preventDefault();
+
+                // Nếu bạn có validation client-side thì thêm điều kiện ở đây
+                if (confirm("Xác nhận tạo quản lý mới?")) {
+                    form.submit();
+                }
+            });
+        });
+    </script>
+}
+
+
+
+
+

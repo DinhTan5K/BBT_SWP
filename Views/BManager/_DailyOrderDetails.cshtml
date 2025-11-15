@@ -1,0 +1,47 @@
+@model List<start.Models.Order>
+
+@if (!Model.Any())
+{
+    <div class="p-3 text-center text-muted">Không tìm thấy chi tiết đơn hàng cho ngày này.</div>
+}
+else
+{
+    <div class="p-3" style="background-color: #fdfdfd;">
+        <h5 class="mb-3">Chi tiết đơn hàng cho ngày @Model.First().UpdatedAt.Value.ToString("dd/MM/yyyy")</h5>
+        
+        @foreach (var order in Model)
+        {
+            <div class="card mb-2 shadow-sm">
+                <div class="card-header d-flex justify-content-between" style="background-color: #f0f0f0;">
+                    <div>
+                        <strong>Mã ĐH: @order.OrderCode</strong> | KH: @order.ReceiverName
+                    </div>
+                    <span class="fw-bold">Tổng: @order.Total.ToString("N0") đ</span>
+                </div>
+                <div class="card-body p-2">
+                    <table class="table table-sm table-borderless mb-0">
+                        <thead>
+                            <tr style="font-size: 0.9em; color: #555;">
+                                <th>Sản phẩm</th>
+                                <th>Size</th>
+                                <th>SL</th>
+                                <th>Đơn giá</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var detail in order.OrderDetails)
+                            {
+                                <tr style="font-size: 0.9em;">
+                                    <td>@detail.Product?.ProductName</td>
+                                    <td>@detail.ProductSize?.Size</td>
+                                    <td>@detail.Quantity</td>
+                                    <td>@detail.UnitPrice.ToString("N0") đ</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+    </div>
+}

@@ -1,0 +1,67 @@
+@model start.Models.Order
+
+<div>
+    <h4>Thông tin Khách hàng</h4>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <th style="width: 150px;">Tên khách hàng</th>
+                <td>@Model.Customer?.Name</td>
+            </tr>
+            <tr>
+                <th>Email</th>
+                <td>@Model.Customer?.Email</td>
+            </tr>
+            <tr>
+                <th>Số điện thoại</th>
+                <td>@Model.ReceiverPhone</td>
+            </tr>
+            <tr>
+                <th>Địa chỉ giao hàng</th>
+                <td>@Model.Address, @Model.DetailAddress</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h4 class="mt-4">Chi tiết Đơn hàng</h4>
+    <table class="table table-sm table-striped">
+        <thead class="table-light">
+            <tr>
+                <th>Sản phẩm</th>
+                <th>Size</th>
+                <th class="text-center">Số lượng</th>
+                <th class="text-end">Đơn giá</th>
+                <th class="text-end">Thành tiền</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var detail in Model.OrderDetails)
+            {
+                <tr>
+                    <td>@detail.Product?.ProductName</td>
+                    <td>@detail.ProductSize?.Size</td>
+                    <td class="text-center">@detail.Quantity</td>
+                    <td class="text-end">@detail.UnitPrice.ToString("N0") đ</td>
+                    <td class="text-end">@((detail.Quantity * detail.UnitPrice).ToString("N0")) đ</td>
+                </tr>
+            }
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="4" class="text-end fw-bold">Phí vận chuyển</td>
+                <td class="text-end fw-bold">@Model.ShippingFee.ToString("N0") đ</td>
+            </tr>
+            @if (!string.IsNullOrEmpty(Model.PromoCode))
+            {
+                <tr>
+                    <td colspan="4" class="text-end fw-bold">Giảm giá (@Model.PromoCode)</td>
+                    <td class="text-end fw-bold text-danger">- @Model.PromoCode đ</td>
+                </tr>
+            }
+            <tr class="table-primary">
+                <td colspan="4" class="text-end fw-bold fs-5">TỔNG CỘNG</td>
+                <td class="text-end fw-bold fs-5">@Model.Total.ToString("N0") đ</td>
+            </tr>
+        </tfoot>
+    </table>
+</div>

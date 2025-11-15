@@ -253,16 +253,38 @@ document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('.btn-wishlist').forEach(btn => {
         btn.addEventListener('click', function () {
             const productId = this.dataset.id;
+            
+            if (!productId) {
+                console.error('ProductId is missing');
+                return;
+            }
+            
             fetch('/Wishlist/Toggle', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ productId: productId })
-            }).then(res => res.json())
-              .then(data => {
-                  if (data && data.success === true) {
-                      setWishlistStateFor(productId, data.isWishlisted);
-                  }
-              });
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                },
+                body: JSON.stringify({ productId: parseInt(productId) })
+            })
+            .then(res => {
+                if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+                return res.json();
+            })
+            .then(data => {
+                if (data && data.success === true) {
+                    setWishlistStateFor(productId, data.isWishlisted);
+                } else if (data && data.error) {
+                    console.error('Wishlist error:', data.error);
+                    alert(data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Wishlist toggle error:', error);
+                alert('Có lỗi xảy ra khi thao tác với wishlist. Vui lòng thử lại.');
+            });
         });
     });
 });

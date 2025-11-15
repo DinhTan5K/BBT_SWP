@@ -640,7 +640,7 @@ namespace start.Controllers
                 foreach (var oldContract in activeContracts)
                 {
                     oldContract.Status = "Hết hạn";
-                    oldContract.UpdatedAt = DateTime.UtcNow;
+                    oldContract.UpdatedAt = DateTime.Now;
                 }
 
                 // Tạo contract mới
@@ -654,7 +654,7 @@ namespace start.Controllers
                     PaymentType = paymentType.Trim(),
                     BaseRate = baseRate,
                     Status = status.Trim(),
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = DateTime.Now
                 };
 
                 _db.Contracts.Add(contract);
@@ -1635,6 +1635,7 @@ namespace start.Controllers
                     .ThenInclude(e => e.Branch)  // Load chi nhánh hiện tại của nhân viên
                 .Include(ebr => ebr.Branch)  // Load chi nhánh đích
                 .AsQueryable();
+               
 
             // Query ProductRequests
             var productQuery = _db.ProductRequests
@@ -1946,14 +1947,14 @@ namespace start.Controllers
                     .Include(pr => pr.RequestedByEmployee)
                     .Include(pr => pr.ReviewedByEmployee)
                     .Include(pr => pr.Product)
-                    .Include(pr => pr.Category)
-                    .FirstOrDefault(pr => pr.Id == id);
-
+                    .ThenInclude(p => p.Category)
+                    .FirstOrDefault(pr => pr.Id == id);           
                 if (request == null)
                     return NotFound();
 
                 ViewBag.RequestType = "Product";
                 ViewBag.ActiveMenu = "Approvals";
+                 
                 return View("ViewProductApproval", request);
             }
             else if (type == "category")
@@ -1979,14 +1980,26 @@ namespace start.Controllers
                     .Include(br => br.RequestedByEmployee)
                     .Include(br => br.ReviewedByEmployee)
                     .Include(br => br.Branch)
+                        .ThenInclude(b => b.Region)
                     .Include(br => br.Region)
                     .FirstOrDefault(br => br.Id == id);
 
                 if (request == null)
                     return NotFound();
 
+                // Tính số nhân viên và đơn hàng liên quan (nếu là Edit hoặc Delete)
+                int employeeCount = 0;
+                int orderCount = 0;
+                if (request.BranchId.HasValue && request.Branch != null)
+                {
+                    employeeCount = _db.Employees.Count(e => e.BranchID == request.BranchId && e.IsActive);
+                    orderCount = _db.Orders.Count(o => o.BranchID == request.BranchId);
+                }
+
                 ViewBag.RequestType = "Branch";
                 ViewBag.ActiveMenu = "Approvals";
+                ViewBag.EmployeeCount = employeeCount;
+                ViewBag.OrderCount = orderCount;
                 return View("ViewBranchApproval", request);
             }
             else
@@ -2029,7 +2042,7 @@ namespace start.Controllers
             {
                 request.Status = RequestStatus.Approved;
                 request.ReviewedBy = CurrentEmpId;
-                request.ReviewedAt = DateTime.UtcNow;
+                request.ReviewedAt = DateTime.Now;
 
                 // Thực hiện hành động dựa trên RequestType
                 if (request.RequestType == RequestType.Add)
@@ -2108,7 +2121,7 @@ namespace start.Controllers
             {
                 request.Status = RequestStatus.Rejected;
                 request.ReviewedBy = CurrentEmpId;
-                request.ReviewedAt = DateTime.UtcNow;
+                request.ReviewedAt = DateTime.Now;
                 request.RejectionReason = rejectionReason?.Trim();
 
                 await _db.SaveChangesAsync();
@@ -2144,7 +2157,7 @@ namespace start.Controllers
             {
                 request.Status = RequestStatus.Approved;
                 request.ReviewedBy = CurrentEmpId;
-                request.ReviewedAt = DateTime.UtcNow;
+                request.ReviewedAt = DateTime.Now;
 
                 // Thực hiện hành động dựa trên RequestType
                 if (request.RequestType == RequestType.Add)
@@ -2216,7 +2229,7 @@ namespace start.Controllers
             {
                 request.Status = RequestStatus.Rejected;
                 request.ReviewedBy = CurrentEmpId;
-                request.ReviewedAt = DateTime.UtcNow;
+                request.ReviewedAt = DateTime.Now;
                 request.RejectionReason = rejectionReason?.Trim();
 
                 await _db.SaveChangesAsync();
@@ -2305,22 +2318,32 @@ namespace start.Controllers
                             return Json(new { success = false, message = "Số điện thoại đã tồn tại trong hệ thống" });
                         }
 
-                        // Tạo EmployeeID mới (E + số thứ tự)
-                        var lastEmployee = await _db.Employees
-                            .Where(e => e.EmployeeID != null && e.EmployeeID.StartsWith("E"))
-                            .OrderByDescending(e => e.EmployeeID)
-                            .FirstOrDefaultAsync();
+                        // Tạo EmployeeID mới (EM + số thứ tự) - Format: EM001, EM002, ...
+                        // Lấy tất cả EmployeeID bắt đầu bằng "EM" và có format EM### (5 ký tự: EM + 3 chữ số)
+                        var allEMEmployees = await _db.Employees
+                            .Where(e => e.EmployeeID != null && e.EmployeeID.StartsWith("EM") && e.EmployeeID.Length == 5)
+                            .Select(e => e.EmployeeID)
+                            .ToListAsync();
 
                         string newEmployeeId;
-                        if (lastEmployee != null && !string.IsNullOrEmpty(lastEmployee.EmployeeID))
+                        int maxNumber = 0;
+                        
+                        foreach (var empId in allEMEmployees)
                         {
-                            var lastNumber = int.Parse(lastEmployee.EmployeeID.Substring(1));
-                            newEmployeeId = $"E{(lastNumber + 1):D3}";
+                            if (empId != null && empId.Length >= 3)
+                            {
+                                var numberPart = empId.Substring(2); // Bỏ qua "EM", lấy phần số
+                                if (int.TryParse(numberPart, out int number))
+                                {
+                                    if (number > maxNumber)
+                                    {
+                                        maxNumber = number;
+                                    }
+                                }
+                            }
                         }
-                        else
-                        {
-                            newEmployeeId = "E001";
-                        }
+
+                        newEmployeeId = $"EM{(maxNumber + 1):D3}";
 
                         // Tạo nhân viên mới
                         var newEmployee = new Employee
@@ -2336,11 +2359,11 @@ namespace start.Controllers
                             Ethnicity = request.Ethnicity ?? "Kinh",
                             EmergencyPhone1 = request.EmergencyPhone1,
                             EmergencyPhone2 = request.EmergencyPhone2,
-                            RoleID = request.RoleID ?? "EM", // Mặc định là EM
+                            RoleID = "EM", // Branch Manager chỉ có thể tạo nhân viên EM
                             BranchID = request.BranchId.Value,
                             Password = _authService.HashPassword("1234567"), // Mật khẩu mặc định (đã hash)
                             IsHashed = true,
-                            HireDate = DateTime.UtcNow,
+                            HireDate = DateTime.Now,
                             IsActive = true,
                             AvatarUrl = "https://res.cloudinary.com/do48qpmut/image/upload/v1761645429/uploads/tdppvgyas8bhvfs7lton.png" // Avatar mặc định
                         };
@@ -2396,7 +2419,7 @@ namespace start.Controllers
                 // Đảm bảo chỉ approve khi thực sự đã thêm/chuyển/xóa nhân viên thành công
                 request.Status = RequestStatus.Approved;
                 request.ReviewedBy = CurrentEmpId;
-                request.ReviewedAt = DateTime.UtcNow;
+                request.ReviewedAt = DateTime.Now;
 
                 await _db.SaveChangesAsync();
                 return Json(new { success = true, message = "Đã duyệt yêu cầu thành công!" });
@@ -2426,7 +2449,7 @@ namespace start.Controllers
             {
                 request.Status = RequestStatus.Rejected;
                 request.ReviewedBy = CurrentEmpId;
-                request.ReviewedAt = DateTime.UtcNow;
+                request.ReviewedAt = DateTime.Now;
                 request.RejectionReason = rejectionReason?.Trim();
 
                 await _db.SaveChangesAsync();
@@ -2462,7 +2485,7 @@ namespace start.Controllers
             {
                 request.Status = RequestStatus.Approved;
                 request.ReviewedBy = CurrentEmpId;
-                request.ReviewedAt = DateTime.UtcNow;
+                request.ReviewedAt = DateTime.Now;
 
                 // Thực hiện hành động dựa trên RequestType
                 if (request.RequestType == RequestType.Add)
@@ -2606,7 +2629,7 @@ namespace start.Controllers
             {
                 request.Status = RequestStatus.Rejected;
                 request.ReviewedBy = CurrentEmpId;
-                request.ReviewedAt = DateTime.UtcNow;
+                request.ReviewedAt = DateTime.Now;
                 request.RejectionReason = rejectionReason?.Trim();
 
                 await _db.SaveChangesAsync();
@@ -2640,7 +2663,7 @@ namespace start.Controllers
             {
                 request.Status = RequestStatus.Approved;
                 request.ReviewedBy = CurrentEmpId;
-                request.ReviewedAt = DateTime.UtcNow;
+                request.ReviewedAt = DateTime.Now;
 
                 // Thực hiện hành động dựa trên RequestType
                 if (request.RequestType == RequestType.Add)
@@ -2711,7 +2734,7 @@ namespace start.Controllers
 
             request.Status = RequestStatus.Rejected;
             request.ReviewedBy = CurrentEmpId;
-            request.ReviewedAt = DateTime.UtcNow;
+            request.ReviewedAt = DateTime.Now;
             request.RejectionReason = rejectionReason?.Trim();
 
             await _db.SaveChangesAsync();
@@ -2741,35 +2764,50 @@ namespace start.Controllers
             {
                 request.Status = RequestStatus.Approved;
                 request.ReviewedBy = CurrentEmpId;
-                request.ReviewedAt = DateTime.UtcNow;
+                request.ReviewedAt = DateTime.Now;
 
                 // Thực hiện hành động dựa trên RequestType
                 if (request.RequestType == RequestType.Add)
                 {
-                    // Kiểm tra tên branch không trùng trong cùng region
+                    // Kiểm tra tên branch không trùng trong cùng region (case-insensitive)
                     var existingBranch = await _db.Branches
-                        .FirstOrDefaultAsync(b => b.Name == request.Name && b.RegionID == request.RegionID);
+                        .FirstOrDefaultAsync(b => b.Name != null && 
+                                                 b.Name.Trim().ToLowerInvariant() == request.Name.Trim().ToLowerInvariant() && 
+                                                 b.RegionID == request.RegionID);
 
                     if (existingBranch != null)
                     {
-                        return Json(new { success = false, message = $"Đã tồn tại chi nhánh \"{request.Name}\" trong region này" });
+                        return Json(new { success = false, message = $"Đã tồn tại chi nhánh \"{request.Name}\" trong khu vực này" });
+                    }
+
+                    // Kiểm tra duplicate phone number (nếu có phone)
+                    if (!string.IsNullOrWhiteSpace(request.Phone))
+                    {
+                        var phone = request.Phone.Trim();
+                        var existingPhone = await _db.Branches
+                            .FirstOrDefaultAsync(b => b.Phone != null && b.Phone.Trim() == phone);
+
+                        if (existingPhone != null)
+                        {
+                            return Json(new { success = false, message = $"Số điện thoại \"{phone}\" đã được sử dụng bởi chi nhánh khác" });
+                        }
                     }
 
                     // Kiểm tra RegionID tồn tại
                     var region = await _db.Regions.FindAsync(request.RegionID);
                     if (region == null)
                     {
-                        return Json(new { success = false, message = "Region không tồn tại" });
+                        return Json(new { success = false, message = "Khu vực không tồn tại" });
                     }
 
                     // Tạo Branch mới
                     var branch = new Branch
                     {
-                        Name = request.Name,
-                        Address = request.Address,
-                        Phone = request.Phone,
+                        Name = request.Name.Trim(),
+                        Address = request.Address?.Trim(),
+                        Phone = request.Phone?.Trim(),
                         RegionID = request.RegionID,
-                        City = request.City,
+                        City = request.City?.Trim(),
                         Latitude = request.Latitude ?? 0,
                         Longitude = request.Longitude ?? 0
                     };
@@ -2788,23 +2826,43 @@ namespace start.Controllers
                             return Json(new { success = false, message = "Chi nhánh không tồn tại" });
                         }
 
-                        // Kiểm tra tên branch không trùng với branch khác trong cùng region
+                        // Kiểm tra tên branch không trùng với branch khác trong cùng region (case-insensitive)
+                        var branchName = request.Name?.Trim() ?? "";
                         var existingBranch = await _db.Branches
-                            .FirstOrDefaultAsync(b => b.Name == request.Name &&
+                            .FirstOrDefaultAsync(b => b.Name != null &&
+                                                     b.Name.Trim().ToLowerInvariant() == branchName.ToLowerInvariant() &&
                                                      b.RegionID == request.RegionID &&
                                                      b.BranchID != request.BranchId.Value);
 
                         if (existingBranch != null)
                         {
-                            return Json(new { success = false, message = $"Đã tồn tại chi nhánh \"{request.Name}\" trong region này" });
+                            return Json(new { success = false, message = $"Đã tồn tại chi nhánh \"{branchName}\" trong khu vực này" });
+                        }
+
+                        // Kiểm tra duplicate phone number (nếu phone mới khác phone cũ)
+                        if (!string.IsNullOrWhiteSpace(request.Phone))
+                        {
+                            var phone = request.Phone.Trim();
+                            if (branch.Phone?.Trim() != phone)
+                            {
+                                var existingPhone = await _db.Branches
+                                    .FirstOrDefaultAsync(b => b.BranchID != request.BranchId.Value &&
+                                                             b.Phone != null &&
+                                                             b.Phone.Trim() == phone);
+
+                                if (existingPhone != null)
+                                {
+                                    return Json(new { success = false, message = $"Số điện thoại \"{phone}\" đã được sử dụng bởi chi nhánh khác" });
+                                }
+                            }
                         }
 
                         // Cập nhật thông tin
-                        branch.Name = request.Name;
-                        branch.Address = request.Address;
-                        branch.Phone = request.Phone;
+                        branch.Name = branchName;
+                        branch.Address = request.Address?.Trim();
+                        branch.Phone = request.Phone?.Trim();
                         branch.RegionID = request.RegionID;
-                        branch.City = request.City;
+                        branch.City = request.City?.Trim();
                         if (request.Latitude.HasValue) branch.Latitude = request.Latitude.Value;
                         if (request.Longitude.HasValue) branch.Longitude = request.Longitude.Value;
                     }
@@ -2881,7 +2939,7 @@ namespace start.Controllers
             {
                 request.Status = RequestStatus.Rejected;
                 request.ReviewedBy = CurrentEmpId;
-                request.ReviewedAt = DateTime.UtcNow;
+                request.ReviewedAt = DateTime.Now;
                 request.RejectionReason = rejectionReason?.Trim();
 
                 await _db.SaveChangesAsync();
@@ -3210,7 +3268,7 @@ namespace start.Controllers
                     TargetEmployeeName = targetEmployeeName,
                     Description = description,
                     EntityType = entityType,
-                    CreatedAt = DateTime.UtcNow,
+                    CreatedAt = DateTime.Now,
                     IpAddress = ipAddress
                 };
 
@@ -3371,7 +3429,7 @@ namespace start.Controllers
                     RegionID = regionId.Value, // RM quản lý vùng
                     Password = _authService.HashPassword("1234567"), // Mật khẩu mặc định
                     IsHashed = true,
-                    HireDate = DateTime.UtcNow,
+                    HireDate = DateTime.Now,
                     IsActive = true,
                     AvatarUrl = "https://res.cloudinary.com/do48qpmut/image/upload/v1761645429/uploads/tdppvgyas8bhvfs7lton.png"
                 };
@@ -3728,7 +3786,7 @@ namespace start.Controllers
                     RegionID = null, // MK không gắn với vùng cụ thể
                     Password = _authService.HashPassword("1234567"), // Mật khẩu mặc định
                     IsHashed = true,
-                    HireDate = DateTime.UtcNow,
+                    HireDate = DateTime.Now,
                     IsActive = true,
                     AvatarUrl = "https://res.cloudinary.com/do48qpmut/image/upload/v1761645429/uploads/tdppvgyas8bhvfs7lton.png"
                 };

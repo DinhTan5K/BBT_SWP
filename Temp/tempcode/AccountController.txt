@@ -341,49 +341,82 @@ public class AccountController : Controller
     //Login
 
     [HttpGet]
-    public IActionResult Login()
-    {
-        return View();
-    }
+    public IActionResult Login() => View();
 
     //change passord
 
     [HttpPost]
-    public IActionResult Login(string loginId, string password)
+    public async Task<IActionResult> Login(string loginId, string password)
     {
-        Console.WriteLine($"LoginId: {loginId}");
-        Console.WriteLine($"Password: {password}");
-
         if (string.IsNullOrWhiteSpace(loginId) || string.IsNullOrWhiteSpace(password))
-        {   
-            ModelState.AddModelError("LoginError", "Vui lòng nhập Email/Username và mật khẩu");
-            return View();
-        }
-
-        var hashedPassword = HashPassword(password);
-
-
-        var user = _context.Customers
-            .FirstOrDefault(c =>
-                (c.Email == loginId || c.Username == loginId) &&
-                c.Password == hashedPassword);
-
-        if (user == null)
         {
-            ModelState.AddModelError("ErrorAccount", "Sai Email/Username hoặc mật khẩu");
+            ModelState.AddModelError("", "Vui lòng nhập Email/Username và mật khẩu");
             return View();
         }
 
-        if (!user.IsEmailConfirmed)
+        try
         {
-            ModelState.AddModelError("", "Email chưa được xác thực. Vui lòng kiểm tra Gmail.");
+            // 1. Thử đăng nhập với tư cách Employee
+            var emp = _authService.LoginEmployee(loginId, password);
+            if (emp != null)
+            {
+                // Lưu thông tin chung vào Session
+                HttpContext.Session.SetString("EmployeeID", emp.EmployeeID);
+                HttpContext.Session.SetString("EmployeeName", emp.FullName ?? "");
+                HttpContext.Session.SetString("RoleID", emp.RoleID ?? "EM"); // Dùng RoleID cho nhất quán
+                HttpContext.Session.SetString("AvatarUrl", emp.AvatarUrl ?? "/images/default-avatar.png");
+
+                if (emp.BranchID.HasValue)
+                    HttpContext.Session.SetString("BranchId", emp.BranchID.Value.ToString());
+
+                // Chuyển hướng dựa trên vai trò
+                switch (emp.RoleID?.ToUpperInvariant())
+                {
+                    case "AD":
+                    case "EM":
+                    case "SL":
+                    case "SP": // Shipper
+                        return RedirectToAction("Profile", "Employee");
+                    case "BM":
+                        return RedirectToAction("Index", "BManager");
+                    case "RM":
+                        if (emp.RegionID.HasValue)
+                        {
+                            var region = await _context.Regions.FindAsync(emp.RegionID.Value);
+                            HttpContext.Session.SetInt32("RegionID", emp.RegionID.Value);
+                            HttpContext.Session.SetString("RegionName", region?.RegionName ?? "Chưa có vùng");
+                        }
+                        else
+                        {
+                            // Fallback nếu RM chưa được gán vùng
+                            HttpContext.Session.SetInt32("RegionID", 0);
+                            HttpContext.Session.SetString("RegionName", "Chưa được gán");
+                        }
+                        return RedirectToAction("RegionHome", "Region");
+                    default:
+                        return RedirectToAction("Profile", "Employee"); // Fallback
+                }
+            }
+
+            // 2. Nếu không phải Employee, thử Customer
+            var customer = _authService.LoginCustomer(loginId, password);
+            if (customer != null)
+            {
+                HttpContext.Session.SetInt32("CustomerID", customer.CustomerID);
+                HttpContext.Session.SetString("CustomerName", customer.Name ?? "");
+                HttpContext.Session.SetString("Role", "Customer"); // Phân biệt với Employee
+                return RedirectToAction("Index", "Home");
+            }
+
+            // 3. Sai thông tin
+            ModelState.AddModelError("", "Sai Email/Username hoặc mật khẩu");
             return View();
         }
-
-        HttpContext.Session.SetInt32("CustomerID", user.CustomerID);
-        HttpContext.Session.SetString("CustomerName", user.Name ?? "");
-
-        return RedirectToAction("Index", "Home");
+        catch (Exception ex)
+        {
+            ModelState.AddModelError("", "Đã có lỗi xảy ra: " + ex.Message);
+            return View();
+        }
     }
 
 

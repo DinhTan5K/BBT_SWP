@@ -71,25 +71,63 @@ public class EmployeeProfileService : IEmployeeProfileService
 
     public async Task<bool> UploadAvatar(string employeeId, IFormFile avatar)
     {
-        if (avatar == null || avatar.Length == 0) return false;
+        if (avatar == null || avatar.Length == 0) 
+        {
+            System.Diagnostics.Debug.WriteLine($"[UploadAvatar] Avatar file is null or empty for employee: {employeeId}");
+            return false;
+        }
 
         var e = _db.Employees.FirstOrDefault(x => x.EmployeeID == employeeId);
-        if (e == null) return false;
-
-        // Upload lên Cloudinary
-        var cloudinaryUrl = await _cloudinaryService.UploadImageAsync(avatar, "uploads/avatars");
-        
-        if (string.IsNullOrEmpty(cloudinaryUrl))
+        if (e == null) 
+        {
+            System.Diagnostics.Debug.WriteLine($"[UploadAvatar] Employee not found: {employeeId}");
             return false;
+        }
 
-        // Xóa avatar cũ trên Cloudinary nếu có (nếu là URL Cloudinary)
-        // Note: Có thể cải thiện thêm bằng cách lưu public_id để xóa chính xác hơn
-        // Hiện tại chỉ update URL mới, không xóa ảnh cũ để tránh lỗi
+        // Validate file size (max 10MB)
+        const long maxFileSize = 10 * 1024 * 1024; // 10MB
+        if (avatar.Length > maxFileSize)
+        {
+            System.Diagnostics.Debug.WriteLine($"[UploadAvatar] File size {avatar.Length} exceeds maximum {maxFileSize} for employee: {employeeId}");
+            return false;
+        }
 
-        // Update DB với URL từ Cloudinary
-        e.AvatarUrl = cloudinaryUrl;
-        _db.SaveChanges();
-        return true;
+        // Validate file type
+        var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+        var fileExtension = System.IO.Path.GetExtension(avatar.FileName)?.ToLowerInvariant();
+        if (string.IsNullOrEmpty(fileExtension) || !allowedExtensions.Contains(fileExtension))
+        {
+            System.Diagnostics.Debug.WriteLine($"[UploadAvatar] Invalid file extension: {fileExtension} for employee: {employeeId}");
+            return false;
+        }
+
+        try
+        {
+            // Upload lên Cloudinary
+            var cloudinaryUrl = await _cloudinaryService.UploadImageAsync(avatar, "uploads/avatars");
+            
+            if (string.IsNullOrEmpty(cloudinaryUrl))
+            {
+                System.Diagnostics.Debug.WriteLine($"[UploadAvatar] Cloudinary upload failed for employee: {employeeId}");
+                return false;
+            }
+
+            System.Diagnostics.Debug.WriteLine($"[UploadAvatar] Cloudinary upload successful for employee: {employeeId}, URL: {cloudinaryUrl}");
+
+            // Update DB với URL từ Cloudinary
+            e.AvatarUrl = cloudinaryUrl;
+            var saveResult = _db.SaveChanges();
+            
+            System.Diagnostics.Debug.WriteLine($"[UploadAvatar] Database update result: {saveResult} rows affected for employee: {employeeId}");
+            
+            return saveResult > 0;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[UploadAvatar] Exception occurred for employee: {employeeId}, Error: {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"[UploadAvatar] Stack trace: {ex.StackTrace}");
+            return false;
+        }
     }
     
     

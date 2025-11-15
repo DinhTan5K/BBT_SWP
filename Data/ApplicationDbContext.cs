@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using start.Models;
 using start.Models.System;
 
@@ -17,6 +18,7 @@ namespace start.Data
 
         public DbSet<Branch> Branches { get; set; }
         public DbSet<Region> Regions { get; set; }
+       
         public DbSet<Cart> Carts { get; set; }
         public DbSet<CartDetail> CartDetails { get; set; }
 
@@ -43,12 +45,38 @@ namespace start.Data
         public DbSet<DayOffRequest> DayOffRequests => Set<DayOffRequest>();
         public DbSet<ProductCategory> ProductCategories { get; set; }
         public DbSet<News> News { get; set; }
+        
         public DbSet<Wishlist> Wishlist { get; set; }
         public DbSet<ProductReview> ProductReviews { get; set; }
         public DbSet<ChatHistory> ChatHistories { get; set; }
+        public DbSet<ShiftReport> ShiftReports { get; set; }
         public DbSet<AuditLog> AuditLogs { get; set; }
         public DbSet<MarketingKPI> MarketingKPIs { get; set; }
         public DbSet<AdminSecurity> AdminSecurities { get; set; }
 
+        public DbSet<Attendance> Attendances { get; set; }
+        
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+
+            // Unique constraint: Branch Name trong cùng Region (case-insensitive)
+            // Note: SQL Server không hỗ trợ case-insensitive unique constraint trực tiếp,
+            // nên chúng ta sẽ validate trong code thay vì database constraint
+            // Tuy nhiên, có thể thêm index để tăng performance
+            modelBuilder.Entity<Branch>()
+                .HasIndex(b => new { b.RegionID, b.Name })
+                .HasDatabaseName("IX_Branch_RegionID_Name");
+
+            // Unique constraint: Branch Phone (nếu có)
+            // Chỉ áp dụng cho phone không null
+            modelBuilder.Entity<Branch>()
+                .HasIndex(b => b.Phone)
+                .HasDatabaseName("IX_Branch_Phone")
+                .IsUnique()
+                .HasFilter("[Phone] IS NOT NULL");
+
+            // Employee đã có unique constraints trong model (PhoneNumber, Email)
+        }
     }
 }

@@ -1,8 +1,15 @@
 @model start.Models.Employee
+@using System.Security.Claims
 @{
-    // Kiểm tra role để dùng layout phù hợp
-    var role = (Model?.RoleID ?? "").Trim().ToUpperInvariant();
+    // Kiểm tra role để dùng layout phù hợp - GIỐNG EditProfile
+    var roleFromViewBag = ViewBag.CurrentRole as string;
+    var roleFromClaims = User?.FindFirst("Role")?.Value ?? User?.FindFirst("RoleID")?.Value;
+    var roleFromEmployee = Model?.RoleID;
     
+    var roleRaw = roleFromViewBag ?? roleFromClaims ?? roleFromEmployee;
+    var role = !string.IsNullOrWhiteSpace(roleRaw) ? roleRaw.Trim().ToUpperInvariant() : "";
+    
+    // Chọn layout dựa trên role
     if (role == "MK")
     {
         Layout = "~/Views/Shared/_MarketingLayout.cshtml";
@@ -11,90 +18,73 @@
     {
         Layout = "~/Views/Shared/_EmployeeLayout.cshtml";
     }
+    
+    ViewBag.ActiveMenu = "Profile";           // để sidebar highlight
+    ViewData["Title"] = "Hồ sơ nhân viên";    // tiêu đề tab trình duyệt
 
     var avatar = !string.IsNullOrWhiteSpace(Model.AvatarUrl)
-         ? Url.Content(Model.AvatarUrl) 
-        : Url.Content("https://res.cloudinary.com/do48qpmut/image/upload/v1761645429/uploads/tdppvgyas8bhvfs7lton.png");
+        ? Model.AvatarUrl
+        : "https://res.cloudinary.com/do48qpmut/image/upload/v1761645429/uploads/tdppvgyas8bhvfs7lton.png";
 
     string roleText = (Model.RoleID == "AD" ? "Quản trị"
                        : Model.RoleID == "SL" ? "Trưởng ca"
                        : Model.RoleID == "BM" ? "Quản lý chi nhánh"
                        : Model.RoleID == "RM" ? "Quản lý vùng"
                        : Model.RoleID == "MK" ? "Marketing"
+                       :Model.RoleID == "SP" ? "Shipper"
                        : "Nhân viên");
-
-    ViewBag.ActiveMenu = "Profile";
 }
 
 @section Styles {
-    <link rel="stylesheet" href='@Url.Content("~/css/employee/profile.css")' />
+    <link rel="stylesheet" href="~/css/employee/profile.css" />
 }
 
-<div class="wrap">
-  <section class="card">
-    <div class="profile-head">
-          <div class="avatar"><img src="@avatar" alt="avatar"></div>
-          <div>
-            <h3 class="name">@Model.FullName</h3>
-            <div class="position">@((Model.RoleID=="AD")?"Quản trị":(Model.RoleID=="EM"?"Nhân viên":Model.RoleID))</div>
+<div class="profile-head">
+    <div class="avatar"><img src="@avatar" alt="avatar"></div>
+    <div>
+        <h3 class="name">@Model.FullName</h3>
+        <div class="position">@roleText</div>
 
-            <div class="grid-mini">
-              <div class="kv"><div class="k">Mã nhân viên</div><div>@Model.EmployeeID</div></div>
-              @* <div class="kv"><div class="k">Điện thoại di động</div><div>@Model.PhoneNumber</div></div>
-              <div class="kv"><div class="k">Email công việc</div><div>@Model.Email</div></div> *@
-              <div class="kv"><div class="k">Cấp bậc</div><div>@roleText</div></div>
-              <div class="kv">
-  <div class="k">Chi nhánh</div>
-  <div>@(Model.Branch?.Name ?? ("#" + (Model.BranchID?.ToString() ?? "N/A")))</div>
-</div>
-              <div class="kv"><div class="k">Địa chỉ chi nhánh</div><div>@Model.Branch?.Address</div></div>
-              <div class="kv"><div class="k">Ngày vào làm</div><div>@Model.HireDate.ToString("yyyy-MM-dd")</div></div>
-
-
-            </div>
-          </div>
+        <div class="grid-mini">
+            <div class="kv"><div class="k">Mã nhân viên</div><div>@Model.EmployeeID</div></div>
+            <div class="kv"><div class="k">Chi nhánh</div><div>@(Model.Branch?.Name ?? "N/A")</div></div>
+            <div class="kv"><div class="k">Địa chỉ chi nhánh</div><div>@Model.Branch?.Address</div></div>
+            <div class="kv"><div class="k">Ngày vào làm</div><div>@Model.HireDate.ToString("yyyy-MM-dd")</div></div>
         </div>
-
-        <nav class="tabs">
-  <a class="tab" href='@Url.Action("Profile","Employee")'>Thông tin cá nhân</a>
-  <a class="tab"
-     href='@Url.Action("Contract","Employee", new { id = Model.EmployeeID })'>Thông tin lao động</a>
-  <a class="tab" href='@Url.Action("Chat","Employee", new { id = Model.EmployeeID })'>Đoạn chat chung</a>
-  <a class="tab" href='@Url.Action("Salary","Employee", new { id = Model.EmployeeID })''>Thu nhập</a>
-</nav>
-        <div class="section">
-          <h3 class="section-title">THÔNG TIN CƠ BẢN</h3>
-          <table class="tbl">
-            <tr>
-              <th>Ngày sinh</th><td>@Model.DateOfBirth?.ToString("yyyy-MM-dd")</td>
-              <th>Quốc tịch</th><td>@Model.Nationality</td>
-            </tr>
-            <tr>
-              <th>Giới tính</th><td>@Model.Gender</td>
-              <th>Dân tộc</th><td>@Model.Ethnicity</td>
-            </tr>
-            @* <tr>
-              <th>Tình trạng hôn nhân</th><td></td>
-              <th>Tài khoản ngân hàng</th><td></td>
-            </tr> *@
-          </table>
-        </div>
-        <div class="section">
-          <h3 class="section-title">THÔNG TIN LIÊN HỆ</h3>
-          <table class="tbl">
-            <tr>
-              <th>Điện thoại di động</th><td>@Model.PhoneNumber</td>
-              <th>SĐT khẩn cấp 1</th><td>@Model.EmergencyPhone1 </td>
-            </tr>
-            @* <tr>
-              <th>Điện thoại bàn</th><td></td>
-              <th>Quan hệ SĐT #1</th><td></td>
-            </tr> *@
-            <tr>
-              <th>Email cá nhân</th><td>@Model.Email</td>
-              <th>SĐT khẩn cấp 2</th><td>@Model.EmergencyPhone2</td>
-            </tr>
-          </table>
     </div>
-  </section>
+</div>
+
+<nav class="tabs">
+    <a class="tab" href='@Url.Action("Profile","Employee")'>Thông tin cá nhân</a>
+    <a class="tab" href='@Url.Action("Contract","Employee", new { id = Model.EmployeeID })'>Thông tin lao động</a>
+    <a class="tab" href='@Url.Action("Chat","Employee", new { id = Model.EmployeeID })'>Đoạn chat chung</a>
+    <a class="tab" href='@Url.Action("Salary","Employee", new { id = Model.EmployeeID })'>Thu nhập</a>
+</nav>
+
+<div class="section">
+    <h3 class="section-title">THÔNG TIN CƠ BẢN</h3>
+    <table class="tbl">
+        <tr>
+            <th>Ngày sinh</th><td>@Model.DateOfBirth?.ToString("yyyy-MM-dd")</td>
+            <th>Quốc tịch</th><td>@Model.Nationality</td>
+        </tr>
+        <tr>
+            <th>Giới tính</th><td>@Model.Gender</td>
+            <th>Dân tộc</th><td>@Model.Ethnicity</td>
+        </tr>
+    </table>
+</div>
+
+<div class="section">
+    <h3 class="section-title">THÔNG TIN LIÊN HỆ</h3>
+    <table class="tbl">
+        <tr>
+            <th>Điện thoại di động</th><td>@Model.PhoneNumber</td>
+            <th>SĐT khẩn cấp 1</th><td>@Model.EmergencyPhone1 </td>
+        </tr>
+        <tr>
+            <th>Email cá nhân</th><td>@Model.Email</td>
+            <th>SĐT khẩn cấp 2</th><td>@Model.EmergencyPhone2</td>
+        </tr>
+    </table>
 </div>
