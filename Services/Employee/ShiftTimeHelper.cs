@@ -3,7 +3,7 @@ using System;
 public static class ShiftTimeHelper
 {
     // Định nghĩa giờ bắt đầu và kết thúc cho mỗi ca
-    private static readonly TimeSpan MorningShiftStart = new TimeSpan(7, 30, 0); // 7:30 AM
+    private static readonly TimeSpan MorningShiftStart = new TimeSpan(8, 0, 0); // 8:00 AM (changed from 7:30 AM)
     private static readonly TimeSpan MorningShiftEnd = new TimeSpan(15, 0, 0);   // 3:00 PM (15:00)
     private static readonly TimeSpan NightShiftStart = new TimeSpan(15, 0, 0);   // 3:00 PM (15:00)
     private static readonly TimeSpan NightShiftEnd = new TimeSpan(22, 0, 0);     // 10:00 PM (22:00)

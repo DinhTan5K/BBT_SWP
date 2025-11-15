@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: sqlserver
+    env: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./sqlserver/Dockerfile
+    disk:
+      name: sqldata
+      mountPath: /var/opt/mssql
+      sizeGB: 5
+    envVars:
+      - key: ACCEPT_EULA
+        value: "Y"
+      - key: SA_PASSWORD
+        value: "Check123!"
+      - key: MSSQL_PID
+        value: "Developer"
+      - key: PORT
+        value: "1433"
+    autoDeploy: true

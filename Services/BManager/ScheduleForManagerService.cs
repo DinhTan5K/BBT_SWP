@@ -85,11 +85,19 @@ namespace start.Services
             {
                 return (false, "❌ Bạn đã đăng ký ca này rồi.");
             }
+            
+            // Lấy thông tin nhân viên để xác định BranchId
+            var employee = await _context.Employees.FindAsync(schedule.EmployeeID);
+            if (employee == null || !employee.BranchID.HasValue)
+            {
+                return (false, "Không tìm thấy thông tin chi nhánh của nhân viên.");
+            }
 
             schedule.CheckInTime = null;
             schedule.CheckOutTime = null;
             schedule.IsActive = true;
             schedule.Status = "Chưa duyệt";
+            schedule.BranchId = employee.BranchID.Value; // Gán BranchId từ thông tin nhân viên
 
             _context.WorkSchedules.Add(schedule);
             await _context.SaveChangesAsync();
@@ -110,43 +118,37 @@ namespace start.Services
                 return (false, "Không thể xếp lịch cho ngày trong quá khứ.");
             }
 
-            //  3. CHỈ kiểm tra trùng lịch theo NHÂN VIÊN
-            // Một nhân viên chỉ được có 1 lịch duyệt trong cùng ngày và cùng ca
-            bool alreadyApproved = await _context.WorkSchedules
+            // 3. Kiểm tra xem nhân viên đã có lịch nào trong ngày và ca làm việc này chưa (bao gồm cả trạng thái chờ duyệt và đã duyệt)
+            bool scheduleExists = await _context.WorkSchedules
                 .AnyAsync(ws => ws.EmployeeID == schedule.EmployeeID &&
                                 ws.Date == schedule.Date.Date &&
-                                ws.Shift == schedule.Shift &&
-                                ws.Status == "Đã duyệt");
+                                ws.Shift == schedule.Shift);
 
-            if (alreadyApproved)
+            if (scheduleExists)
             {
-                return (false, "Nhân viên này đã có ca làm được duyệt trong ngày này.");
+                return (false, "Nhân viên này đã có ca làm trong ngày này.");
             }
 
-            //  4. Cho phép tạo cho nhân viên khác cùng ngày/ca (không cần kiểm tra branch-level trùng)
-            // Tự động xoá các yêu cầu chờ duyệt trùng (nếu có)
-            var pendingRequests = await _context.WorkSchedules
-                .Where(ws => ws.EmployeeID == schedule.EmployeeID &&
-                             ws.Date == schedule.Date.Date &&
-                             ws.Shift == schedule.Shift &&
-                             ws.Status == "Chưa duyệt")
-                .ToListAsync();
-
-            if (pendingRequests.Any())
-            {
-                _context.WorkSchedules.RemoveRange(pendingRequests);
-            }
-
-            //  5. Gán thông tin mặc định và lưu
+            // 4. Gán thông tin mặc định và lưu
             schedule.CheckInTime = null;
             schedule.CheckOutTime = null;
             schedule.IsActive = true;
             schedule.Status = "Đã duyệt"; // Quản lý tạo là duyệt luôn
+            schedule.BranchId = managerBranchId; // Gán BranchId từ manager
 
             _context.WorkSchedules.Add(schedule);
-            await _context.SaveChangesAsync();
-
-            return (true, "Xếp lịch thành công.");
+            
+            try
+            {
+                await _context.SaveChangesAsync();
+                return (true, "Xếp lịch thành công.");
+            }
+            catch (Exception ex)
+            {
+                // Log the exception for debugging purposes
+                Console.WriteLine($"Error saving schedule: {ex.Message}");
+                return (false, "Lỗi hệ thống khi lưu lịch làm việc.");
+            }
         }
 
         public async Task<WorkSchedule?> GetScheduleByIdAsync(int id)
@@ -270,9 +272,12 @@ namespace start.Services
                 return (false, "Bạn không có quyền duyệt lịch này.");
             }
 
+            // Kiểm tra xem nhân viên đã có ca làm được duyệt trong cùng ngày và cùng ca chưa
+            // Chỉ ngăn chặn nếu cùng ngày và cùng ca (Sáng/Tối), không ngăn nếu khác ca
             bool scheduleExists = await _context.WorkSchedules
                 .AnyAsync(ws => ws.EmployeeID == schedule.EmployeeID &&
                                ws.Date == schedule.Date &&
+                               ws.Shift == schedule.Shift &&  // Thêm điều kiện cùng ca
                                ws.Status == "Đã duyệt" &&
                                ws.WorkScheduleID != scheduleId);
             if (scheduleExists)

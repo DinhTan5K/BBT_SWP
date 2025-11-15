@@ -32,6 +32,7 @@
     <Folder Include="Repository\" />
     <Folder Include="Services\" />
     <Folder Include="Services\HumanResources\" />
+    <Folder Include="sqlserver\" />
     <Folder Include="Temp\" />
   </ItemGroup>
 

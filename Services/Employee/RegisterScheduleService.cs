@@ -49,7 +49,7 @@ namespace start.Services
             int daysUntilNextMonday = ((int)DayOfWeek.Monday - (int)today.DayOfWeek + 7) % 7;
             if (daysUntilNextMonday == 0) daysUntilNextMonday = 7; 
             var startOfNextWeek = today.AddDays(daysUntilNextMonday);
-            var endOfNextWeek = startOfNextWeek.AddDays(6); 
+            var endOfNextWeek = startOfNextWeek.AddDays(6);
 
             if (workDateOnly < startOfNextWeek || workDateOnly > endOfNextWeek)
             {
@@ -66,6 +66,13 @@ namespace start.Services
                 return (false, "Bạn đã đăng ký ca này rồi.");
             }
             
+            // Lấy thông tin nhân viên để xác định BranchId
+            var employee = await _context.Employees.FindAsync(employeeId);
+            if (employee == null || !employee.BranchID.HasValue)
+            {
+                return (false, "Không tìm thấy thông tin chi nhánh của nhân viên.");
+            }
+            
             // Tạo lịch mới
             var schedule = new WorkSchedule
             {
@@ -74,6 +81,7 @@ namespace start.Services
                 Shift = request.ShiftType,
                 Status = "Chưa duyệt", // Mọi đăng ký mới đều là "Chưa duyệt"
                 IsActive = true,
+                BranchId = employee.BranchID.Value // Gán BranchId từ thông tin nhân viên
                 // CheckInTime = null,
                 // CheckOutTime = null
             };

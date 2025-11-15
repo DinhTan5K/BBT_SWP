@@ -160,25 +160,75 @@ html, body {
     transition: margin-left 0.3s ease;
 }
 
-/* Loại bỏ khoảng trống thừa ở đầu main-content và card đầu tiên */
+/* Fix for extra spacing at the top of the revenue report */
 .main-content > .card:first-child {
     margin-top: 0 !important;
-    padding-top: 1rem !important;
+    padding-top: 15px !important; /* Add some breathing room at the top */
 }
 
 .main-content > .card:first-child.show {
     margin-top: 0 !important;
-    padding-top: 1rem !important;
+    padding-top: 15px !important; /* Add some breathing room at the top */
 }
 
-/* Đảm bảo phần tử đầu tiên trong card đầu tiên không có margin-top */
+/* Ensure first element in card doesn't have extra margin */
 .main-content > .card:first-child > *:first-child {
     margin-top: 0 !important;
 }
 
-/* Đảm bảo header div trong card đầu tiên không có margin-top */
+/* Ensure header div in card doesn't have extra margin */
 .main-content > .card:first-child > div:first-child {
     margin-top: 0 !important;
+}
+
+/* Special fix for revenue card header */
+#revenueCard > div:first-child {
+    margin-top: 0 !important;
+}
+
+/* Add appropriate spacing for revenue card header section */
+#revenueCard > div:first-child[style*="background: linear-gradient"] {
+    margin: 0 0 1rem 0 !important; /* Reduced from 2rem to 1rem */
+}
+
+/* Ensure revenue summary section has proper top spacing */
+.revenue-summary {
+    margin-top: 10px !important; /* Reduced from 15px */
+}
+
+/* Fix for all cards to have consistent top spacing */
+.card {
+    margin-top: 0 !important;
+}
+
+.card.show {
+    margin-top: 0 !important;
+}
+
+/* Add padding back to other cards except revenue card */
+#ordersCard, #inProgressCard, #employeesCard {
+    padding: 2rem !important;
+}
+
+/* Specifically target the revenue card to remove extra top spacing */
+#revenueCard {
+    margin-top: 0 !important;
+    padding: 0 !important; /* Remove all padding */
+}
+
+/* Remove margin from the first child div in revenue card */
+#revenueCard > div:first-child {
+    margin-top: 0 !important;
+}
+
+/* Add appropriate spacing for revenue card header section */
+#revenueCard > div:first-child[style*="background: linear-gradient"] {
+    margin: 0 0 1rem 0 !important;
+}
+
+/* Ensure revenue summary section has proper top spacing */
+.revenue-summary {
+    margin-top: 10px !important;
 }
 
 /* ============================= */
@@ -191,7 +241,7 @@ html, body {
     transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
     background-color: var(--surface-color);
     border-radius: var(--radius-lg);
-    padding: 2rem;
+    padding: 0; /* Remove default padding */
     box-shadow: var(--shadow-lg);
     margin-left: auto;
     margin-right: auto;
