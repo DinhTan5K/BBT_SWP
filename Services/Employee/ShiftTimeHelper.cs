@@ -1,60 +1,49 @@
 using System;
 
-namespace start.Services
+public static class ShiftTimeHelper
 {
-    /// <summary>
-    /// Helper class kiểm tra ca làm việc (chỉ xét theo ngày làm việc)
-    /// </summary>
-    public static class ShiftTimeHelper
+    // Định nghĩa giờ bắt đầu và kết thúc cho mỗi ca
+    private static readonly TimeSpan MorningShiftStart = new TimeSpan(7, 30, 0); // 7:30 AM
+    private static readonly TimeSpan NightShiftStart = new TimeSpan(15, 0, 0); // 3:00 PM
+
+    // Khoảng thời gian cho phép check-in (ví dụ: 30 phút trước và sau giờ bắt đầu)
+    private const int CheckInWindowMinutes = 30;
+
+    public static bool CanCheckIn(DateTime currentTime, DateTime workDate, string? shiftName, out string message)
     {
-        /// <summary>
-        /// Trả về ngày bắt đầu ca (bằng ngày làm việc)
-        /// </summary>
-        public static DateTime GetShiftStartDateTime(DateTime workDate, string? shiftName)
+        message = "";
+        TimeSpan shiftStartTime;
+
+        // Xác định giờ bắt đầu ca dựa trên tên ca
+        if ("Sáng".Equals(shiftName, StringComparison.OrdinalIgnoreCase))
         {
-            // Không quan trọng ca là gì nữa, chỉ dùng ngày
-            return workDate.Date;
+            shiftStartTime = MorningShiftStart;
+        }
+        else if ("Tối".Equals(shiftName, StringComparison.OrdinalIgnoreCase))
+        {
+            shiftStartTime = NightShiftStart;
+        }
+        else
+        {
+            message = "Ca làm việc không hợp lệ.";
+            return false;
         }
 
-        /// <summary>
-        /// Trả về ngày kết thúc ca (bằng cuối ngày làm việc, 23:59:59)
-        /// </summary>
-        public static DateTime GetShiftEndDateTime(DateTime workDate, string? shiftName)
+        // Tính toán khoảng thời gian check-in hợp lệ
+        var checkInStart = workDate.Date.Add(shiftStartTime).AddMinutes(-CheckInWindowMinutes);
+        var checkInEnd = workDate.Date.Add(shiftStartTime).AddMinutes(CheckInWindowMinutes);
+
+        if (currentTime < checkInStart)
         {
-            return workDate.Date.AddDays(1).AddTicks(-1); // 23:59:59 của cùng ngày
+            message = $"Bạn chỉ có thể check-in từ {checkInStart:HH:mm}.";
+            return false;
+        }
+        if (currentTime > checkInEnd)
+        {
+            message = $"Đã quá giờ check-in cho ca này (trễ nhất là {checkInEnd:HH:mm}).";
+            return false;
         }
 
-        /// <summary>
-        /// Kiểm tra xem có thể check-in được không (chỉ xét ngày)
-        /// </summary>
-        public static bool CanCheckIn(DateTime currentTime, DateTime workDate, string? shiftName, out string message)
-        {
-            var startOfDay = workDate.Date;
-            var endOfDay = workDate.Date.AddDays(1).AddTicks(-1);
-
-            if (currentTime.Date < startOfDay)
-            {
-                message = $"Chưa đến ngày làm việc ({workDate:dd/MM/yyyy}).";
-                return false;
-            }
-
-            if (currentTime.Date > workDate.Date)
-            {
-                message = $"Đã qua ngày làm việc ({workDate:dd/MM/yyyy}).";
-                return false;
-            }
-
-            message = string.Empty;
-            return true;
-        }
-
-        /// <summary>
-        /// Hiển thị thông tin ca làm (chỉ ngày)
-        /// </summary>
-        public static string GetShiftTimeDisplay(string? shiftName)
-        {
-            // Vì không còn chia giờ, chỉ hiển thị "Trong ngày làm việc"
-            return "Trong ngày làm việc";
-        }
+        return true;
     }
 }
