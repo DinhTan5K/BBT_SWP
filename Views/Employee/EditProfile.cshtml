@@ -32,8 +32,8 @@
     }
     
     var avatarUrl = !string.IsNullOrWhiteSpace(emp?.AvatarUrl)
-        ? emp!.AvatarUrl
-        : Url.Content("https://res.cloudinary.com/do48qpmut/image/upload/v1761645429/uploads/tdppvgyas8bhvfs7lton.png");
+        ? emp.AvatarUrl
+        : "https://res.cloudinary.com/do48qpmut/image/upload/v1761645429/uploads/tdppvgyas8bhvfs7lton.png";
 }
 
 @section Styles { <link rel="stylesheet" href="~/css/employee/editprofile.css" /> }
@@ -114,7 +114,7 @@
     <h3 class="section-title">ẢNH KHUÔN MẶT CHO CHECK-IN</h3>
 
 <div class="ep-face-wrap mb-4">
-    @if (emp != null && (emp.RoleID == "EM" || emp.RoleID == "SL"))
+    @if (emp != null && (emp.RoleID == "EM" || emp.RoleID == "SL" || emp.RoleID == "SH"))
     {
         if (string.IsNullOrEmpty(emp.AvatarUrl))
         {

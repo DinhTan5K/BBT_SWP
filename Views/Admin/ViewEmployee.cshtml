@@ -4,8 +4,8 @@
     ViewData["Title"] = "Chi tiết nhân viên";
 
     var avatar = !string.IsNullOrWhiteSpace(Model.AvatarUrl)
-         ? Url.Content(Model.AvatarUrl) 
-        : Url.Content("https://res.cloudinary.com/do48qpmut/image/upload/v1761645429/uploads/tdppvgyas8bhvfs7lton.png");
+         ? Model.AvatarUrl
+        : "https://res.cloudinary.com/do48qpmut/image/upload/v1761645429/uploads/tdppvgyas8bhvfs7lton.png";
 
     // Lấy tên vai trò từ Role object nếu có, nếu không thì dùng mapping
     var roleText = Model.Role?.RoleName ?? 
@@ -130,13 +130,21 @@
                             <div style="font-size: 13px; color: var(--muted); margin-bottom: 4px;">Ngày bắt đầu</div>
                             <div style="color: var(--ink);">@contract.StartDate.ToString("dd/MM/yyyy")</div>
                         </div>
-                        @if (contract.EndDate.HasValue)
-                        {
-                            <div>
-                                <div style="font-size: 13px; color: var(--muted); margin-bottom: 4px;">Ngày kết thúc</div>
+                        <div>
+                            <div style="font-size: 13px; color: var(--muted); margin-bottom: 4px;">Ngày kết thúc</div>
+                            @if (contract.ContractType == "Vô thời hạn")
+                            {
+                                <div style="color: var(--ink); font-style: italic;">Vô thời hạn</div>
+                            }
+                            else if (contract.EndDate.HasValue)
+                            {
                                 <div style="color: var(--ink);">@contract.EndDate.Value.ToString("dd/MM/yyyy")</div>
-                            </div>
-                        }
+                            }
+                            else
+                            {
+                                <div style="color: #dc3545; font-weight: 600;">Thiếu ngày kết thúc</div>
+                            }
+                        </div>
                         <div>
                             <div style="font-size: 13px; color: var(--muted); margin-bottom: 4px;">Cách tính lương</div>
                             <div style="color: var(--ink);">@contract.PaymentType</div>

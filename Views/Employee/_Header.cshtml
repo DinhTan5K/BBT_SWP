@@ -1,7 +1,8 @@
 @model start.Models.Employee
 @{
-    var avatar = string.IsNullOrWhiteSpace(Model.AvatarUrl) ? Url.Content("https://res.cloudinary.com/do48qpmut/image/upload/v1761645429/uploads/tdppvgyas8bhvfs7lton.png")
-                                                            : Url.Content(Model.AvatarUrl);
+    var avatar = !string.IsNullOrWhiteSpace(Model.AvatarUrl)
+        ? Model.AvatarUrl
+        : "https://res.cloudinary.com/do48qpmut/image/upload/v1761645429/uploads/tdppvgyas8bhvfs7lton.png";
   string roleText = Model.RoleID switch {
     "AD" => "Quản trị", "SL" => "Trưởng ca", "BM" => "Quản lý chi nhánh",
     "RM" => "Quản lý vùng", "SP" => "Shipper", _ => "Nhân viên"

@@ -46,7 +46,14 @@ namespace start.Controllers
             var emp = _authService.LoginEmployee(loginId, password);
             if (emp != null)
             {
-                // --- TÁI CẤU TRÚC: HỢP NHẤT LOGIC ĐĂNG NHẬP CHO TẤT CẢ NHÂN VIÊN ---
+                // Lấy thông tin đầy đủ của Employee, bao gồm cả Region và Branch
+                var fullEmpInfo = await _db.Employees
+                    .Include(e => e.Region)
+                    .Include(e => e.Branch)
+                    .FirstOrDefaultAsync(e => e.EmployeeID == emp.EmployeeID);
+
+                if (fullEmpInfo == null) return View(); // Không tìm thấy thông tin đầy đủ
+
 
                 // 1. Tạo claims (thông tin xác thực) cho nhân viên
                 var claims = new List<Claim>
@@ -55,7 +62,8 @@ namespace start.Controllers
                     new Claim(ClaimTypes.Name, emp.FullName ?? "User"),
                     new Claim(ClaimTypes.Role, emp.RoleID ?? "EM"),
                     new Claim(ClaimTypes.Email, emp.Email ?? ""),
-                    new Claim("EmployeeID", emp.EmployeeID) // Thêm claim EmployeeID để dễ truy cập
+                    new Claim("EmployeeID", emp.EmployeeID), // Thêm claim EmployeeID để dễ truy cập
+                    new Claim("AvatarUrl", emp.AvatarUrl ?? "")
                 };
                 if (emp.BranchID.HasValue)
                 {
@@ -63,7 +71,7 @@ namespace start.Controllers
                 }
                 if (emp.RegionID.HasValue)
                 {
-                    claims.Add(new Claim("RegionID", emp.RegionID.Value.ToString()));
+                    claims.Add(new Claim("RegionId", emp.RegionID.Value.ToString()));
                 }
 
                 // 2. Tạo identity và principal với scheme "EmployeeScheme"
@@ -77,6 +85,13 @@ namespace start.Controllers
                 HttpContext.Session.SetString("EmployeeID", emp.EmployeeID);
                 HttpContext.Session.SetString("EmployeeName", emp.FullName ?? "");
                 HttpContext.Session.SetString("RoleID", emp.RoleID ?? "EM"); // Dùng RoleID cho nhất quán
+                HttpContext.Session.SetString("AvatarUrl", emp.AvatarUrl ?? "");
+                if (emp.RegionID.HasValue)
+                {
+                    HttpContext.Session.SetString("RegionId", emp.RegionID.Value.ToString());
+                    HttpContext.Session.SetString("RegionName", fullEmpInfo.Region?.RegionName ?? "Chưa xác định");
+                }
+
                 if (emp.BranchID.HasValue)
                 {
                     HttpContext.Session.SetString("BranchId", emp.BranchID.Value.ToString());
@@ -92,7 +107,7 @@ namespace start.Controllers
                 {
                     "BM" => RedirectToAction("Index", "BManager"),
                     "RM" => RedirectToAction("RegionHome", "Region"),
-                    "SH" or "SP" => RedirectToAction("Index", "Shipper"),
+                    "SH" or "SP" => RedirectToAction("MyOrders", "Shipper"),
                     _ => RedirectToAction("Profile", "Employee"), // Mặc định cho AD, EM, SL và các vai trò khác
                 };
             }

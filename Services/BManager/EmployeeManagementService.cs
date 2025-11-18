@@ -11,8 +11,8 @@ namespace start.Services
     public class EmployeeManagementService : IEmployeeManagementService
     {
         private readonly ApplicationDbContext _context;
-    // Add SP (Shipper) so it appears in selectable roles for creating employees
-    private static readonly string[] EmployeeAndShiftLeadRoles = { "EM", "SL", "SP" };
+    // Sửa lại mã vai trò của Shipper từ "SP" thành "SH" để khớp với database
+    private static readonly string[] EmployeeAndShiftLeadRoles = { "EM", "SL", "SH" };
 
         public EmployeeManagementService(ApplicationDbContext context)
         {
@@ -63,12 +63,6 @@ namespace start.Services
                  .Where(r => EmployeeAndShiftLeadRoles.Contains(r.RoleID))
                  .AsNoTracking()
                  .ToListAsync();
-
-            // Ensure 'SP' (Shipper) exists in the selectable roles even if it's not seeded in DB
-            if (EmployeeAndShiftLeadRoles.Contains("SP") && !roles.Any(r => r.RoleID == "SP"))
-            {
-                roles.Add(new Role { RoleID = "SP", RoleName = "Shipper" });
-            }
 
             return roles;
         }

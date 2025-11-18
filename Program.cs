@@ -195,6 +195,11 @@ app.MapControllerRoute(
     defaults: new { controller = "Employee" });
 
 app.MapControllerRoute(
+    name: "shipper",
+    pattern: "Shipper/{action=MyOrders}/{id?}",
+    defaults: new { controller = "Employee" }); // Ánh xạ các route Shipper tới EmployeeController
+
+app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}")
     .WithStaticAssets();

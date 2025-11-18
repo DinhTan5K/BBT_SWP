@@ -11,7 +11,7 @@ namespace start.Services
     public class ScheduleForManagerService : IScheduleForManagerService
     {
         private readonly ApplicationDbContext _context;
-        private static readonly string[] EmployeeAndShiftLeadRoles = { "EM", "SL" };
+        private static readonly string[] EmployeeAndShiftLeadRoles = { "EM", "SL", "SH" };
 
         public ScheduleForManagerService(ApplicationDbContext context)
         {
@@ -20,6 +20,7 @@ namespace start.Services
 
         public async Task<List<WorkSchedule>> GetWorkScheduleAsync(int branchId, DateTime? startDate, DateTime? endDate)
         {
+            // Sửa lỗi: Lấy danh sách ID nhân viên bao gồm cả Shipper
             var employeeIdsInBranch = await _context.Employees
                 .Where(e => e.BranchID == branchId && EmployeeAndShiftLeadRoles.Contains(e.RoleID))
                 .Select(e => e.EmployeeID)
@@ -32,6 +33,7 @@ namespace start.Services
 
             var query = _context.WorkSchedules
                     .Include(ws => ws.Employee)
+                    // Sửa lỗi: Lọc các lịch làm việc theo danh sách ID nhân viên đã lấy ở trên
                     .Where(ws => employeeIdsInBranch.Contains(ws.EmployeeID))
                     .AsNoTracking()
                     .AsQueryable();

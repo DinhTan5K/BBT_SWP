@@ -31,7 +31,16 @@ namespace start.Controllers
 
         // Lấy EmployeeID từ session
         private string? CurrentEmpId => HttpContext.Session.GetString("EmployeeID");
-        private int? CurrentRegionId => HttpContext.Session.GetInt32("RegionID");
+        private int? CurrentRegionId
+        {
+            get
+            {
+                // Sửa lỗi: Đọc key "RegionId" (chữ 'd' thường) và parse từ string sang int
+                var regionIdValue = HttpContext.Session.GetString("RegionId");
+                if (int.TryParse(regionIdValue, out var regionId)) return regionId;
+                return null;
+            }
+        }
         public RegionController(IRegionService regionService, IConfiguration configuration, IAntiforgery antiforgery, ICompositeViewEngine viewEngine)
         {
             _regionService = regionService;
@@ -144,7 +153,15 @@ namespace start.Controllers
             var query = (q ?? "").Trim();
 
             // Always fetch branches (we will pass to view). Service returns all branches in region.
-            var branches = await _regionService.GetBranchesForStatusAsync(empId, null, query);
+            var rawBranches = await _regionService.GetBranchesForStatusAsync(empId, null, query);
+
+            // SỬA LỖI: Loại bỏ các chi nhánh bị trùng lặp
+            // Ưu tiên giữ lại bản ghi có ManagerName
+            var branches = rawBranches
+                .GroupBy(b => b.BranchId)
+                .Select(g => g.OrderByDescending(b => !string.IsNullOrEmpty(b.ManagerName)).First())
+                .ToList();
+
 
             // Determine requested tab
             var activeTab = string.IsNullOrWhiteSpace(view) ? "branches" : view.Trim().ToLowerInvariant();

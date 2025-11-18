@@ -426,53 +426,49 @@
     ===================================================== */
     function initDeliverButtons() {
         document.querySelectorAll(".deliver-btn").forEach(button => {
-            button.addEventListener("click", async function () {
+            button.addEventListener("click", async function (e) {
+                e.preventDefault();
                 const orderId = this.dataset.orderId;
                 const row = this.closest("tr");
                 try {
-                    const response = await fetch(`/Internal/DeliverOrder`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                        body: `orderId=${orderId}`
-                    });
-                    const data = await response.json();
-                    if (!data.success) return alert(data.message);
+                    // Sửa lại cách gửi orderId, đưa vào URL thay vì body
+                    const response = await fetch(`/Internal/DeliverOrder?orderId=${orderId}`, { method: "POST" });
 
-                    const statusCell = row.querySelector("td:nth-child(7)");
-                    if (statusCell) statusCell.textContent = "Đang giao";
-                    this.textContent = "Hoàn tất đơn hàng";
-                    this.classList.replace("deliver-btn", "complete-btn");
-                    alert(data.message);
+                    const data = await response.json();
+                    if (data.success) {
+                        const statusCell = row.querySelector("td:nth-child(7)");
+                        if (statusCell) statusCell.textContent = "Đang giao";
+                        
+                        // Thay thế nút "Giao hàng" bằng nút "Hoàn tất"
+                        this.textContent = "Hoàn tất đơn hàng";
+                        this.classList.remove("deliver-btn");
+                        this.classList.add("complete-btn");
+                        alert(data.message);
+                    } else {
+                        alert(data.message);
+                    }
                 } catch (err) {
                     console.error(err);
                     alert("Lỗi khi cập nhật đơn hàng.");
                 }
             });
         });
-
-        document.addEventListener("click", async e => {
-            if (e.target.classList.contains("complete-btn")) {
-                const btn = e.target;
-                const orderId = btn.dataset.orderId;
-                const row = btn.closest("tr");
-                try {
-                    const res = await fetch(`/Internal/CompleteOrder`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                        body: `orderId=${orderId}`
-                    });
-                    const data = await res.json();
-                    if (data.success) {
-                        const statusCell = row.querySelector("td:nth-child(7)");
-                        if (statusCell) statusCell.textContent = "Đã giao";
-                        btn.textContent = "✔ Đã giao";
-                        btn.disabled = true;
-                    }
-                    alert(data.message);
-                } catch (err) {
-                    console.error(err);
-                    alert("Lỗi khi hoàn tất đơn hàng.");
+    
+        // Sử dụng event delegation để xử lý cả nút được tạo động
+        document.getElementById('inProgressCard').addEventListener("click", async function (e) {
+            if (e.target && e.target.classList.contains('complete-btn')) {
+                const button = e.target;
+                const orderId = button.dataset.orderId;
+                const row = button.closest("tr");
+    
+                const response = await fetch(`/Internal/CompleteOrder?orderId=${orderId}`, { method: "POST" });
+                const data = await response.json();
+    
+                if (data.success) {
+                    row.querySelector("td:nth-child(7)").textContent = "Đã giao";
+                    button.outerHTML = '<span>✔️ Đã giao</span>'; // Thay thế nút bằng text
                 }
+                alert(data.message);
             }
         });
     }

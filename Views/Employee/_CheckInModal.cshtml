@@ -184,14 +184,14 @@ submitBtn?.addEventListener('click', async () => {
             }, 2000);
         } else {
             showError(result.message || "Có lỗi xảy ra. Vui lòng thử lại.");
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = '<i class="fas fa-check-circle"></i> Xác nhận';
+            submitBtn.disabled = false; // Bật lại nút
+            submitBtn.innerHTML = `<i class="fas fa-check-circle"></i> Xác nhận ${(isCheckIn ? "Check-in" : "Check-out")}`; // Khôi phục nội dung nút
         }
     } catch (error) {
         console.error('Submit error:', error);
         showError("Không thể kết nối đến server. Vui lòng thử lại.");
         submitBtn.disabled = false;
-        submitBtn.innerHTML = '<i class="fas fa-check-circle"></i> Xác nhận';
+        submitBtn.innerHTML = `<i class="fas fa-check-circle"></i> Xác nhận ${(isCheckIn ? "Check-in" : "Check-out")}`;
     }
 });
 

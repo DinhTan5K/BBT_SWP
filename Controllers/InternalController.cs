@@ -12,10 +12,14 @@ namespace start.Controllers
     public class InternalController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly IOrderService _orderService;
+        private readonly ILogger<InternalController> _logger;
 
-        public InternalController(ApplicationDbContext context)
+        public InternalController(ApplicationDbContext context, IOrderService orderService, ILogger<InternalController> logger)
         {
             _context = context;
+            _orderService = orderService;
+            _logger = logger;
         }
 
         // GET: /Internal/BranchOrders
@@ -82,19 +86,21 @@ namespace start.Controllers
 
 
             // === Thêm phần tính thống kê doanh thu ===
+            var deliveredOrdersInShift = orders.Where(o => o.Status == "Đã giao").ToList();
+
             var totalOrders = orders.Count;
-            var completed = orders.Count(o => o.Status == "Đã giao");
+            var completed = deliveredOrdersInShift.Count;
             var delivering = orders.Count(o => o.Status == "Đang giao");
             var cancelled = orders.Count(o => o.Status == "Đã hủy");
-            var totalRevenue = orders
-                .Where(o => o.Status == "Đã giao")
+            var totalRevenue = deliveredOrdersInShift
                 .Select(o => (decimal?)o.Total ?? 0)
                 .DefaultIfEmpty(0)
                 .Sum();
 
             // 🔍 Thống kê chi tiết sản phẩm bán ra (theo số lượng)
-            var productStats = orders
-                .Where(o => o.Status == "Đã giao" && o.OrderDetails != null)
+            // Sửa: Chỉ tính trên các đơn hàng đã giao trong ca
+            var productStats = deliveredOrdersInShift
+                .Where(o => o.OrderDetails != null)
                 .SelectMany(o => o.OrderDetails!)
                 .Where(od => od.Product != null)
                 .GroupBy(od => od.Product!.ProductName)
@@ -119,11 +125,12 @@ namespace start.Controllers
 
 
             // 🕒 Gom doanh thu theo từng khoảng 30 phút
-            var intervalRevenue = orders
-                .Where(o => o.Status == "Đã giao")
+            // Sửa: Chỉ tính trên các đơn hàng đã giao trong ca và dùng UpdatedAt
+            var intervalRevenue = deliveredOrdersInShift
+                .Where(o => o.UpdatedAt.HasValue)
                 .GroupBy(o =>
                 {
-                    var time = o.CreatedAt;
+                    var time = o.UpdatedAt.Value;
                     int roundedMinutes = (time.Minute / 30) * 30; // 0 hoặc 30 phút
                     return new DateTime(time.Year, time.Month, time.Day, time.Hour, roundedMinutes, 0);
                 })
@@ -162,19 +169,18 @@ namespace start.Controllers
         [HttpPost]
         public async Task<IActionResult> ConfirmOrder(int id)
         {
-            var branchIdString = HttpContext.Session.GetString("BranchId");
-            int? branchId = !string.IsNullOrEmpty(branchIdString) ? int.Parse(branchIdString) : (int?)null;
+            // Sử dụng OrderService để đảm bảo logic được đồng bộ (cập nhật UpdatedAt)
+            var (success, message) = await _orderService.UpdateOrderStatusAsync(id, "Đã xác nhận");
 
-            if (branchId == null)
-                return RedirectToAction("Login", "Account");
+            if (success)
+            {
+                TempData["Message"] = $"Đơn hàng đã được xác nhận thành công.";
+            }
+            else
+            {
+                TempData["Error"] = message; // Hiển thị lỗi nếu có
+            }
 
-            var order = await _context.Orders.FindAsync(id);
-            if (order == null || order.BranchID != branchId)
-                return NotFound();
-
-            order.Status = "Đã xác nhận";
-            await _context.SaveChangesAsync();
-            TempData["Message"] = $"Đơn {order.OrderCode} đã được xác nhận";
             return RedirectToAction("BranchOrders");
         }
 
@@ -228,35 +234,44 @@ namespace start.Controllers
         [HttpPost]
         public async Task<IActionResult> DeliverOrder(int orderId)
         {
-            var order = await _context.Orders.FirstOrDefaultAsync(o => o.OrderID == orderId);
-            if (order == null)
-                return Json(new { success = false, message = "❌ Không tìm thấy đơn hàng." });
-
-            if (order.Status == "Đã xác nhận")
+            var branchId = HttpContext.Session.GetInt32("BranchId");
+            if (!branchId.HasValue)
             {
-                order.Status = "Đang giao";
-                await _context.SaveChangesAsync();
-                return Json(new { success = true, next = "Delivering", message = "Đơn hàng đã được thông báo cho shipper!" });
+                return Json(new { success = false, message = "Không xác định được chi nhánh." });
             }
 
-            return Json(new { success = false, message = "Đơn hàng này không thể giao." });
+            // 1. Tìm một Shipper đang trong ca làm việc (đã check-in và ca đã được duyệt)
+            var now = DateTime.Now;
+            var availableShipper = await _context.WorkSchedules
+                .Where(ws => ws.Employee.BranchID == branchId.Value &&
+                             ws.Employee.RoleID == "SH" &&
+                             ws.Date.Date == now.Date && // Lịch làm việc của ngày hôm nay
+                             ws.Status == "Đã duyệt" && // SỬA LỖI: Bổ sung điều kiện ca làm phải được duyệt
+                             ws.CheckInTime.HasValue && // Shipper phải đã check-in
+                             !ws.CheckOutTime.HasValue) // và chưa check-out
+                .Select(ws => ws.Employee)
+                .FirstOrDefaultAsync();
+
+            if (availableShipper == null)
+            {
+                return Json(new { success = false, message = "Không có shipper nào sẵn sàng trong ca làm việc hiện tại." });
+            }
+
+            // 2. Nếu có shipper, gán đơn hàng và cập nhật trạng thái
+            var (success, message) = await _orderService.UpdateOrderStatusAsync(orderId, "Đang giao", availableShipper.EmployeeID);
+
+            if (!success) return Json(new { success = false, message });
+            return Json(new { success = true, message = "Đơn hàng đã được chuyển sang trạng thái 'Đang giao'." });
         }
 
         [HttpPost]
         public async Task<IActionResult> CompleteOrder(int orderId)
         {
-            var order = await _context.Orders.FirstOrDefaultAsync(o => o.OrderID == orderId);
-            if (order == null)
-                return Json(new { success = false, message = "❌ Không tìm thấy đơn hàng." });
+            // Sử dụng OrderService để đảm bảo logic được đồng bộ (cập nhật UpdatedAt)
+            var (success, message) = await _orderService.UpdateOrderStatusAsync(orderId, "Đã giao");
 
-            if (order.Status == "Đang giao")
-            {
-                order.Status = "Đã giao";
-                await _context.SaveChangesAsync();
-                return Json(new { success = true, next = "Done", message = "Đơn hàng đã hoàn tất thành công!" });
-            }
-
-            return Json(new { success = true, message = "Đơn hàng đã được hoàn tất!" });
+            if (!success) return Json(new { success = false, message });
+            return Json(new { success = true, message = "Đơn hàng đã được hoàn tất thành công." });
         }
 
 

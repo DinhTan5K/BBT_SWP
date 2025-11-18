@@ -11,7 +11,7 @@ namespace start.Services
     public class DashboardService : IDashboardService
     {
         private readonly ApplicationDbContext _context;
-        private static readonly string[] EmployeeAndShiftLeadRoles = { "EM", "SL" };
+        private static readonly string[] EmployeeAndShiftLeadRoles = { "EM", "SL", "SH" };
         private const string OrderStatusCompleted = "Đã giao";
 
         public DashboardService(ApplicationDbContext context)
@@ -172,41 +172,28 @@ namespace start.Services
 {
     var today = DateTime.Today;
     var startOfWeek = today.AddDays(-(int)today.DayOfWeek + (int)DayOfWeek.Monday);
-    
-    // 1. Lấy tất cả lịch làm việc trong tuần (Đã làm, Đã duyệt, Chờ duyệt)
-    var allSchedules = await _context.WorkSchedules
-        .Include(ws => ws.Employee)
-        .Where(ws => ws.Employee.BranchID == branchId &&
-                     ws.Date.Date >= startOfWeek)
+    if (today.DayOfWeek == DayOfWeek.Sunday) startOfWeek = startOfWeek.AddDays(-7);
+
+    // SỬA LỖI: Truy vấn từ bảng Attendances để lấy giờ làm thực tế
+    var employeeAttendances = await _context.Attendances
         .AsNoTracking()
+        .Include(a => a.WorkSchedule.Employee)
+        .Where(a => a.WorkSchedule.Employee.BranchID == branchId &&
+                    a.CheckInTime >= startOfWeek &&
+                    a.CheckOutTime.HasValue)
+        .GroupBy(a => new { a.EmployeeID, a.WorkSchedule.Employee.FullName, a.WorkSchedule.Employee.AvatarUrl })
+        .Select(g => new WeeklySummary
+        {
+            EmployeeID = g.Key.EmployeeID,
+            FullName = g.Key.FullName,
+            // Tính tổng giờ làm từ DateDiffSecond để có độ chính xác cao, sau đó chia cho 3600
+            TotalHours = Math.Round(g.Sum(a => EF.Functions.DateDiffSecond(a.CheckInTime, a.CheckOutTime.Value)) / 3600.0, 1),
+            TotalShifts = g.Count() // Mỗi bản ghi attendance là một ca đã làm
+        })
+        .OrderByDescending(s => s.TotalHours)
         .ToListAsync();
 
-    // 2. Nhóm theo nhân viên
-    var summary = allSchedules
-        .GroupBy(ws => ws.EmployeeID)
-        .Select(group => 
-        {
-            double hoursWorked = 0;
-            
-            // Tính giờ làm thực tế (chỉ ca đã check-in/out)
-            foreach (var s in group.Where(g => g.CheckInTime.HasValue && g.CheckOutTime.HasValue))
-            {
-                hoursWorked += (s.CheckOutTime.Value - s.CheckInTime.Value).TotalHours;
-            }
-            
-            return new WeeklySummary
-            {
-                EmployeeID = group.Key,
-                FullName = group.First().Employee!.FullName,
-                TotalHours = Math.Round(hoursWorked, 1),
-                TotalShifts = group.Count(g => g.Status == "Đã duyệt"), // Tổng ca đã duyệt
-                ShiftsPending = group.Count(g => g.Status == "Chưa duyệt") // Tổng ca chờ duyệt
-            };
-        })
-        .OrderByDescending(s => s.TotalHours) // Xếp theo giờ làm
-        .ToList();
-
-    return summary;
+    return employeeAttendances;
 }
     }
 }

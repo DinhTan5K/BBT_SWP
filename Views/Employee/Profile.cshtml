@@ -5,8 +5,8 @@
     ViewData["Title"] = "Hồ sơ nhân viên";    // tiêu đề tab trình duyệt
 
     var avatar = !string.IsNullOrWhiteSpace(Model.AvatarUrl)
-        ? Url.Content(Model.AvatarUrl)
-        : Url.Content("https://res.cloudinary.com/do48qpmut/image/upload/v1761645429/uploads/tdppvgyas8bhvfs7lton.png");
+        ? Model.AvatarUrl
+        : "https://res.cloudinary.com/do48qpmut/image/upload/v1761645429/uploads/tdppvgyas8bhvfs7lton.png";
 
     string roleText = (Model.RoleID == "AD" ? "Quản trị"
                        : Model.RoleID == "SL" ? "Trưởng ca"

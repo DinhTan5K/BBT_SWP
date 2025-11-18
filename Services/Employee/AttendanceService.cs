@@ -65,12 +65,12 @@ namespace start.Services
         };
 
         _db.Attendances.Add(attendance);
-        await _db.SaveChangesAsync(); // ✅ Giữ nguyên SaveChanges như cũ (ổn định)
-
-        // Chỉ dòng này để tránh lỗi trigger
-        _db.ChangeTracker.Clear();
-        await _db.Database.ExecuteSqlRawAsync(
-            "UPDATE WorkSchedules SET IsActive = 1 WHERE WorkScheduleID = {0}", workSchedule.WorkScheduleID);
+        
+        // Cập nhật WorkSchedule với thời gian check-in
+        workSchedule.CheckInTime = attendance.CheckInTime;
+        _db.WorkSchedules.Update(workSchedule);
+        
+        await _db.SaveChangesAsync();
 
         return (true, "Check-in thành công!", attendance);
     }
@@ -107,7 +107,17 @@ public async Task<(bool success, string message, Attendance? attendance)> CheckO
         attendance.CheckOutTime = DateTime.Now;
         attendance.CheckOutImageUrl = checkOutImageUrl;
 
-        await _db.SaveChangesAsync(); // ✅ Giữ lại như trước (để view cập nhật TempData)
+        // Cập nhật WorkSchedule với thời gian check-out
+        if (attendance.WorkScheduleID.HasValue)
+        {
+            var workSchedule = await _db.WorkSchedules.FindAsync(attendance.WorkScheduleID.Value);
+            if (workSchedule != null)
+            {
+                workSchedule.CheckOutTime = attendance.CheckOutTime;
+                _db.WorkSchedules.Update(workSchedule);
+            }
+        }
+        await _db.SaveChangesAsync();
 
         return (true, "Check-out thành công!", attendance);
     }
@@ -188,18 +198,38 @@ var apiSecret = _cfg["FaceApi:ApiSecret"];
 var apiUrl = _cfg["FaceApi:Url"];
 
 
-       if (employee == null || string.IsNullOrEmpty(employee.AvatarUrl))
-    return false;
+        if (employee == null || string.IsNullOrEmpty(employee.AvatarUrl))
+            return false;
 
-var originalPath = Path.Combine(_env.WebRootPath, employee.AvatarUrl.TrimStart('/'));
-if (!System.IO.File.Exists(originalPath))
-{
-    Console.WriteLine("❌ Không tìm thấy ảnh Avatar: " + originalPath);
-    return false;
-}
+        byte[] originalBytes;
+        // SỬA LỖI: Kiểm tra xem AvatarUrl là URL hay đường dẫn cục bộ
+        if (Uri.TryCreate(employee.AvatarUrl, UriKind.Absolute, out var uriResult)
+            && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps))
+        {
+            // Nếu là URL, tải ảnh từ internet
+            using var httpClient = new HttpClient();
+            try
+            {
+                originalBytes = await httpClient.GetByteArrayAsync(employee.AvatarUrl);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Lỗi khi tải ảnh từ URL: {employee.AvatarUrl}. Lỗi: {ex.Message}");
+                return false;
+            }
+        }
+        else
+        {
+            // Nếu là đường dẫn cục bộ, đọc file từ wwwroot
+            var originalPath = Path.Combine(_env.WebRootPath, employee.AvatarUrl.TrimStart('/'));
+            if (!System.IO.File.Exists(originalPath))
+            {
+                Console.WriteLine("❌ Không tìm thấy ảnh Avatar cục bộ: " + originalPath);
+                return false;
+            }
+            originalBytes = await System.IO.File.ReadAllBytesAsync(originalPath);
+        }
 
-
-        var originalBytes = await System.IO.File.ReadAllBytesAsync(originalPath);
         string originalBase64 = Convert.ToBase64String(originalBytes);
 
         using var http = new HttpClient();
@@ -314,4 +344,3 @@ Console.WriteLine("Response JSON: " + json);
         }
     }
 }
-

@@ -5,6 +5,13 @@ using start.Data;
 using start.Models;
 public class OrderService : IOrderService
 {
+    // Define constants for order statuses to avoid magic strings
+    private const string StatusPendingConfirmation = "Chờ xác nhận";
+    private const string StatusConfirmed = "Đã xác nhận";
+    private const string StatusShipping = "Đang giao";
+    private const string StatusDelivered = "Đã giao";
+    private const string StatusCancelled = "Đã hủy";
+
     private readonly ApplicationDbContext _context;
     private readonly ILogger<OrderService> _logger;
     private static readonly Random _random = new Random();
@@ -612,15 +619,39 @@ public class OrderService : IOrderService
         await _context.SaveChangesAsync();
     }
 
-public async Task MarkOrderAsDelivered(int orderId)
+    public async Task<(bool Success, string Message)> MarkOrderAsDelivered(int orderId)
     {
-        var order = await _context.Orders.FindAsync(orderId);
-        if (order != null)
-        {
-            order.Status = "Đã giao";
-            order.UpdatedAt = DateTime.Now; 
-            await _context.SaveChangesAsync();
-        }
+        // Hợp nhất logic: Gọi phương thức UpdateOrderStatusAsync để đảm bảo tính nhất quán.
+        // Phương thức này sẽ luôn cập nhật `UpdatedAt` khi thay đổi trạng thái.
+        // Điều này giải quyết vấn đề `UpdatedAt` bị null nếu trạng thái trước đó không hợp lệ.
+        return await UpdateOrderStatusAsync(orderId, StatusDelivered);
     }
 
+    public async Task<(bool Success, string Message)> UpdateOrderStatusAsync(int orderId, string newStatus, string? shipperId = null)
+    {
+        var order = await _context.Orders.FindAsync(orderId);
+        if (order == null)
+        {
+            return (false, "Không tìm thấy đơn hàng.");
+        }
+
+        // Gán trạng thái mới
+        order.Status = newStatus;
+        order.UpdatedAt = DateTime.Now; // Luôn cập nhật thời gian thay đổi trạng thái
+
+        // Nếu trạng thái là "Đang giao", gán ShipperId
+        if (newStatus == StatusShipping && !string.IsNullOrEmpty(shipperId))
+        {
+            order.ShipperId = shipperId;
+        }
+
+        // Nếu trạng thái là "Đã giao", đảm bảo có thời gian cập nhật
+        if (newStatus == StatusDelivered)
+        {
+            _logger.LogInformation("Order {OrderId} was marked as DELIVERED at {Timestamp}", orderId, order.UpdatedAt);
+        }
+
+        await _context.SaveChangesAsync();
+        return (true, $"Cập nhật trạng thái đơn hàng thành '{newStatus}' thành công.");
+    }
 }

@@ -2,7 +2,7 @@
 @{
     // Tên hiển thị
     var empName = Context.Session.GetString("EmployeeName") ?? User?.Identity?.Name ?? "Tài khoản";
-    var regionName = Context.Session.GetString("RegionName") ?? "Chưa xác định";
+    var regionName = Context.Session.GetString("RegionName") ?? "Chưa xác định"; // Sửa lại key cho đúng
 
     // Avatar: ưu tiên lưu trong session, fallback sang claim "AvatarUrl" nếu có, rồi fallback sang ảnh mặc định
     var avatarUrl = Context.Session.GetString("AvatarUrl");
@@ -26,7 +26,7 @@
     // Nếu vẫn null => dùng ảnh mặc định trong wwwroot/images/default-avatar.png
     if (string.IsNullOrEmpty(avatarUrl))
     {
-        avatarUrl = Url.Content("~/images/default-avatar.png");
+        avatarUrl = "/images/default-avatar.png";
     }
 
     Layout = null;

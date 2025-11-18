@@ -104,9 +104,8 @@
                         
                         // Đếm số ca theo trạng thái
                         int pendingCount = hasWork ? workByDate[d.Date].Count(s => s.Status == "Chưa duyệt") : 0;
-                        int approvedCount = hasWork ? workByDate[d.Date].Count(s => s.Status == "Đã duyệt" && (s.Date.Date >= DateTime.Today.Date || !s.CheckInTime.HasValue)) : 0;
-                        int doneCount = hasWork ? workByDate[d.Date].Count(s => s.Date.Date < DateTime.Today.Date && s.CheckInTime.HasValue) : 0;
-
+                        int doneCount = hasWork ? workByDate[d.Date].Count(s => s.CheckInTime.HasValue && s.CheckOutTime.HasValue) : 0;
+                        int approvedCount = hasWork ? workByDate[d.Date].Count(s => s.Status == "Đã duyệt" && !(s.CheckInTime.HasValue && s.CheckOutTime.HasValue)) : 0;
                         int totalShifts = hasWork ? workByDate[d.Date].Count() : 0;
                         
                         var cellClass = "cal-cell cal-day" + (isToday ? " today" : "") + (hasWork ? " workday" : "");
@@ -124,14 +123,11 @@
                             @if (hasWork)
                             {
                                 <div class="mt-2 small schedule-summary">
-                                    @if (pendingCount > 0)
-                                    {
+                                    @if (pendingCount > 0) {
                                         <div class="text-warning"><strong>@workByDate[d.Date].Count(s => s.Status == "Chưa duyệt") Chờ duyệt</strong></div>
-                                    }
-                                    else if (doneCount > 0)
-                                    {
+                                    } else if (doneCount > 0) {
                                         <div class="text-success"><strong>@doneCount Đã làm</strong></div>
-                                    }
+                                    } 
                                     <div class="text-primary">@approvedCount Đã duyệt</div>
                                 </div>
                             }

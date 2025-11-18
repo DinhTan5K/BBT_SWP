@@ -58,7 +58,17 @@
                         <div class="d-none d-lg-block">@emp.Email</div>
                         <div class="d-none d-lg-block">@emp.City</div>
                         <div class="employee-status">
-                            <span class="badge bg-secondary">@emp.RoleID</span>
+                            @{
+                                // Logic để xác định tên và màu sắc cho từng vai trò
+                                var roleName = emp.RoleID == "EM" ? "Nhân viên" : emp.RoleID == "SL" ? "Trưởng ca" : emp.RoleID == "SH" ? "Shipper" : emp.RoleID;
+                                var roleColor = emp.RoleID switch
+                                {
+                                    "SL" => "bg-primary",   // Trưởng ca
+                                    "SH" => "bg-info",      // Shipper
+                                    _    => "bg-secondary"  // Mặc định cho Nhân viên (EM) và các vai trò khác
+                                };
+                            }
+                            <span class="badge @roleColor">@roleName</span>
                             @if (emp.IsActive)
                             {
                                 <span class="badge bg-success">Active</span>
@@ -351,10 +361,11 @@
                 contractModalBody.html('<div class="text-center p-3">Đang tải form...</div>');
 
                 contractModalBody.load('@Url.Action("CreateContractPartial")?employeeId=' + employeeId, function () {
+                    const createContractForm = $('#createContractForm');
                     $.validator.unobtrusive.parse(contractModalBody.find('form'));
                     
-                    // GẮN LOGIC VALIDATION CUSTOM (THAY THẾ CONFIRM/ALERT CŨ)
-                    $('#createContractForm').on('submit', function(e) {
+                    // GẮN LOGIC VALIDATION CUSTOM VÀ AJAX SUBMISSION TRỰC TIẾP VÀO FORM SUBMIT
+                    createContractForm.on('submit', async function(e) {
                         e.preventDefault();
                         
                         var startDateVal = $('#StartDate').val();
@@ -363,27 +374,53 @@
                         
                         var startDate = new Date(startDateVal);
                         var endDate = endDateVal ? new Date(endDateVal) : null;
-                        var today = new Date().setHours(0,0,0,0);
-                        
+                        // var today = new Date().setHours(0,0,0,0); // Đã bỏ kiểm tra ngày trong quá khứ
+
                         let validationMessage = null;
 
-                        if (startDate < today) {
-                            validationMessage = 'Ngày bắt đầu hợp đồng không thể là ngày trong quá khứ.';
-                        } else if (contractType === 'Vô thời hạn' && endDate) {
+                        if (contractType === 'Vô thời hạn' && endDate) { // Kiểm tra hợp đồng vô thời hạn không có ngày kết thúc
                             validationMessage = 'Hợp đồng vô thời hạn không nên có ngày kết thúc.';
-                        } else if (contractType !== 'Vô thời hạn' && !endDateVal) {
-                            validationMessage = 'Hợp đồng có thời hạn phải có ngày kết thúc.';
-                        } else if (endDate && endDate <= startDate) {
+                        } else if (contractType === 'Thử việc' && !endDateVal) { 
+                            validationMessage = 'Hợp đồng "Thử việc" bắt buộc phải có ngày kết thúc.';
+                        } else if (contractType === 'Chính thức có thời hạn' && !endDateVal) {
+                            validationMessage = 'Hợp đồng "Chính thức có thời hạn" bắt buộc phải có ngày kết thúc.';
+                        } else if (endDate && endDate <= startDate) { // Kiểm tra ngày kết thúc phải sau ngày bắt đầu
                             validationMessage = 'Ngày kết thúc phải sau ngày bắt đầu.';
                         }
                         
                         if (validationMessage) {
                             Swal.fire({ title: 'Lỗi Validation', text: validationMessage, icon: 'error', confirmButtonColor: '#dc3545' });
-                            return;
+                            return; // Dừng lại nếu có lỗi client-side validation
                         }
                         
-                        // Kích hoạt nút lưu hợp đồng nếu validation OK
-                        $('#saveContractBtn').trigger('click');
+                        // Nếu validation client-side OK, tiến hành gửi AJAX
+                        const saveContractBtn = $('#saveContractBtn');
+                        saveContractBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...');
+
+                        try {
+                            const response = await $.ajax({
+                                url: '@Url.Action("CreateContract")',
+                                method: 'POST',
+                                data: createContractForm.serialize(), // Sử dụng dữ liệu từ form
+                                headers: { 'RequestVerificationToken': token }
+                            });
+
+                            if (response.success) {
+                                showInfoPopup('Thành công!', "Tạo hợp đồng thành công!", true); 
+                                loadContracts(response.employeeId); 
+                            } else {
+                                // Nếu server trả về lỗi (ví dụ: validation server-side), hiển thị lại form với lỗi
+                                contractModalBody.html(response);
+                                $.validator.unobtrusive.parse(contractModalBody.find('form'));
+                                var errorMessage = contractModalBody.find('.text-danger:first').text() || 'Lỗi: Vui lòng kiểm tra lại dữ liệu hợp đồng.';
+                                showInfoPopup('Lỗi Validation', errorMessage, false);
+                            }
+                        } catch (xhr) {
+                            showInfoPopup('Lỗi Server', "Lỗi khi lưu hợp đồng. Vui lòng kiểm tra console.", false); 
+                            console.error("AJAX Error:", xhr);
+                        } finally {
+                            saveContractBtn.prop('disabled', false).text('Save Contract');
+                        }
                     });
                     
                     contractModalFooter.html(`
@@ -394,44 +431,12 @@
             }
 
             // --- HỢP ĐỒNG: Lưu Hợp Đồng ---
+            // Nút này giờ chỉ kích hoạt sự kiện submit của form
             $(contractModalFooter).on('click', '#saveContractBtn', function () {
-                var form = contractModalBody.find('form');
-                
-         
-                if (form.length && form.attr('id') === 'createContractForm') {
-                    
-                    form.submit(); 
-                    return; 
+                const createContractForm = contractModalBody.find('#createContractForm');
+                if (createContractForm.length) {
+                    createContractForm.submit(); // Kích hoạt sự kiện submit của form
                 }
-
-                if (!form.valid()) return; 
-                
-                const saveContractBtn = $(this);
-                saveContractBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...');
-
-                $.ajax({
-                    url: '@Url.Action("CreateContract")',
-                    method: 'POST',
-                    data: form.serialize(),
-                    headers: { 'RequestVerificationToken': token },
-                    success: function (response) {
-                        if (response.success) {
-                            showInfoPopup('Thành công!', "Tạo hợp đồng thành công!", true); 
-                            loadContracts(response.employeeId); 
-                        } else {
-                            contractModalBody.html(response);
-                            $.validator.unobtrusive.parse(contractModalBody.find('form'));
-                            var errorMessage = contractModalBody.find('.text-danger:first').text() || 'Lỗi: Vui lòng kiểm tra lại dữ liệu hợp đồng.';
-                            showInfoPopup('Lỗi Validation', errorMessage, false);
-                        }
-                    },
-                    error: function () { 
-                        showInfoPopup('Lỗi Server', "Lỗi khi lưu hợp đồng. Vui lòng kiểm tra console.", false); 
-                    },
-                    complete: function() {
-                        saveContractBtn.prop('disabled', false).text('Save Contract');
-                    }
-                });
             });
             
             // --- HỢP ĐỒNG: Hủy Hợp Đồng ---

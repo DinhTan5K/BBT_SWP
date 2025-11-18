@@ -24,12 +24,6 @@
         .GroupBy(x => x.Date.Date)
         .ToDictionary(g => g.Key, g => g.ToList());
 
-    // Lấy ID các ca đã có chấm công hoàn chỉnh để xác định trạng thái "Đã làm"
-    var scheduleIds = Model.Items.Select(i => i.WorkScheduleID).ToList();
-    var completedAttendanceScheduleIds = new HashSet<int>(
-        ViewBag.CompletedAttendances as List<int> ?? new List<int>()
-    );
-
     string[] dowHeaders = new[] { "T2", "T3", "T4", "T5", "T6", "T7", "CN" };
 
     // Lấy thông tin từ ViewBag
@@ -115,13 +109,13 @@
                       {
                           // --- SỬA LOGIC XÁC ĐỊNH TRẠNG THÁI ---
                           string badgeClass;
-                          string statusText;
-                          if (completedAttendanceScheduleIds.Contains(w.WorkScheduleID))
+                          string statusText;                          
+                          if (w.CheckInTime.HasValue && w.CheckOutTime.HasValue)
                           {
                               badgeClass = "badge-done";
                               statusText = "Đã làm";
                           }
-                          else // Mặc định là "Dự kiến" vì đã lọc "Đã duyệt" ở trên
+                          else
                           {
                               badgeClass = "badge-plan";
                               statusText = "Dự kiến";

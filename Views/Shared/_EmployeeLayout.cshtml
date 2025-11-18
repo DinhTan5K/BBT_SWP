@@ -49,16 +49,17 @@
            href="@Url.Action("RegisterSchedule","Employee")">Đăng ký lịch làm</a>
     }
     
-    @if (role == "BM")
+   
+    <a class="sb-item @(active=="EditProfile" ? "active" : "")"
+       href="@Url.Action("EditProfile","Employee")">Chỉnh sửa thông tin cá nhân</a>
+        <a class="sb-item @(active=="" ? "active" : "")"
+       href="@Url.Action("Index","Home")">Đăng xuất</a>
+        @if (role == "BM")
     {
         <a class="sb-item" href="@Url.Action("Index", "BManager")">
             <i class="fas fa-arrow-left me-2"></i> Quay lại Dashboard
         </a>
     }
-    <a class="sb-item @(active=="EditProfile" ? "active" : "")"
-       href="@Url.Action("EditProfile","Employee")">Chỉnh sửa thông tin cá nhân</a>
-        <a class="sb-item @(active=="" ? "active" : "")"
-       href="@Url.Action("Index","Home")">Đăng xuất</a>
      @if (role == "SH")
   {
       <a class="sb-item @(ViewBag.ActiveMenu=="MyOrders" ? "active" : "")"
